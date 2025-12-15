@@ -1,0 +1,14 @@
+{
+  "KANBAN": {
+    "HEADER": "Quadro Kanban",
+    "NO_CONVERSATIONS": "Nenhuma conversa neste status",
+    "SETTINGS": "Configurações",
+    "SETTINGS_TITLE": "Configurar Colunas",
+    "UPDATE": "Atualizar",
+    "UNASSIGNED": "Não atribuído",
+    "TABS": {
+      "LABELS": "Etiquetas",
+      "TEAMS": "Times"
+    }
+  }
+}

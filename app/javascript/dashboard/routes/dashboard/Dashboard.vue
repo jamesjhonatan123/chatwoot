@@ -1,5 +1,5 @@
 <script>
-import { defineAsyncComponent, ref } from 'vue';
+import { defineAsyncComponent, ref, computed } from 'vue';
 
 import NextSidebar from 'next/sidebar/Sidebar.vue';
 import WootKeyShortcutModal from 'dashboard/components/widgets/modal/WootKeyShortcutModal.vue';
@@ -9,6 +9,7 @@ import UpgradePage from 'dashboard/routes/dashboard/upgrade/UpgradePage.vue';
 import { useUISettings } from 'dashboard/composables/useUISettings';
 import { useAccount } from 'dashboard/composables/useAccount';
 import { useWindowSize } from '@vueuse/core';
+import { useRoute } from 'vue-router';
 
 import wootConstants from 'dashboard/constants/globals';
 
@@ -37,6 +38,9 @@ export default {
     const { uiSettings, updateUISettings } = useUISettings();
     const { accountId } = useAccount();
     const { width: windowWidth } = useWindowSize();
+    const route = useRoute();
+
+    const isPopout = computed(() => route.query.is_popout === 'true');
 
     return {
       uiSettings,
@@ -44,6 +48,7 @@ export default {
       accountId,
       upgradePageRef,
       windowWidth,
+      isPopout,
     };
   },
   data() {
@@ -123,6 +128,7 @@ export default {
 <template>
   <div class="flex flex-grow overflow-hidden text-n-slate-12">
     <NextSidebar
+      v-if="!isPopout"
       :is-mobile-sidebar-open="isMobileSidebarOpen"
       @toggle-account-modal="toggleAccountModal"
       @open-key-shortcut-modal="toggleKeyShortcutModal"
@@ -138,19 +144,21 @@ export default {
         :bypass-upgrade-page="bypassUpgradePage"
       >
         <MobileSidebarLauncher
+          v-if="!isPopout"
           :is-mobile-sidebar-open="isMobileSidebarOpen"
           @toggle="toggleMobileSidebar"
         />
       </UpgradePage>
       <template v-if="!showUpgradePage">
         <router-view />
-        <CommandBar />
-        <CopilotLauncher />
+        <CommandBar v-if="!isPopout" />
+        <CopilotLauncher v-if="!isPopout" />
         <MobileSidebarLauncher
+          v-if="!isPopout"
           :is-mobile-sidebar-open="isMobileSidebarOpen"
           @toggle="toggleMobileSidebar"
         />
-        <CopilotContainer />
+        <CopilotContainer v-if="!isPopout" />
       </template>
       <AddAccountModal
         :show="showCreateAccountModal"

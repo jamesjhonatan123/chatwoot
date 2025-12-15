@@ -190,9 +190,13 @@ const actions = {
     commit(types.CLEAR_ALL_MESSAGES_LOADED);
     if (data.dataFetched === undefined) {
       try {
+        const before =
+          data.messages && data.messages.length > 0
+            ? data.messages[0].id
+            : undefined;
         await dispatch('fetchPreviousMessages', {
           after,
-          before: data.messages[0].id,
+          before,
           conversationId: data.id,
         });
         data.dataFetched = true;

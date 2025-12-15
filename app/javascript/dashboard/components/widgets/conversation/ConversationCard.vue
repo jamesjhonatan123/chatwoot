@@ -28,6 +28,7 @@ const props = defineProps({
   compact: { type: Boolean, default: false },
   enableContextMenu: { type: Boolean, default: false },
   allowedContextMenuOptions: { type: Array, default: () => [] },
+  disableLink: { type: Boolean, default: false },
 });
 
 const emit = defineEmits([
@@ -42,6 +43,7 @@ const emit = defineEmits([
   'deleteConversation',
   'selectConversation',
   'deSelectConversation',
+  'click',
 ]);
 
 const router = useRouter();
@@ -139,6 +141,11 @@ const conversationPath = computed(() => {
 });
 
 const onCardClick = e => {
+  if (props.disableLink) {
+    emit('click', e);
+    return;
+  }
+
   const path = conversationPath.value;
   if (!path) return;
 
