@@ -18,7 +18,6 @@
         </div>
       </div>
       <Button
-        v-if="activeTab === 'labels'"
         icon="i-lucide-settings"
         variant="outline"
         size="sm"
@@ -95,28 +94,87 @@
         </div>
 
         <div class="p-6 overflow-y-auto max-h-[60vh]">
-          <div class="space-y-3">
-            <label
-              v-for="label in labels"
-              :key="label.title"
-              class="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer border border-transparent hover:border-slate-100 dark:hover:border-slate-700 transition-colors"
+          <p class="text-sm text-slate-500 dark:text-slate-400 mb-4">
+            {{ $t('KANBAN.SETTINGS_DESCRIPTION') || 'Select and drag to reorder columns' }}
+          </p>
+
+          <!-- Labels Settings -->
+          <div v-if="activeTab === 'labels'" class="space-y-2">
+            <draggable
+              v-model="orderedLabels"
+              item-key="title"
+              handle=".drag-handle"
+              class="space-y-2"
             >
-              <input
-                type="checkbox"
-                :value="label.title"
-                v-model="selectedTags"
-                class="w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500 dark:border-slate-600 dark:bg-slate-700"
-              >
-              <div class="flex items-center gap-2">
-                <span
-                  class="w-3 h-3 rounded-full"
-                  :style="{ backgroundColor: label.color }"
-                ></span>
-                <span class="text-sm font-medium text-slate-700 dark:text-slate-200">
-                  {{ label.title }}
-                </span>
-              </div>
-            </label>
+              <template #item="{ element: label }">
+                <div
+                  class="flex items-center gap-3 p-3 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 cursor-default"
+                >
+                  <span class="drag-handle cursor-move text-slate-400 hover:text-slate-600 dark:hover:text-slate-300">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <circle cx="9" cy="5" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="19" r="1"/>
+                      <circle cx="15" cy="5" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="19" r="1"/>
+                    </svg>
+                  </span>
+                  <input
+                    type="checkbox"
+                    :value="label.title"
+                    v-model="selectedTags"
+                    class="w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500 dark:border-slate-600 dark:bg-slate-700"
+                  >
+                  <div class="flex items-center gap-2 flex-1">
+                    <span
+                      class="w-3 h-3 rounded-full"
+                      :style="{ backgroundColor: label.color }"
+                    ></span>
+                    <span class="text-sm font-medium text-slate-700 dark:text-slate-200">
+                      {{ label.title }}
+                    </span>
+                  </div>
+                </div>
+              </template>
+            </draggable>
+          </div>
+
+          <!-- Teams Settings -->
+          <div v-else class="space-y-2">
+            <draggable
+              v-model="orderedTeams"
+              item-key="id"
+              handle=".drag-handle"
+              class="space-y-2"
+            >
+              <template #item="{ element: team }">
+                <div
+                  class="flex items-center gap-3 p-3 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 cursor-default"
+                >
+                  <span class="drag-handle cursor-move text-slate-400 hover:text-slate-600 dark:hover:text-slate-300">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <circle cx="9" cy="5" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="19" r="1"/>
+                      <circle cx="15" cy="5" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="19" r="1"/>
+                    </svg>
+                  </span>
+                  <input
+                    type="checkbox"
+                    :value="team.id"
+                    v-model="selectedTeamIds"
+                    class="w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500 dark:border-slate-600 dark:bg-slate-700"
+                  >
+                  <div class="flex items-center gap-2 flex-1">
+                    <span
+                      class="w-3 h-3 rounded-full"
+                      :class="team.id === 0 ? 'bg-slate-400' : 'bg-slate-500'"
+                    ></span>
+                    <span
+                      class="text-sm font-medium"
+                      :class="team.id === 0 ? 'text-slate-500 dark:text-slate-400' : 'text-slate-700 dark:text-slate-200'"
+                    >
+                      {{ team.id === 0 ? ($t('KANBAN.UNASSIGNED') || 'Unassigned') : team.name }}
+                    </span>
+                  </div>
+                </div>
+              </template>
+            </draggable>
           </div>
         </div>
 
@@ -140,15 +198,39 @@
     <Modal
       v-if="showPreviewModal"
       :show="showPreviewModal"
+      :show-close-button="false"
       @close="closePreview"
       modal-type="right-aligned"
       class="w-full h-full kanban-preview-modal"
     >
-      <iframe
-        :src="previewConversationUrl"
-        class="w-full h-full border-0"
-        allow="microphone"
-      />
+      <div class="flex flex-col h-full">
+        <div class="flex items-center justify-between px-4 py-3 border-b border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900">
+          <div class="flex items-center gap-2">
+             <Button
+              variant="ghost"
+              size="sm"
+              icon="i-lucide-x"
+              @click="closePreview"
+            />
+            <span class="text-sm font-medium text-slate-700 dark:text-slate-200">
+              #{{ currentConversation?.id }}
+            </span>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            icon="i-lucide-external-link"
+            @click="navigateToConversation"
+          >
+            {{ $t('KANBAN.OPEN_IN_CONVERSATION') || 'Open Conversation' }}
+          </Button>
+        </div>
+        <iframe
+          :src="previewConversationUrl"
+          class="flex-1 w-full border-0"
+          allow="microphone"
+        />
+      </div>
     </Modal>
   </div>
 </template>
@@ -164,6 +246,7 @@
 
 <script setup>
 import { ref, onMounted, computed, watch } from 'vue';
+import { useRouter } from 'vue-router';
 import KanbanAPI from 'dashboard/api/kanban';
 import LabelsAPI from 'dashboard/api/labels';
 import TeamsAPI from 'dashboard/api/teams';
@@ -178,6 +261,7 @@ import { frontendURL } from 'dashboard/helper/URLHelper';
 
 const { t } = useI18n();
 const store = useStore();
+const router = useRouter();
 
 const isLoading = ref(true);
 const conversations = ref({});
@@ -188,35 +272,68 @@ const activeTab = ref('labels');
 const showSettingsModal = ref(false);
 const showPreviewModal = ref(false);
 const selectedTags = ref([]);
+const selectedTeamIds = ref([]);
+const orderedLabels = ref([]);
+const orderedTeams = ref([]);
 const previewConversationUrl = ref('');
+const currentConversation = ref(null);
 
 const uiSettings = computed(() => store.getters.getUISettings || {});
 const accountId = computed(() => store.getters.getCurrentAccountId);
 
 const statuses = computed(() => {
   if (activeTab.value === 'teams') {
-    const teamColumns = teams.value.map(team => ({
-      key: team.name,
+    const savedTeamOrder = uiSettings.value.kanban_team_order;
+    const savedTeamIds = uiSettings.value.kanban_team_columns;
+
+    // Create unassigned team object
+    const unassignedTeam = { id: 0, name: t('KANBAN.UNASSIGNED') || 'Unassigned' };
+
+    // Combine real teams with unassigned
+    let allTeams = [unassignedTeam, ...teams.value];
+
+    // Filter by selected teams if saved
+    if (savedTeamIds && savedTeamIds.length > 0) {
+      allTeams = allTeams.filter(team => savedTeamIds.includes(team.id));
+    }
+
+    // Order teams if saved order exists
+    if (savedTeamOrder && savedTeamOrder.length > 0) {
+      allTeams = [...allTeams].sort((a, b) => {
+        const indexA = savedTeamOrder.indexOf(a.id);
+        const indexB = savedTeamOrder.indexOf(b.id);
+        if (indexA === -1) return 1;
+        if (indexB === -1) return -1;
+        return indexA - indexB;
+      });
+    }
+
+    return allTeams.map(team => ({
+      key: team.id === 0 ? 'Unassigned' : team.name,
       label: team.name,
       id: team.id,
-      color: '#64748b',
+      color: team.id === 0 ? '#94a3b8' : '#64748b',
     }));
-
-    teamColumns.push({
-      key: 'Unassigned',
-      label: t('KANBAN.UNASSIGNED') || 'Unassigned',
-      id: 0,
-      color: '#94a3b8',
-    });
-
-    return teamColumns;
   }
 
   const savedColumns = uiSettings.value.kanban_columns;
+  const savedOrder = uiSettings.value.kanban_column_order;
+
   let visibleLabels = labels.value;
 
-  if (savedColumns) {
+  if (savedColumns && savedColumns.length > 0) {
     visibleLabels = labels.value.filter(l => savedColumns.includes(l.title));
+  }
+
+  // Order labels if saved order exists
+  if (savedOrder && savedOrder.length > 0) {
+    visibleLabels = [...visibleLabels].sort((a, b) => {
+      const indexA = savedOrder.indexOf(a.title);
+      const indexB = savedOrder.indexOf(b.title);
+      if (indexA === -1) return 1;
+      if (indexB === -1) return -1;
+      return indexA - indexB;
+    });
   }
 
   return visibleLabels.map(label => ({
@@ -232,16 +349,62 @@ const switchTab = async (tab) => {
 };
 
 const openSettings = () => {
-  const savedColumns = uiSettings.value.kanban_columns;
-  if (savedColumns) {
-    selectedTags.value = [...savedColumns];
+  if (activeTab.value === 'labels') {
+    const savedColumns = uiSettings.value.kanban_columns;
+    const savedOrder = uiSettings.value.kanban_column_order;
+
+    // Set up ordered labels based on saved order
+    if (savedOrder && savedOrder.length > 0) {
+      orderedLabels.value = [...labels.value].sort((a, b) => {
+        const indexA = savedOrder.indexOf(a.title);
+        const indexB = savedOrder.indexOf(b.title);
+        if (indexA === -1) return 1;
+        if (indexB === -1) return -1;
+        return indexA - indexB;
+      });
+    } else {
+      orderedLabels.value = [...labels.value];
+    }
+
+    if (savedColumns && savedColumns.length > 0) {
+      selectedTags.value = [...savedColumns];
+    } else {
+      selectedTags.value = labels.value.map(l => l.title);
+    }
   } else {
-    selectedTags.value = labels.value.map(l => l.title);
+    const savedTeamIds = uiSettings.value.kanban_team_columns;
+    const savedTeamOrder = uiSettings.value.kanban_team_order;
+
+    // Create unassigned team object
+    const unassignedTeam = { id: 0, name: t('KANBAN.UNASSIGNED') || 'Unassigned' };
+
+    // Combine real teams with unassigned
+    const allTeams = [unassignedTeam, ...teams.value];
+
+    // Set up ordered teams based on saved order
+    if (savedTeamOrder && savedTeamOrder.length > 0) {
+      orderedTeams.value = [...allTeams].sort((a, b) => {
+        const indexA = savedTeamOrder.indexOf(a.id);
+        const indexB = savedTeamOrder.indexOf(b.id);
+        if (indexA === -1) return 1;
+        if (indexB === -1) return -1;
+        return indexA - indexB;
+      });
+    } else {
+      orderedTeams.value = [...allTeams];
+    }
+
+    if (savedTeamIds && savedTeamIds.length > 0) {
+      selectedTeamIds.value = [...savedTeamIds];
+    } else {
+      selectedTeamIds.value = allTeams.map(t => t.id);
+    }
   }
   showSettingsModal.value = true;
 };
 
 const openPreview = (conversation) => {
+  currentConversation.value = conversation;
   const url = frontendURL(`accounts/${accountId.value}/conversations/${conversation.id}`);
   previewConversationUrl.value = `${url}?is_popout=true`;
   showPreviewModal.value = true;
@@ -250,15 +413,36 @@ const openPreview = (conversation) => {
 const closePreview = () => {
   showPreviewModal.value = false;
   previewConversationUrl.value = '';
+  currentConversation.value = null;
+};
+
+const navigateToConversation = () => {
+  if (currentConversation.value) {
+    router.push({
+      name: 'inbox_conversation',
+      params: { conversation_id: currentConversation.value.id },
+    });
+    closePreview();
+  }
 };
 
 const saveSettings = async () => {
   try {
-    await store.dispatch('updateUISettings', {
-      uiSettings: {
-        kanban_columns: selectedTags.value
-      }
-    });
+    if (activeTab.value === 'labels') {
+      await store.dispatch('updateUISettings', {
+        uiSettings: {
+          kanban_columns: selectedTags.value,
+          kanban_column_order: orderedLabels.value.map(l => l.title)
+        }
+      });
+    } else {
+      await store.dispatch('updateUISettings', {
+        uiSettings: {
+          kanban_team_columns: selectedTeamIds.value,
+          kanban_team_order: orderedTeams.value.map(t => t.id)
+        }
+      });
+    }
     showSettingsModal.value = false;
   } catch (error) {
     console.error('Error saving settings:', error);

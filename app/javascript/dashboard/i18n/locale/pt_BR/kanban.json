@@ -4,8 +4,10 @@
     "NO_CONVERSATIONS": "Nenhuma conversa neste status",
     "SETTINGS": "Configurações",
     "SETTINGS_TITLE": "Configurar Colunas",
+    "SETTINGS_DESCRIPTION": "Selecione e arraste para reordenar as colunas",
     "UPDATE": "Atualizar",
     "UNASSIGNED": "Não atribuído",
+    "OPEN_IN_CONVERSATION": "Abrir Conversa",
     "TABS": {
       "LABELS": "Etiquetas",
       "TEAMS": "Times"

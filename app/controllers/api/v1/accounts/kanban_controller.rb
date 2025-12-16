@@ -12,6 +12,8 @@ class Api::V1::Accounts::KanbanController < Api::V1::Accounts::BaseController
       base_query, current_user, current_account
     ).perform
 
+    accessible_conversations = accessible_conversations.where(status: [:open, :pending])
+
     if params[:group_by] == 'team'
       teams = current_account.teams.order(:name)
       teams.each do |team|
