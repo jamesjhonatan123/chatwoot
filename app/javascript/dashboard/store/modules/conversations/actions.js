@@ -12,6 +12,10 @@ import {
 import messageReadActions from './actions/messageReadActions';
 import messageTranslateActions from './actions/messageTranslateActions';
 import * as Sentry from '@sentry/vue';
+import {
+  handleVoiceCallCreated,
+  handleVoiceCallUpdated,
+} from 'dashboard/helper/voice';
 
 export const hasMessageFailedWithExternalError = pendingMessage => {
   // This helper is used to check if the message has failed with an external error.
@@ -92,7 +96,7 @@ const actions = {
         data: payload,
       });
       if (!payload.length) {
-        commit(types.SET_ALL_MESSAGES_LOADED);
+        commit(types.SET_ALL_MESSAGES_LOADED, data.conversationId);
       }
     } catch (error) {
       // Handle error
@@ -187,7 +191,7 @@ const actions = {
 
   async setActiveChat({ commit, dispatch }, { data, after }) {
     commit(types.SET_CURRENT_CHAT_WINDOW, data);
-    commit(types.CLEAR_ALL_MESSAGES_LOADED);
+    commit(types.CLEAR_ALL_MESSAGES_LOADED, data.id);
     if (data.dataFetched === undefined) {
       try {
         const before =
@@ -199,7 +203,7 @@ const actions = {
           before,
           conversationId: data.id,
         });
-        data.dataFetched = true;
+        commit(types.SET_CHAT_DATA_FETCHED, data.id);
       } catch (error) {
         // Ignore error
       }
@@ -212,14 +216,17 @@ const actions = {
         conversationId,
         agentId,
       });
-      dispatch('setCurrentChatAssignee', response.data);
+      dispatch('setCurrentChatAssignee', {
+        conversationId,
+        assignee: response.data,
+      });
     } catch (error) {
       // Handle error
     }
   },
 
-  setCurrentChatAssignee({ commit }, assignee) {
-    commit(types.ASSIGN_AGENT, assignee);
+  setCurrentChatAssignee({ commit }, { conversationId, assignee }) {
+    commit(types.ASSIGN_AGENT, { conversationId, assignee });
   },
 
   assignTeam: async ({ dispatch }, { conversationId, teamId }) => {
@@ -240,9 +247,21 @@ const actions = {
 
   toggleStatus: async (
     { commit },
-    { conversationId, status, snoozedUntil = null }
+    { conversationId, status, snoozedUntil = null, customAttributes = null }
   ) => {
     try {
+      // Update custom attributes first if provided
+      if (customAttributes) {
+        await ConversationApi.updateCustomAttributes({
+          conversationId,
+          customAttributes,
+        });
+        commit(types.UPDATE_CONVERSATION_CUSTOM_ATTRIBUTES, {
+          conversationId,
+          customAttributes,
+        });
+      }
+
       const {
         data: {
           payload: {
@@ -303,7 +322,7 @@ const actions = {
     }
   },
 
-  addMessage({ commit }, message) {
+  addMessage({ commit, rootGetters }, message) {
     commit(types.ADD_MESSAGE, message);
     if (message.message_type === MESSAGE_TYPE.INCOMING) {
       commit(types.SET_CONVERSATION_CAN_REPLY, {
@@ -312,10 +331,12 @@ const actions = {
       });
       commit(types.ADD_CONVERSATION_ATTACHMENTS, message);
     }
+    handleVoiceCallCreated(message, rootGetters?.getCurrentUserID);
   },
 
-  updateMessage({ commit }, message) {
+  updateMessage({ commit, rootGetters }, message) {
     commit(types.ADD_MESSAGE, message);
+    handleVoiceCallUpdated(commit, message, rootGetters?.getCurrentUserID);
   },
 
   deleteMessage: async function deleteLabels(
@@ -440,11 +461,7 @@ const actions = {
   },
 
   sendEmailTranscript: async (_, { conversationId, email }) => {
-    try {
-      await ConversationApi.sendEmailTranscript({ conversationId, email });
-    } catch (error) {
-      throw new Error(error);
-    }
+    await ConversationApi.sendEmailTranscript({ conversationId, email });
   },
 
   updateCustomAttributes: async (
@@ -457,7 +474,10 @@ const actions = {
         customAttributes,
       });
       const { custom_attributes } = response.data;
-      commit(types.UPDATE_CONVERSATION_CUSTOM_ATTRIBUTES, custom_attributes);
+      commit(types.UPDATE_CONVERSATION_CUSTOM_ATTRIBUTES, {
+        conversationId,
+        customAttributes: custom_attributes,
+      });
     } catch (error) {
       // Handle error
     }

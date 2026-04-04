@@ -17,10 +17,15 @@ const CommandBar = defineAsyncComponent(
   () => import('./commands/commandbar.vue')
 );
 
+const FloatingCallWidget = defineAsyncComponent(
+  () => import('dashboard/components/widgets/FloatingCallWidget.vue')
+);
+
 import CopilotLauncher from 'dashboard/components-next/copilot/CopilotLauncher.vue';
 import CopilotContainer from 'dashboard/components/copilot/CopilotContainer.vue';
 
 import MobileSidebarLauncher from 'dashboard/components-next/sidebar/MobileSidebarLauncher.vue';
+import { useCallsStore } from 'dashboard/stores/calls';
 
 export default {
   components: {
@@ -31,6 +36,7 @@ export default {
     UpgradePage,
     CopilotLauncher,
     CopilotContainer,
+    FloatingCallWidget,
     MobileSidebarLauncher,
   },
   setup() {
@@ -41,6 +47,7 @@ export default {
     const route = useRoute();
 
     const isPopout = computed(() => route.query.is_popout === 'true');
+    const callsStore = useCallsStore();
 
     return {
       uiSettings,
@@ -49,6 +56,8 @@ export default {
       upgradePageRef,
       windowWidth,
       isPopout,
+      hasActiveCall: computed(() => callsStore.hasActiveCall),
+      hasIncomingCall: computed(() => callsStore.hasIncomingCall),
     };
   },
   data() {
@@ -137,7 +146,9 @@ export default {
       @close-mobile-sidebar="closeMobileSidebar"
     />
 
-    <main class="flex flex-1 h-full w-full min-h-0 px-0 overflow-hidden">
+    <main
+      class="flex flex-1 h-full w-full min-h-0 px-0 overflow-hidden bg-n-surface-1"
+    >
       <UpgradePage
         v-show="showUpgradePage"
         ref="upgradePageRef"
@@ -159,6 +170,7 @@ export default {
           @toggle="toggleMobileSidebar"
         />
         <CopilotContainer v-if="!isPopout" />
+        <FloatingCallWidget v-if="hasActiveCall || hasIncomingCall" />
       </template>
       <AddAccountModal
         :show="showCreateAccountModal"
