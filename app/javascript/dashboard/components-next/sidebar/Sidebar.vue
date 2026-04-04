@@ -244,6 +244,12 @@ const menuItems = computed(() => {
       },
     },
     {
+      name: 'Kanban',
+      label: 'Kanban',
+      icon: 'i-lucide-kanban',
+      to: accountScopedRoute('kanban_dashboard'),
+    },
+    {
       name: 'Conversation',
       label: t('SIDEBAR.CONVERSATIONS'),
       icon: 'i-lucide-message-circle',

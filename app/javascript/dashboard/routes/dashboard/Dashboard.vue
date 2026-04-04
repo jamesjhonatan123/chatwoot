@@ -9,6 +9,7 @@ import UpgradePage from 'dashboard/routes/dashboard/upgrade/UpgradePage.vue';
 import { useUISettings } from 'dashboard/composables/useUISettings';
 import { useAccount } from 'dashboard/composables/useAccount';
 import { useWindowSize } from '@vueuse/core';
+import { useRoute } from 'vue-router';
 
 import wootConstants from 'dashboard/constants/globals';
 
@@ -43,6 +44,9 @@ export default {
     const { uiSettings, updateUISettings } = useUISettings();
     const { accountId } = useAccount();
     const { width: windowWidth } = useWindowSize();
+    const route = useRoute();
+
+    const isPopout = computed(() => route.query.is_popout === 'true');
     const callsStore = useCallsStore();
 
     return {
@@ -51,6 +55,7 @@ export default {
       accountId,
       upgradePageRef,
       windowWidth,
+      isPopout,
       hasActiveCall: computed(() => callsStore.hasActiveCall),
       hasIncomingCall: computed(() => callsStore.hasIncomingCall),
     };
@@ -132,6 +137,7 @@ export default {
 <template>
   <div class="flex flex-grow overflow-hidden text-n-slate-12">
     <NextSidebar
+      v-if="!isPopout"
       :is-mobile-sidebar-open="isMobileSidebarOpen"
       @toggle-account-modal="toggleAccountModal"
       @open-key-shortcut-modal="toggleKeyShortcutModal"
@@ -149,19 +155,21 @@ export default {
         :bypass-upgrade-page="bypassUpgradePage"
       >
         <MobileSidebarLauncher
+          v-if="!isPopout"
           :is-mobile-sidebar-open="isMobileSidebarOpen"
           @toggle="toggleMobileSidebar"
         />
       </UpgradePage>
       <template v-if="!showUpgradePage">
         <router-view />
-        <CommandBar />
-        <CopilotLauncher />
+        <CommandBar v-if="!isPopout" />
+        <CopilotLauncher v-if="!isPopout" />
         <MobileSidebarLauncher
+          v-if="!isPopout"
           :is-mobile-sidebar-open="isMobileSidebarOpen"
           @toggle="toggleMobileSidebar"
         />
-        <CopilotContainer />
+        <CopilotContainer v-if="!isPopout" />
         <FloatingCallWidget v-if="hasActiveCall || hasIncomingCall" />
       </template>
       <AddAccountModal

@@ -1,0 +1,16 @@
+{
+  "KANBAN": {
+    "HEADER": "Kanban Board",
+    "NO_CONVERSATIONS": "No conversations in this status",
+    "SETTINGS": "Settings",
+    "SETTINGS_TITLE": "Configure Columns",
+    "SETTINGS_DESCRIPTION": "Select and drag to reorder columns",
+    "UPDATE": "Update",
+    "UNASSIGNED": "Unassigned",
+    "OPEN_IN_CONVERSATION": "Open Conversation",
+    "TABS": {
+      "LABELS": "Labels",
+      "TEAMS": "Teams"
+    }
+  }
+}

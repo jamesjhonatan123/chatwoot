@@ -247,6 +247,7 @@
   },
   "COMMON": {
     "OR": "Ou",
-    "CLICK_HERE": "clique aqui"
+    "CLICK_HERE": "clique aqui",
+    "CANCEL": "Cancelar"
   }
 }

@@ -39,6 +39,7 @@ import teamsSettings from './teamsSettings.json';
 import whatsappTemplates from './whatsappTemplates.json';
 import contentTemplates from './contentTemplates.json';
 import mfa from './mfa.json';
+import kanban from './kanban.json';
 import yearInReview from './yearInReview.json';
 
 export default {
@@ -83,5 +84,6 @@ export default {
   ...whatsappTemplates,
   ...contentTemplates,
   ...mfa,
+  ...kanban,
   ...yearInReview,
 };

@@ -1,5 +1,7 @@
 <script>
 import { mapGetters } from 'vuex';
+import { computed } from 'vue';
+import { useRoute } from 'vue-router';
 import { useUISettings } from 'dashboard/composables/useUISettings';
 import { useAccount } from 'dashboard/composables/useAccount';
 import ChatList from '../../../components/ChatList.vue';
@@ -56,11 +58,14 @@ export default {
   setup() {
     const { uiSettings, updateUISettings } = useUISettings();
     const { accountId } = useAccount();
+    const route = useRoute();
+    const isPopout = computed(() => route.query.is_popout === 'true');
 
     return {
       uiSettings,
       updateUISettings,
       accountId,
+      isPopout,
     };
   },
   data() {
@@ -80,6 +85,9 @@ export default {
       return this.conversationId ? true : !this.isOnExpandedLayout;
     },
     isOnExpandedLayout() {
+      if (this.isPopout) {
+        return true;
+      }
       const {
         LAYOUT_TYPES: { CONDENSED },
       } = wootConstants;
@@ -121,6 +129,11 @@ export default {
     this.$watch('chatList.length', () => {
       this.setActiveChat();
     });
+
+    // In popout mode, fetch the conversation directly since ChatList is hidden
+    if (this.isPopout && this.conversationId) {
+      this.fetchAndSetConversationForPopout();
+    }
   },
 
   methods: {
@@ -190,6 +203,17 @@ export default {
     closeSearch() {
       this.showSearchModal = false;
     },
+    async fetchAndSetConversationForPopout() {
+      try {
+        await this.$store.dispatch('getConversation', this.conversationId);
+        const conversation = this.findConversation();
+        if (conversation) {
+          this.$store.dispatch('setActiveChat', { data: conversation });
+        }
+      } catch (error) {
+        console.error('Error fetching conversation for popout:', error);
+      }
+    },
   },
 };
 </script>
@@ -197,6 +221,7 @@ export default {
 <template>
   <section class="flex w-full h-full min-w-0">
     <ChatList
+      v-if="!isPopout"
       :show-conversation-list="showConversationList"
       :conversation-inbox="inboxId"
       :label="label"
@@ -213,7 +238,7 @@ export default {
     >
       <SidepanelSwitch v-if="currentChat.id" />
     </ConversationBox>
-    <ConversationSidebar v-if="shouldShowSidebar" :current-chat="currentChat" />
+    <ConversationSidebar v-if="shouldShowSidebar && !isPopout" :current-chat="currentChat" />
     <CmdBarConversationSnooze />
   </section>
 </template>
