@@ -28,6 +28,10 @@ module Filters::FilterHelper
   end
 
   def build_condition_query_string(current_filter, query_hash, current_index)
+    if current_filter.present? && query_hash['attribute_key'] == 'unread_count'
+      return unread_count_filter_query(query_hash, filter_config[:table_name])
+    end
+
     filter_operator_value = filter_operation(query_hash, current_index)
 
     return handle_nil_filter(query_hash, current_index) if current_filter.nil?

@@ -73,6 +73,10 @@ const getValuesForPriority = (values, priority) => {
   return priority.filter(option => values.includes(option.id));
 };
 
+const getValuesForUnreadStatus = (values, unreadStatus) => {
+  return getValuesName(values, unreadStatus, 'id', 'name');
+};
+
 export const getValuesForFilter = (filter, params) => {
   const { attribute_key, values } = filter;
   const {
@@ -84,10 +88,13 @@ export const getValuesForFilter = (filter, params) => {
     campaigns,
     labels,
     priority,
+    unreadStatus,
   } = params;
   switch (attribute_key) {
     case 'status':
       return getValuesForStatus(values);
+    case 'unread_count':
+      return getValuesForUnreadStatus(values, unreadStatus);
     case 'assignee_id':
       return getValuesName(values, agents, 'id', 'name');
     case 'inbox_id':

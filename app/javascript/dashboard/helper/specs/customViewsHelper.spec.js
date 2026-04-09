@@ -134,6 +134,20 @@ describe('customViewsHelper', () => {
       ]);
     });
 
+    it('should return id and name if attribute_key is unread_count', () => {
+      const filter = { attribute_key: 'unread_count', values: [true] };
+      const params = {
+        unreadStatus: [
+          { id: true, name: 'Unread' },
+          { id: false, name: 'Read' },
+        ],
+      };
+      expect(getValuesForFilter(filter, params)).toEqual({
+        id: true,
+        name: 'Unread',
+      });
+    });
+
     it('should return id and name if attribute_key is assignee_id', () => {
       const filter = { attribute_key: 'assignee_id', values: [1] };
       const params = { agents: [{ id: 1, name: 'test' }] };

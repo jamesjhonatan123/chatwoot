@@ -68,6 +68,8 @@ const getValueFromConversation = (conversation, attributeKey) => {
     case 'created_at':
     case 'last_activity_at':
       return conversation[attributeKey];
+    case 'unread_count':
+      return Boolean(conversation.unread_count);
     case 'display_id':
       // Frontend uses 'id' but backend expects 'display_id'
       return conversation.display_id || conversation.id;

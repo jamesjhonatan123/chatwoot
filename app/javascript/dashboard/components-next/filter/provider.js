@@ -100,6 +100,26 @@ export function useConversationFilterContext() {
       attributeModel: 'standard',
     },
     {
+      attributeKey: CONVERSATION_ATTRIBUTES.UNREAD_COUNT,
+      value: CONVERSATION_ATTRIBUTES.UNREAD_COUNT,
+      attributeName: t('FILTER.ATTRIBUTES.UNREAD_MESSAGES'),
+      label: t('FILTER.ATTRIBUTES.UNREAD_MESSAGES'),
+      inputType: 'searchSelect',
+      options: [
+        {
+          id: true,
+          name: t('FILTER.ATTRIBUTE_LABELS.UNREAD'),
+        },
+        {
+          id: false,
+          name: t('FILTER.ATTRIBUTE_LABELS.READ'),
+        },
+      ],
+      dataType: 'boolean',
+      filterOperators: equalityOperators.value,
+      attributeModel: 'standard',
+    },
+    {
       attributeKey: CONVERSATION_ATTRIBUTES.PRIORITY,
       value: CONVERSATION_ATTRIBUTES.PRIORITY,
       attributeName: t('FILTER.ATTRIBUTES.PRIORITY'),

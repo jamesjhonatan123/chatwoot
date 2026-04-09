@@ -464,6 +464,10 @@ function setParamsForEditFolderModal() {
       { id: 'high', name: t('CONVERSATION.PRIORITY.OPTIONS.HIGH') },
       { id: 'urgent', name: t('CONVERSATION.PRIORITY.OPTIONS.URGENT') },
     ],
+    unreadStatus: [
+      { id: true, name: t('FILTER.ATTRIBUTE_LABELS.UNREAD') },
+      { id: false, name: t('FILTER.ATTRIBUTE_LABELS.READ') },
+    ],
     filterTypes: advancedFilterTypes.value,
     allCustomAttributes: conversationCustomAttributes.value,
   };

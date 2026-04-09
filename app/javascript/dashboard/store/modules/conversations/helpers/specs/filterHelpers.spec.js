@@ -152,6 +152,32 @@ describe('filterHelpers', () => {
       expect(matchesFilters(conversation, filters)).toBe(false);
     });
 
+    it('should match conversation with unread_count equal_to true when it has unread messages', () => {
+      const conversation = { unread_count: 2 };
+      const filters = [
+        {
+          attribute_key: 'unread_count',
+          filter_operator: 'equal_to',
+          values: [{ id: true, name: 'Unread' }],
+          query_operator: 'and',
+        },
+      ];
+      expect(matchesFilters(conversation, filters)).toBe(true);
+    });
+
+    it('should match conversation with unread_count equal_to false when it has no unread messages', () => {
+      const conversation = { unread_count: 0 };
+      const filters = [
+        {
+          attribute_key: 'unread_count',
+          filter_operator: 'equal_to',
+          values: [{ id: false, name: 'Read' }],
+          query_operator: 'and',
+        },
+      ];
+      expect(matchesFilters(conversation, filters)).toBe(true);
+    });
+
     // Standard attribute tests - assignee_id
     it('should match conversation with equal_to operator for assignee_id', () => {
       const conversation = { meta: { assignee: { id: 1 } } };

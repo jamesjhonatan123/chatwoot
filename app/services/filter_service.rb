@@ -138,6 +138,15 @@ class FilterService
     end
   end
 
+  def unread_count_filter_query(query_hash, table_name = 'conversations')
+    unread_value = parse_boolean_filter_value(query_hash['values'], query_hash[:attribute_key])
+    unread_query = unread_messages_exist_query(table_name)
+    query = unread_value ? unread_query : "NOT #{unread_query}"
+    query = invert_boolean_query(query) if query_hash[:filter_operator] == 'not_equal_to'
+
+    "#{query} #{query_hash[:query_operator]}"
+  end
+
   private
 
   def standard_attribute_data_type(attribute_key)
@@ -170,6 +179,35 @@ class FilterService
     return "ILIKE ANY (ARRAY[:value_#{current_index}])" if %w[contains].include?(filter_operator)
 
     "NOT ILIKE ALL (ARRAY[:value_#{current_index}])"
+  end
+
+  def parse_boolean_filter_value(values, attribute_key)
+    value = values.is_a?(Array) ? values.first : values
+
+    return true if value == true || value == 'true'
+    return false if value == false || value == 'false'
+
+    raise CustomExceptions::CustomFilter::InvalidValue.new(attribute_name: attribute_key)
+  end
+
+  def unread_messages_exist_query(table_name)
+    <<~SQL.squish
+      EXISTS (
+        SELECT 1
+        FROM messages
+        WHERE messages.conversation_id = #{table_name}.id
+          AND messages.account_id = #{table_name}.account_id
+          AND messages.message_type = #{Message.message_types[:incoming]}
+          AND (
+            #{table_name}.agent_last_seen_at IS NULL
+            OR messages.created_at > #{table_name}.agent_last_seen_at
+          )
+      )
+    SQL
+  end
+
+  def invert_boolean_query(query)
+    query.start_with?('NOT ') ? query.delete_prefix('NOT ') : "NOT #{query}"
   end
 
   def like_filter_string(filter_operator, current_index)
