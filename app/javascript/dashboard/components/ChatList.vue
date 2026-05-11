@@ -92,6 +92,7 @@ provide('contextMenuElementTarget', virtualListRef);
 const activeAssigneeTab = ref(wootConstants.ASSIGNEE_TYPE.ME);
 const activeStatus = ref(wootConstants.STATUS_TYPE.OPEN);
 const activeSortBy = ref(wootConstants.SORT_BY_TYPE.LAST_ACTIVITY_AT_DESC);
+const isUnreadFilterActive = ref(false);
 const showAdvancedFilters = ref(false);
 // chatsOnView is to store the chats that are currently visible on the screen,
 // which mirrors the conversationList.
@@ -212,6 +213,9 @@ const showAssigneeInConversationCard = computed(() => {
 });
 
 const currentPageFilterKey = computed(() => {
+  if (isUnreadFilterActive.value) {
+    return 'unreadFilter';
+  }
   return hasAppliedFiltersOrActiveFolders.value
     ? 'appliedFilters'
     : activeAssigneeTab.value;
@@ -260,7 +264,7 @@ const conversationListPagination = computed(() => {
     return 1;
   }
 
-  return currentPage.value + 1;
+  return currentFiltersPage.value + 1;
 });
 
 const conversationFilters = computed(() => {
@@ -314,7 +318,9 @@ const pageTitle = computed(() => {
 const conversationList = computed(() => {
   let localConversationList = [];
 
-  if (!hasAppliedFiltersOrActiveFolders.value) {
+  if (isUnreadFilterActive.value) {
+    localConversationList = [...chatLists.value];
+  } else if (!hasAppliedFiltersOrActiveFolders.value) {
     const filters = conversationFilters.value;
     if (activeAssigneeTab.value === 'me') {
       localConversationList = [...mineChatsList.value(filters)];
@@ -376,20 +382,108 @@ function emitConversationLoaded() {
 
 function fetchFilteredConversations(payload) {
   payload = useSnakeCase(payload);
-  let page = currentFiltersPage.value + 1;
+  const filterType = isUnreadFilterActive.value ? 'unreadFilter' : undefined;
+
+  if (isUnreadFilterActive.value) {
+    payload = [
+      ...payload,
+      {
+        attribute_key: 'unread_count',
+        attribute_model: 'standard',
+        filter_operator: 'equal_to',
+        values: [true],
+        query_operator: 'and',
+        custom_attribute_type: '',
+      },
+    ];
+  }
+
+  let page = (currentFiltersPage.value || 0) + 1;
   store
     .dispatch('fetchFilteredConversations', {
       queryData: filterQueryGenerator(payload),
       page,
+      filterType,
     })
     .then(emitConversationLoaded);
 
   showAdvancedFilters.value = false;
 }
 
+function buildUnreadFilterPayload() {
+  const payload = [];
+
+  if (activeStatus.value) {
+    payload.push({
+      attribute_key: 'status',
+      attribute_model: 'standard',
+      filter_operator: 'equal_to',
+      values: [activeStatus.value],
+      query_operator: 'and',
+      custom_attribute_type: '',
+    });
+  }
+
+  if (activeAssigneeTab.value === wootConstants.ASSIGNEE_TYPE.ME) {
+    payload.push({
+      attribute_key: 'assignee_id',
+      attribute_model: 'standard',
+      filter_operator: 'equal_to',
+      values: [currentUser.value.id],
+      query_operator: 'and',
+      custom_attribute_type: '',
+    });
+  } else if (
+    activeAssigneeTab.value === wootConstants.ASSIGNEE_TYPE.UNASSIGNED
+  ) {
+    payload.push({
+      attribute_key: 'assignee_id',
+      attribute_model: 'standard',
+      filter_operator: 'is_not_present',
+      values: [],
+      query_operator: 'and',
+      custom_attribute_type: '',
+    });
+  }
+
+  initializeInboxTeamAndLabelFilterToModal(
+    props.conversationInbox,
+    inbox.value,
+    props.teamId,
+    activeTeam.value,
+    props.label
+  ).forEach(filter => {
+    payload.push(filter);
+  });
+
+  payload.push({
+    attribute_key: 'unread_count',
+    attribute_model: 'standard',
+    filter_operator: 'equal_to',
+    values: [true],
+    query_operator: undefined,
+    custom_attribute_type: '',
+  });
+
+  return payload;
+}
+
+function fetchUnreadFilteredConversations() {
+  const payload = buildUnreadFilterPayload();
+  let page = (currentFiltersPage.value || 0) + 1;
+
+  store
+    .dispatch('fetchFilteredConversations', {
+      queryData: filterQueryGenerator(payload),
+      page,
+      filterType: 'unreadFilter',
+    })
+    .then(emitConversationLoaded);
+}
+
 function fetchSavedFilteredConversations(payload) {
   payload = useSnakeCase(payload);
-  let page = currentFiltersPage.value + 1;
+  let page = (currentFiltersPage.value || 0) + 1;
   store
     .dispatch('fetchFilteredConversations', {
       queryData: payload,
@@ -463,10 +557,6 @@ function setParamsForEditFolderModal() {
       { id: 'medium', name: t('CONVERSATION.PRIORITY.OPTIONS.MEDIUM') },
       { id: 'high', name: t('CONVERSATION.PRIORITY.OPTIONS.HIGH') },
       { id: 'urgent', name: t('CONVERSATION.PRIORITY.OPTIONS.URGENT') },
-    ],
-    unreadStatus: [
-      { id: true, name: t('FILTER.ATTRIBUTE_LABELS.UNREAD') },
-      { id: false, name: t('FILTER.ATTRIBUTE_LABELS.READ') },
     ],
     filterTypes: advancedFilterTypes.value,
     allCustomAttributes: conversationCustomAttributes.value,
@@ -569,7 +659,11 @@ function resetAndFetchData() {
   if (props.foldersId) {
     return;
   }
-  fetchConversations();
+  if (isUnreadFilterActive.value) {
+    fetchUnreadFilteredConversations();
+  } else {
+    fetchConversations();
+  }
 }
 
 function loadMoreConversations() {
@@ -578,7 +672,11 @@ function loadMoreConversations() {
   }
 
   if (!hasAppliedFiltersOrActiveFolders.value) {
-    fetchConversations();
+    if (isUnreadFilterActive.value) {
+      fetchUnreadFilteredConversations();
+    } else {
+      fetchConversations();
+    }
   } else if (hasActiveFolders.value) {
     const payload = activeFolder.value.query;
     fetchSavedFilteredConversations(payload);
@@ -600,7 +698,11 @@ function updateAssigneeTab(selectedTab) {
     resetBulkActions();
     emitter.emit('clearSearchInput');
     activeAssigneeTab.value = selectedTab;
-    if (!currentPage.value) {
+    store.dispatch('conversationPage/reset');
+    store.dispatch('emptyAllConversations');
+    if (isUnreadFilterActive.value) {
+      fetchUnreadFilteredConversations();
+    } else if (!currentPage.value) {
       fetchConversations();
     }
   }
@@ -613,6 +715,21 @@ function onBasicFilterChange(value, type) {
     activeSortBy.value = value;
   }
   resetAndFetchData();
+}
+
+function onToggleUnreadFilter() {
+  isUnreadFilterActive.value = !isUnreadFilterActive.value;
+  appliedFilter.value = [];
+  resetBulkActions();
+  store.dispatch('conversationPage/reset');
+  store.dispatch('emptyAllConversations');
+  store.dispatch('clearConversationFilters');
+
+  if (isUnreadFilterActive.value) {
+    fetchUnreadFilteredConversations();
+  } else {
+    fetchConversations();
+  }
 }
 
 function openLastSavedItemInFolder() {
@@ -894,11 +1011,13 @@ watch(conversationFilters, (newVal, oldVal) => {
       :is-on-expanded-layout="isOnExpandedLayout"
       :conversation-stats="conversationStats"
       :is-list-loading="chatListLoading && !conversationList.length"
+      :is-unread-filter-active="isUnreadFilterActive"
       @add-folders="onClickOpenAddFoldersModal"
       @delete-folders="onClickOpenDeleteFoldersModal"
       @filters-modal="onToggleAdvanceFiltersModal"
       @reset-filters="resetAndFetchData"
       @basic-filter-change="onBasicFilterChange"
+      @toggle-unread-filter="onToggleUnreadFilter"
     />
 
     <TeleportWithDirection

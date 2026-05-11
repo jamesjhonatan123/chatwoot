@@ -67,7 +67,7 @@ const actions = {
         { commit, dispatch },
         params,
         data,
-        'appliedFilters'
+        params.filterType || 'appliedFilters'
       );
     } catch (error) {
       // Handle error

@@ -16,6 +16,7 @@ const props = defineProps({
   isOnExpandedLayout: { type: Boolean, required: true },
   conversationStats: { type: Object, required: true },
   isListLoading: { type: Boolean, required: true },
+  isUnreadFilterActive: { type: Boolean, default: false },
 });
 
 const emit = defineEmits([
@@ -24,6 +25,7 @@ const emit = defineEmits([
   'resetFilters',
   'basicFilterChange',
   'filtersModal',
+  'toggleUnreadFilter',
 ]);
 
 const { uiSettings, updateUISettings } = useUISettings();
@@ -158,6 +160,15 @@ const toggleConversationLayout = () => {
         v-if="!hasAppliedFiltersOrActiveFolders"
         :is-on-expanded-layout="isOnExpandedLayout"
         @change-filter="onBasicFilterChange"
+      />
+      <NextButton
+        v-if="!hasAppliedFiltersOrActiveFolders"
+        :label="$t('CHAT_LIST.UNREAD_TOGGLE')"
+        icon="i-lucide-mail"
+        size="xs"
+        :color="isUnreadFilterActive ? 'teal' : 'slate'"
+        :variant="isUnreadFilterActive ? 'faded' : 'ghost'"
+        @click="emit('toggleUnreadFilter')"
       />
       <SwitchLayout
         :is-on-expanded-layout="isOnExpandedLayout"

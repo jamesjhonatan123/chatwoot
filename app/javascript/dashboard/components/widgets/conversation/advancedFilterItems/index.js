@@ -15,14 +15,6 @@ const filterTypes = [
     attributeModel: 'standard',
   },
   {
-    attributeKey: 'unread_count',
-    attributeI18nKey: 'UNREAD_MESSAGES',
-    inputType: 'search_select',
-    dataType: 'boolean',
-    filterOperators: OPERATOR_TYPES_1,
-    attributeModel: 'standard',
-  },
-  {
     attributeKey: 'assignee_id',
     attributeI18nKey: 'ASSIGNEE_NAME',
     inputType: 'search_select',
@@ -128,10 +120,6 @@ export const filterAttributeGroups = [
       {
         key: 'status',
         i18nKey: 'STATUS',
-      },
-      {
-        key: 'unread_count',
-        i18nKey: 'UNREAD_MESSAGES',
       },
       {
         key: 'assignee_id',

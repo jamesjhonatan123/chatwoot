@@ -6,11 +6,14 @@ const state = {
     unassigned: 0,
     all: 0,
     appliedFilters: 0,
+    unreadFilter: 0,
   },
   hasEndReached: {
     me: false,
     unassigned: false,
     all: false,
+    appliedFilters: false,
+    unreadFilter: false,
   },
 };
 
@@ -64,6 +67,7 @@ export const mutations = {
       unassigned: 0,
       all: 0,
       appliedFilters: 0,
+      unreadFilter: 0,
     };
 
     $state.hasEndReached = {
@@ -71,6 +75,7 @@ export const mutations = {
       unassigned: false,
       all: false,
       appliedFilters: false,
+      unreadFilter: false,
     };
   },
 };

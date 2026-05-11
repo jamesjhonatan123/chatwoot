@@ -343,8 +343,37 @@ const statuses = computed(() => {
   }));
 });
 
+const selectedKanbanParams = computed(() => {
+  if (activeTab.value === 'teams') {
+    const savedTeamIds = uiSettings.value.kanban_team_columns;
+    const teamIds =
+      savedTeamIds && savedTeamIds.length > 0
+        ? savedTeamIds.map(Number)
+        : [0, ...teams.value.map(team => team.id)];
+
+    return {
+      group_by: 'team',
+      team_ids: teamIds,
+    };
+  }
+
+  const savedColumns = uiSettings.value.kanban_columns;
+  const selectedLabels =
+    savedColumns && savedColumns.length > 0
+      ? savedColumns
+      : labels.value.map(label => label.title);
+
+  return {
+    group_by: 'label',
+    labels: selectedLabels,
+  };
+});
+
 const switchTab = async (tab) => {
   activeTab.value = tab;
+  if (tab === 'teams' && !teams.value.length) {
+    await fetchTeams();
+  }
   await fetchKanbanData();
 };
 
@@ -470,19 +499,35 @@ const fetchTeams = async () => {
 const fetchKanbanData = async () => {
   try {
     isLoading.value = true;
-    const params = { group_by: activeTab.value === 'teams' ? 'team' : 'label' };
-    const response = await KanbanAPI.get(params);
-    conversations.value = response.data.data;
+    const response = await KanbanAPI.get(selectedKanbanParams.value);
+    const data = response.data?.data || {};
+    const contacts = Object.values(data)
+      .flat()
+      .map(conversation => conversation.meta?.sender)
+      .filter(Boolean);
+
+    contacts.forEach(contact => {
+      store.commit('contacts/SET_CONTACT_ITEM', contact);
+    });
+
+    conversations.value = statuses.value.reduce(
+      (accumulator, status) => ({
+        ...accumulator,
+        [status.key]: data[status.key] || [],
+      }),
+      {}
+    );
   } catch (error) {
     console.error('Error fetching kanban data:', error);
+    conversations.value = {};
   } finally {
     isLoading.value = false;
   }
 };
 
 onMounted(async () => {
-  await Promise.all([fetchLabels(), fetchTeams()]);
-  fetchKanbanData();
+  await fetchLabels();
+  await fetchKanbanData();
 });
 
 const onDragChange = async (event, newStatus) => {
