@@ -13,3 +13,11 @@ json.data do
     end
   end
 end
+
+json.meta do
+  json.column_counts do
+    @kanban_counts.each do |column_name, count|
+      json.set! column_name, count
+    end
+  end
+end

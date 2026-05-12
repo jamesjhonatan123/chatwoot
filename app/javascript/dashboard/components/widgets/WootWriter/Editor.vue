@@ -236,15 +236,51 @@ const shouldShowCannedResponses = computed(() => {
   );
 });
 
+function cannedResponseTriggerCharacters() {
+  return $position => {
+    const regexp = /(?:^)?\/[^/\n]*/g;
+    const textFrom = $position.before();
+    const textTo = $position.end();
+    const text = $position.doc.textBetween(textFrom, textTo, '\0', '\0');
+
+    let match;
+
+    // eslint-disable-next-line no-cond-assign
+    while ((match = regexp.exec(text))) {
+      const prefix = match.input.slice(
+        Math.max(0, match.index - 1),
+        match.index
+      );
+      if (!/^[\s\0]?$/.test(prefix)) {
+        // eslint-disable-next-line no-continue
+        continue;
+      }
+
+      const from = match.index + $position.start();
+      const to = from + match[0].length;
+
+      if (from < $position.pos && to >= $position.pos) {
+        return {
+          range: { from, to },
+          text: match[0].slice(1),
+        };
+      }
+    }
+
+    return null;
+  };
+}
+
 function createSuggestionPlugin({
   trigger,
   minChars = 0,
   showMenu,
   searchTerm,
   isAllowed = () => true,
+  matcher = null,
 }) {
   return suggestionsPlugin({
-    matcher: triggerCharacters(trigger, minChars),
+    matcher: matcher || triggerCharacters(trigger, minChars),
     suggestionClass: '',
     onEnter: args => {
       if (!isAllowed()) return false;
@@ -294,6 +330,7 @@ const plugins = computed(() => {
       showMenu: showCannedMenu,
       searchTerm: cannedSearchTerm,
       isAllowed: () => !props.isPrivate,
+      matcher: cannedResponseTriggerCharacters(),
     }),
     createSuggestionPlugin({
       trigger: '{{',

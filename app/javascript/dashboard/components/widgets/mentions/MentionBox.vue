@@ -12,6 +12,10 @@ const props = defineProps({
     type: String,
     default: 'canned',
   },
+  size: {
+    type: String,
+    default: 'default',
+  },
 });
 
 const emit = defineEmits(['mentionSelect']);
@@ -68,12 +72,23 @@ const onListItemSelection = index => {
 const variableKey = (item = {}) => {
   return props.type === 'variable' ? `{{${item.label}}}` : `/${item.label}`;
 };
+
+const shouldShowExpandedContent = index => {
+  return props.size === 'expanded' && index === selectedIndex.value;
+};
+
+const containerClass = computed(() => {
+  return props.size === 'expanded'
+    ? 'w-[40rem] max-w-[min(92vw,40rem)] max-h-[34rem] p-2'
+    : 'w-full max-h-[9.75rem] p-1';
+});
 </script>
 
 <template>
   <div
     ref="mentionsListContainerRef"
-    class="bg-n-solid-1 p-1 rounded-xl overflow-auto absolute w-full z-20 shadow-md left-0 bottom-full max-h-[9.75rem] border border-solid border-n-strong mention--box"
+    class="bg-n-solid-1 rounded-xl overflow-auto absolute z-20 shadow-md left-0 bottom-full border border-solid border-n-strong mention--box"
+    :class="containerClass"
   >
     <ul class="mb-0 vertical dropdown menu">
       <woot-dropdown-item
@@ -88,13 +103,20 @@ const variableKey = (item = {}) => {
           :class="{
             'bg-n-alpha-black2': index === selectedIndex,
           }"
+          :title="
+            props.size === 'expanded' ? getPlainText(item.description) : null
+          "
           @click="onListItemSelection(index)"
         >
           <slot :item="item" :index="index" :selected="index === selectedIndex">
             <p
-              class="max-w-full min-w-0 mb-0 overflow-hidden text-sm font-medium text-n-slate-11 group-hover:text-n-slate-12 text-ellipsis whitespace-nowrap"
+              class="max-w-full min-w-0 mb-0 overflow-hidden text-sm font-medium text-n-slate-11 group-hover:text-n-slate-12"
               :class="{
                 'text-n-slate-12': index === selectedIndex,
+                'whitespace-normal break-words':
+                  shouldShowExpandedContent(index),
+                'text-ellipsis whitespace-nowrap':
+                  !shouldShowExpandedContent(index),
               }"
             >
               {{ getPlainText(item.description) }}

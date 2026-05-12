@@ -1,6 +1,9 @@
 class Api::V1::Accounts::KanbanController < Api::V1::Accounts::BaseController
+  PER_PAGE = 20
+
   def index
     @kanban_data = {}
+    @kanban_counts = {}
 
     base_query = current_account.conversations.includes(
       :assignee_agent_bot, { assignee: { avatar_attachment: [:blob] } },
@@ -22,22 +25,21 @@ class Api::V1::Accounts::KanbanController < Api::V1::Accounts::BaseController
       teams = current_account.teams.where(id: selected_team_ids.reject(&:zero?)).order(:name)
       teams.each do |team|
         conversations = accessible_conversations.where(team_id: team.id)
-        conversations = conversations.page(params[:page] || 1).per(20)
-        @kanban_data[team.name] = conversations
+        @kanban_counts[team.name] = conversations.count
+        @kanban_data[team.name] = conversations.page(params[:page] || 1).per(PER_PAGE)
       end
 
       if selected_team_ids.include?(0)
         unassigned = accessible_conversations.where(team_id: nil)
-        unassigned = unassigned.page(params[:page] || 1).per(20)
-        @kanban_data['Unassigned'] = unassigned
+        @kanban_counts['Unassigned'] = unassigned.count
+        @kanban_data['Unassigned'] = unassigned.page(params[:page] || 1).per(PER_PAGE)
       end
     else
       labels = Array(params[:labels]).presence || current_account.labels.order(:title).pluck(:title)
       labels.each do |label|
         conversations = accessible_conversations.tagged_with(label)
-        conversations = conversations.page(params[:page] || 1).per(20)
-
-        @kanban_data[label] = conversations
+        @kanban_counts[label] = conversations.count
+        @kanban_data[label] = conversations.page(params[:page] || 1).per(PER_PAGE)
       end
     end
 

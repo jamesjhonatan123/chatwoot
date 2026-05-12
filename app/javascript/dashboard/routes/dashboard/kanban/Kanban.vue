@@ -1,6 +1,10 @@
 <template>
-  <div class="flex flex-col h-full overflow-hidden bg-slate-50 dark:bg-slate-900">
-    <div class="flex items-center justify-between px-6 py-4 bg-white border-b dark:bg-slate-900 border-slate-200 dark:border-slate-800">
+  <div
+    class="flex flex-col h-full overflow-hidden bg-slate-50 dark:bg-slate-900"
+  >
+    <div
+      class="flex items-center justify-between px-6 py-4 bg-white border-b dark:bg-slate-900 border-slate-200 dark:border-slate-800"
+    >
       <div class="flex items-center gap-4">
         <h1 class="text-xl font-semibold text-slate-800 dark:text-slate-100">
           {{ $t('KANBAN.HEADER') }}
@@ -11,7 +15,11 @@
             :key="tab"
             @click="switchTab(tab)"
             class="px-3 py-1 text-sm font-medium rounded-md transition-colors"
-            :class="activeTab === tab ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'"
+            :class="
+              activeTab === tab
+                ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 shadow-sm'
+                : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+            "
           >
             {{ $t(`KANBAN.TABS.${tab.toUpperCase()}`) || tab }}
           </button>
@@ -33,18 +41,27 @@
         :key="status.key"
         class="flex flex-col min-w-[320px] w-[320px] bg-slate-100 dark:bg-slate-800 rounded-lg h-full"
       >
-        <div class="flex items-center justify-between p-3 border-b border-slate-200 dark:border-slate-700">
+        <div
+          class="flex items-center justify-between p-3 border-b border-slate-200 dark:border-slate-700"
+        >
           <div class="flex items-center gap-2">
-            <span class="font-medium text-slate-700 dark:text-slate-200 capitalize">
+            <span
+              class="font-medium text-slate-700 dark:text-slate-200 capitalize"
+            >
               {{ status.label }}
             </span>
-            <span class="px-2 py-0.5 text-xs font-medium bg-slate-200 dark:bg-slate-700 rounded-full text-slate-600 dark:text-slate-300">
-              {{ (conversations[status.key] || []).length }}
+            <span
+              class="px-2 py-0.5 text-xs font-medium bg-slate-200 dark:bg-slate-700 rounded-full text-slate-600 dark:text-slate-300"
+            >
+              {{ getColumnCount(status) }}
             </span>
           </div>
         </div>
 
-        <div class="flex-1 p-2 overflow-y-auto space-y-2">
+        <div
+          class="flex-1 p-2 overflow-y-auto space-y-2"
+          @scroll.passive="event => onColumnScroll(event, status)"
+        >
           <div v-if="isLoading" class="flex justify-center py-4">
             <spinner />
           </div>
@@ -76,6 +93,13 @@
             >
               <p class="text-sm">{{ $t('KANBAN.NO_CONVERSATIONS') }}</p>
             </div>
+
+            <div
+              v-if="isColumnLoadingMore(status.key)"
+              class="flex justify-center py-3"
+            >
+              <spinner />
+            </div>
           </template>
         </div>
       </div>
@@ -87,7 +111,9 @@
       @close="showSettingsModal = false"
     >
       <div class="flex flex-col h-full">
-        <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-slate-800">
+        <div
+          class="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-slate-800"
+        >
           <h3 class="text-base font-medium text-slate-800 dark:text-slate-100">
             {{ $t('KANBAN.SETTINGS_TITLE') || 'Configure Columns' }}
           </h3>
@@ -95,7 +121,10 @@
 
         <div class="p-6 overflow-y-auto max-h-[60vh]">
           <p class="text-sm text-slate-500 dark:text-slate-400 mb-4">
-            {{ $t('KANBAN.SETTINGS_DESCRIPTION') || 'Select and drag to reorder columns' }}
+            {{
+              $t('KANBAN.SETTINGS_DESCRIPTION') ||
+              'Select and drag to reorder columns'
+            }}
           </p>
 
           <!-- Labels Settings -->
@@ -110,10 +139,23 @@
                 <div
                   class="flex items-center gap-3 p-3 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 cursor-default"
                 >
-                  <span class="drag-handle cursor-move text-slate-400 hover:text-slate-600 dark:hover:text-slate-300">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                      <circle cx="9" cy="5" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="19" r="1"/>
-                      <circle cx="15" cy="5" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="19" r="1"/>
+                  <span
+                    class="drag-handle cursor-move text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      class="w-5 h-5"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                    >
+                      <circle cx="9" cy="5" r="1" />
+                      <circle cx="9" cy="12" r="1" />
+                      <circle cx="9" cy="19" r="1" />
+                      <circle cx="15" cy="5" r="1" />
+                      <circle cx="15" cy="12" r="1" />
+                      <circle cx="15" cy="19" r="1" />
                     </svg>
                   </span>
                   <input
@@ -121,13 +163,15 @@
                     :value="label.title"
                     v-model="selectedTags"
                     class="w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500 dark:border-slate-600 dark:bg-slate-700"
-                  >
+                  />
                   <div class="flex items-center gap-2 flex-1">
                     <span
                       class="w-3 h-3 rounded-full"
                       :style="{ backgroundColor: label.color }"
                     ></span>
-                    <span class="text-sm font-medium text-slate-700 dark:text-slate-200">
+                    <span
+                      class="text-sm font-medium text-slate-700 dark:text-slate-200"
+                    >
                       {{ label.title }}
                     </span>
                   </div>
@@ -148,10 +192,23 @@
                 <div
                   class="flex items-center gap-3 p-3 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 cursor-default"
                 >
-                  <span class="drag-handle cursor-move text-slate-400 hover:text-slate-600 dark:hover:text-slate-300">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                      <circle cx="9" cy="5" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="19" r="1"/>
-                      <circle cx="15" cy="5" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="19" r="1"/>
+                  <span
+                    class="drag-handle cursor-move text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      class="w-5 h-5"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                    >
+                      <circle cx="9" cy="5" r="1" />
+                      <circle cx="9" cy="12" r="1" />
+                      <circle cx="9" cy="19" r="1" />
+                      <circle cx="15" cy="5" r="1" />
+                      <circle cx="15" cy="12" r="1" />
+                      <circle cx="15" cy="19" r="1" />
                     </svg>
                   </span>
                   <input
@@ -159,7 +216,7 @@
                     :value="team.id"
                     v-model="selectedTeamIds"
                     class="w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500 dark:border-slate-600 dark:bg-slate-700"
-                  >
+                  />
                   <div class="flex items-center gap-2 flex-1">
                     <span
                       class="w-3 h-3 rounded-full"
@@ -167,9 +224,17 @@
                     ></span>
                     <span
                       class="text-sm font-medium"
-                      :class="team.id === 0 ? 'text-slate-500 dark:text-slate-400' : 'text-slate-700 dark:text-slate-200'"
+                      :class="
+                        team.id === 0
+                          ? 'text-slate-500 dark:text-slate-400'
+                          : 'text-slate-700 dark:text-slate-200'
+                      "
                     >
-                      {{ team.id === 0 ? ($t('KANBAN.UNASSIGNED') || 'Unassigned') : team.name }}
+                      {{
+                        team.id === 0
+                          ? $t('KANBAN.UNASSIGNED') || 'Unassigned'
+                          : team.name
+                      }}
                     </span>
                   </div>
                 </div>
@@ -178,17 +243,13 @@
           </div>
         </div>
 
-        <div class="flex items-center justify-end gap-2 px-6 py-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50">
-          <Button
-            variant="ghost"
-            @click="showSettingsModal = false"
-          >
+        <div
+          class="flex items-center justify-end gap-2 px-6 py-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50"
+        >
+          <Button variant="ghost" @click="showSettingsModal = false">
             {{ $t('COMMON.CANCEL') }}
           </Button>
-          <Button
-            variant="primary"
-            @click="saveSettings"
-          >
+          <Button variant="primary" @click="saveSettings">
             {{ $t('KANBAN.UPDATE') || 'Update' }}
           </Button>
         </div>
@@ -204,15 +265,19 @@
       class="w-full h-full kanban-preview-modal"
     >
       <div class="flex flex-col h-full">
-        <div class="flex items-center justify-between px-4 py-3 border-b border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900">
+        <div
+          class="flex items-center justify-between px-4 py-3 border-b border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900"
+        >
           <div class="flex items-center gap-2">
-             <Button
+            <Button
               variant="ghost"
               size="sm"
               icon="i-lucide-x"
               @click="closePreview"
             />
-            <span class="text-sm font-medium text-slate-700 dark:text-slate-200">
+            <span
+              class="text-sm font-medium text-slate-700 dark:text-slate-200"
+            >
               #{{ currentConversation?.id }}
             </span>
           </div>
@@ -259,12 +324,17 @@ import draggable from 'vuedraggable';
 import { useStore } from 'dashboard/composables/store';
 import { frontendURL } from 'dashboard/helper/URLHelper';
 
+const KANBAN_SCROLL_THRESHOLD = 80;
+
 const { t } = useI18n();
 const store = useStore();
 const router = useRouter();
 
 const isLoading = ref(true);
 const conversations = ref({});
+const columnCounts = ref({});
+const columnPages = ref({});
+const loadingMoreColumns = ref({});
 const labels = ref([]);
 const teams = ref([]);
 const activeTab = ref('labels');
@@ -287,7 +357,10 @@ const statuses = computed(() => {
     const savedTeamIds = uiSettings.value.kanban_team_columns;
 
     // Create unassigned team object
-    const unassignedTeam = { id: 0, name: t('KANBAN.UNASSIGNED') || 'Unassigned' };
+    const unassignedTeam = {
+      id: 0,
+      name: t('KANBAN.UNASSIGNED') || 'Unassigned',
+    };
 
     // Combine real teams with unassigned
     let allTeams = [unassignedTeam, ...teams.value];
@@ -369,7 +442,7 @@ const selectedKanbanParams = computed(() => {
   };
 });
 
-const switchTab = async (tab) => {
+const switchTab = async tab => {
   activeTab.value = tab;
   if (tab === 'teams' && !teams.value.length) {
     await fetchTeams();
@@ -405,7 +478,10 @@ const openSettings = () => {
     const savedTeamOrder = uiSettings.value.kanban_team_order;
 
     // Create unassigned team object
-    const unassignedTeam = { id: 0, name: t('KANBAN.UNASSIGNED') || 'Unassigned' };
+    const unassignedTeam = {
+      id: 0,
+      name: t('KANBAN.UNASSIGNED') || 'Unassigned',
+    };
 
     // Combine real teams with unassigned
     const allTeams = [unassignedTeam, ...teams.value];
@@ -432,9 +508,11 @@ const openSettings = () => {
   showSettingsModal.value = true;
 };
 
-const openPreview = (conversation) => {
+const openPreview = conversation => {
   currentConversation.value = conversation;
-  const url = frontendURL(`accounts/${accountId.value}/conversations/${conversation.id}`);
+  const url = frontendURL(
+    `accounts/${accountId.value}/conversations/${conversation.id}`
+  );
   previewConversationUrl.value = `${url}?is_popout=true`;
   showPreviewModal.value = true;
 };
@@ -455,23 +533,126 @@ const navigateToConversation = () => {
   }
 };
 
+const buildColumnPageState = statusesList => {
+  return statusesList.reduce((accumulator, status) => {
+    accumulator[status.key] = 1;
+    return accumulator;
+  }, {});
+};
+
+const getColumnCount = status => {
+  return (
+    columnCounts.value[status.key] ??
+    conversations.value[status.key]?.length ??
+    0
+  );
+};
+
+const isColumnLoadingMore = statusKey => {
+  return Boolean(loadingMoreColumns.value[statusKey]);
+};
+
+const hasMoreConversations = statusKey => {
+  const loadedConversations = conversations.value[statusKey]?.length || 0;
+  const totalConversations = columnCounts.value[statusKey] || 0;
+
+  return loadedConversations < totalConversations;
+};
+
+const getColumnParams = status => {
+  if (activeTab.value === 'teams') {
+    return {
+      group_by: 'team',
+      team_ids: [status.id],
+    };
+  }
+
+  return {
+    group_by: 'label',
+    labels: [status.label],
+  };
+};
+
+const registerContacts = data => {
+  const contacts = Object.values(data)
+    .flat()
+    .map(conversation => conversation.meta?.sender)
+    .filter(Boolean);
+
+  contacts.forEach(contact => {
+    store.commit('contacts/SET_CONTACT_ITEM', contact);
+  });
+};
+
+const onColumnScroll = async (event, status) => {
+  const columnElement = event.target;
+  const reachedBottom =
+    columnElement.scrollTop + columnElement.clientHeight >=
+    columnElement.scrollHeight - KANBAN_SCROLL_THRESHOLD;
+
+  if (!reachedBottom || isLoading.value || isColumnLoadingMore(status.key)) {
+    return;
+  }
+
+  if (!hasMoreConversations(status.key)) {
+    return;
+  }
+
+  loadingMoreColumns.value = {
+    ...loadingMoreColumns.value,
+    [status.key]: true,
+  };
+
+  try {
+    const nextPage = (columnPages.value[status.key] || 1) + 1;
+    const response = await KanbanAPI.get({
+      ...getColumnParams(status),
+      page: nextPage,
+    });
+    const data = response.data?.data || {};
+    const nextConversations = data[status.key] || [];
+
+    registerContacts(data);
+
+    conversations.value = {
+      ...conversations.value,
+      [status.key]: [
+        ...(conversations.value[status.key] || []),
+        ...nextConversations,
+      ],
+    };
+    columnPages.value = {
+      ...columnPages.value,
+      [status.key]: nextPage,
+    };
+  } catch (error) {
+    console.error('Error loading more kanban conversations:', error);
+  } finally {
+    loadingMoreColumns.value = {
+      ...loadingMoreColumns.value,
+      [status.key]: false,
+    };
+  }
+};
+
 const saveSettings = async () => {
   try {
     if (activeTab.value === 'labels') {
       await store.dispatch('updateUISettings', {
         uiSettings: {
           kanban_columns: selectedTags.value,
-          kanban_column_order: orderedLabels.value.map(l => l.title)
-        }
+          kanban_column_order: orderedLabels.value.map(l => l.title),
+        },
       });
     } else {
       await store.dispatch('updateUISettings', {
         uiSettings: {
           kanban_team_columns: selectedTeamIds.value,
-          kanban_team_order: orderedTeams.value.map(t => t.id)
-        }
+          kanban_team_order: orderedTeams.value.map(t => t.id),
+        },
       });
     }
+    await fetchKanbanData();
     showSettingsModal.value = false;
   } catch (error) {
     console.error('Error saving settings:', error);
@@ -501,14 +682,9 @@ const fetchKanbanData = async () => {
     isLoading.value = true;
     const response = await KanbanAPI.get(selectedKanbanParams.value);
     const data = response.data?.data || {};
-    const contacts = Object.values(data)
-      .flat()
-      .map(conversation => conversation.meta?.sender)
-      .filter(Boolean);
+    const counts = response.data?.meta?.column_counts || {};
 
-    contacts.forEach(contact => {
-      store.commit('contacts/SET_CONTACT_ITEM', contact);
-    });
+    registerContacts(data);
 
     conversations.value = statuses.value.reduce(
       (accumulator, status) => ({
@@ -517,9 +693,21 @@ const fetchKanbanData = async () => {
       }),
       {}
     );
+    columnCounts.value = statuses.value.reduce(
+      (accumulator, status) => ({
+        ...accumulator,
+        [status.key]: counts[status.key] ?? data[status.key]?.length ?? 0,
+      }),
+      {}
+    );
+    columnPages.value = buildColumnPageState(statuses.value);
+    loadingMoreColumns.value = {};
   } catch (error) {
     console.error('Error fetching kanban data:', error);
     conversations.value = {};
+    columnCounts.value = {};
+    columnPages.value = {};
+    loadingMoreColumns.value = {};
   } finally {
     isLoading.value = false;
   }
@@ -531,8 +719,21 @@ onMounted(async () => {
 });
 
 const onDragChange = async (event, newStatus) => {
+  if (event.removed) {
+    columnCounts.value = {
+      ...columnCounts.value,
+      [newStatus]: Math.max((columnCounts.value[newStatus] || 1) - 1, 0),
+    };
+    return;
+  }
+
   if (event.added) {
     const conversation = event.added.element;
+
+    columnCounts.value = {
+      ...columnCounts.value,
+      [newStatus]: (columnCounts.value[newStatus] || 0) + 1,
+    };
 
     if (activeTab.value === 'teams') {
       const team = teams.value.find(t => t.name === newStatus);
@@ -557,7 +758,9 @@ const onDragChange = async (event, newStatus) => {
 
     // Remove other kanban labels (enforcing single status column behavior)
     const otherKanbanLabels = kanbanLabelTitles.filter(t => t !== newLabel);
-    const newLabelsList = currentLabels.filter(l => !otherKanbanLabels.includes(l));
+    const newLabelsList = currentLabels.filter(
+      l => !otherKanbanLabels.includes(l)
+    );
 
     if (!newLabelsList.includes(newLabel)) {
       newLabelsList.push(newLabel);

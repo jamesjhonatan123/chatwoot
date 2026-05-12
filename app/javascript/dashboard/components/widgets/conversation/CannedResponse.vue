@@ -33,7 +33,9 @@ export default {
   },
   methods: {
     fetchCannedResponses() {
-      this.$store.dispatch('getCannedResponse', { searchKey: this.searchKey });
+      this.$store.dispatch('getCannedResponse', {
+        searchKey: this.searchKey.trim(),
+      });
     },
     handleMentionClick(item = {}) {
       this.$emit('replace', item.description);
@@ -47,6 +49,7 @@ export default {
   <MentionBox
     v-if="items.length"
     :items="items"
+    size="expanded"
     @mention-select="handleMentionClick"
   />
 </template>

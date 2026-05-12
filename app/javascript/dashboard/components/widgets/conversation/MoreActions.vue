@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onUnmounted } from 'vue';
+import { computed, onUnmounted, ref } from 'vue';
 import { useToggle } from '@vueuse/core';
 import { useStore } from 'vuex';
 import { useAlert } from 'dashboard/composables';
@@ -22,8 +22,20 @@ const { t } = useI18n();
 
 const [showEmailActionsModal, toggleEmailModal] = useToggle(false);
 const [showActionsDropdown, toggleDropdown] = useToggle(false);
+const isReadStatusLoading = ref(false);
 
 const currentChat = computed(() => store.getters.getSelectedChat);
+const hasUnreadMessages = computed(
+  () => Number(currentChat.value?.unread_count || 0) > 0
+);
+const readStatusButtonLabel = computed(() => {
+  return hasUnreadMessages.value
+    ? t('CONVERSATION.CARD_CONTEXT_MENU.MARK_AS_READ')
+    : t('CONVERSATION.CARD_CONTEXT_MENU.MARK_AS_UNREAD');
+});
+const readStatusButtonIcon = computed(() => {
+  return hasUnreadMessages.value ? 'i-lucide-mail-open' : 'i-lucide-mail';
+});
 
 const actionMenuItems = computed(() => {
   const items = [];
@@ -68,6 +80,22 @@ const handleActionClick = ({ action }) => {
   }
 };
 
+const toggleReadStatus = async () => {
+  if (!currentChat.value?.id || isReadStatusLoading.value) return;
+
+  isReadStatusLoading.value = true;
+
+  try {
+    if (hasUnreadMessages.value) {
+      await store.dispatch('markMessagesRead', { id: currentChat.value.id });
+    } else {
+      await store.dispatch('markMessagesUnread', { id: currentChat.value.id });
+    }
+  } finally {
+    isReadStatusLoading.value = false;
+  }
+};
+
 // These functions are needed for the event listeners
 const mute = () => {
   store.dispatch('muteConversation', currentChat.value.id);
@@ -95,6 +123,16 @@ onUnmounted(() => {
     <ResolveAction
       :conversation-id="currentChat.id"
       :status="currentChat.status"
+    />
+    <ButtonV4
+      size="sm"
+      variant="ghost"
+      color="slate"
+      :label="readStatusButtonLabel"
+      :icon="readStatusButtonIcon"
+      :is-loading="isReadStatusLoading"
+      class="max-w-[11rem]"
+      @click="toggleReadStatus"
     />
     <div
       v-on-clickaway="() => toggleDropdown(false)"

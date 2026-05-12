@@ -6,6 +6,14 @@ class ChatwootHub
     DEFAULT_BASE_URL
   end
 
+  def self.forced_pricing_plan
+    ENV.fetch('FORCE_INSTALLATION_PRICING_PLAN', '').presence
+  end
+
+  def self.sync_disabled?
+    forced_pricing_plan.present? || ActiveModel::Type::Boolean.new.cast(ENV.fetch('DISABLE_CHATWOOT_HUB_SYNC', false))
+  end
+
   def self.ping_url
     "#{base_url}/ping"
   end
@@ -38,6 +46,7 @@ class ChatwootHub
 
   def self.pricing_plan
     return 'community' unless ChatwootApp.enterprise?
+    return forced_pricing_plan if forced_pricing_plan.present?
 
     InstallationConfig.find_by(name: 'INSTALLATION_PRICING_PLAN')&.value || 'community'
   end

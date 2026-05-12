@@ -8,6 +8,7 @@ module Enterprise::Internal::CheckNewVersionsJob
   private
 
   def update_plan_info
+    return if ChatwootHub.sync_disabled?
     return if @instance_info.blank?
 
     update_installation_config(key: 'INSTALLATION_PRICING_PLAN', value: @instance_info['plan'])
@@ -25,6 +26,8 @@ module Enterprise::Internal::CheckNewVersionsJob
   end
 
   def reconcile_premium_config_and_features
+    return if ChatwootHub.sync_disabled?
+
     Internal::ReconcilePlanConfigService.new.perform
   end
 end
