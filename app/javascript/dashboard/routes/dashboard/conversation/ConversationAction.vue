@@ -158,6 +158,11 @@ export default {
       return false;
     },
   },
+  mounted() {
+    if (!this.teams.length) {
+      this.$store.dispatch('teams/get').catch(() => {});
+    }
+  },
   methods: {
     onSelfAssign() {
       const {

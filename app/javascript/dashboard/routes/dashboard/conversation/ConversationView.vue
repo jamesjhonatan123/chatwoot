@@ -238,7 +238,7 @@ export default {
     >
       <SidepanelSwitch v-if="currentChat.id" />
     </ConversationBox>
-    <ConversationSidebar v-if="shouldShowSidebar && !isPopout" :current-chat="currentChat" />
+    <ConversationSidebar v-if="shouldShowSidebar" :current-chat="currentChat" />
     <CmdBarConversationSnooze />
   </section>
 </template>

@@ -16,6 +16,7 @@ import {
   useMapGetter,
   useFunctionGetter,
 } from 'dashboard/composables/store.js';
+import ConversationApi from 'dashboard/api/inbox/conversation';
 
 import { Virtualizer } from 'virtua/vue';
 import ChatListHeader from './ChatListHeader.vue';
@@ -49,11 +50,13 @@ import { emitter } from 'shared/helpers/mitt';
 
 import wootConstants from 'dashboard/constants/globals';
 import advancedFilterOptions from './widgets/conversation/advancedFilterItems';
+import { syncFiltersWithAssigneeTab } from './widgets/conversation/helpers/chatListAssigneeFilterHelper';
 import filterQueryGenerator from '../helper/filterQueryGenerator.js';
 import languages from 'dashboard/components/widgets/conversation/advancedFilterItems/languages';
 import countries from 'shared/constants/countries';
 import { generateValuesForEditCustomViews } from 'dashboard/helper/customViewsHelper';
 import { conversationListPageURL } from '../helper/URLHelper';
+import { applyPageFilters } from '../store/modules/conversations/helpers';
 import {
   isOnMentionsView,
   isOnUnattendedView,
@@ -62,7 +65,6 @@ import {
   getUserPermissions,
   filterItemsByPermission,
 } from 'dashboard/helper/permissionsHelper.js';
-import { matchesFilters } from '../store/modules/conversations/helpers/filterHelpers';
 import { CONVERSATION_EVENTS } from '../helper/AnalyticsHelper/events';
 import { ASSIGNEE_TYPE_TAB_PERMISSIONS } from 'dashboard/constants/permissions.js';
 
@@ -110,10 +112,7 @@ const advancedFilterTypes = ref(
 );
 
 const currentUser = useMapGetter('getCurrentUser');
-const chatLists = useMapGetter('getFilteredConversations');
-const mineChatsList = useMapGetter('getMineChats');
-const allChatList = useMapGetter('getAllStatusChats');
-const unAssignedChatsList = useMapGetter('getUnAssignedChats');
+const allConversations = useMapGetter('getAllConversations');
 const chatListLoading = useMapGetter('getChatListLoadingStatus');
 const activeInbox = useMapGetter('getSelectedInbox');
 const conversationStats = useMapGetter('conversationStats/getStats');
@@ -170,6 +169,23 @@ const activeFolder = computed(() => {
     return firstValue;
   }
   return undefined;
+});
+
+const activeFolderFilters = computed(() => {
+  const payload = activeFolder.value?.query?.payload;
+
+  if (!Array.isArray(payload)) {
+    return [];
+  }
+
+  const normalizedFilters = payload.map(filter => useCamelCase(filter));
+  const syncedFilters = syncFiltersWithAssigneeTab(
+    normalizedFilters,
+    activeAssigneeTab.value,
+    currentUserDetails.value
+  );
+
+  return useSnakeCase(syncedFilters);
 });
 
 const activeFolderName = computed(() => {
@@ -316,31 +332,28 @@ const pageTitle = computed(() => {
 });
 
 const conversationList = computed(() => {
-  let localConversationList = [];
+  return allConversations.value.filter(conversation => {
+    const matchesAssigneeTab =
+      activeAssigneeTab.value === wootConstants.ASSIGNEE_TYPE.ALL ||
+      (activeAssigneeTab.value === wootConstants.ASSIGNEE_TYPE.ME &&
+        conversation.meta?.assignee?.id === currentUser.value.id) ||
+      (activeAssigneeTab.value === wootConstants.ASSIGNEE_TYPE.UNASSIGNED &&
+        !conversation.meta?.assignee);
 
-  if (isUnreadFilterActive.value) {
-    localConversationList = [...chatLists.value];
-  } else if (!hasAppliedFiltersOrActiveFolders.value) {
-    const filters = conversationFilters.value;
-    if (activeAssigneeTab.value === 'me') {
-      localConversationList = [...mineChatsList.value(filters)];
-    } else if (activeAssigneeTab.value === 'unassigned') {
-      localConversationList = [...unAssignedChatsList.value(filters)];
-    } else {
-      localConversationList = [...allChatList.value(filters)];
+    if (!matchesAssigneeTab) {
+      return false;
     }
-  } else {
-    localConversationList = [...chatLists.value];
-  }
 
-  if (activeFolder.value) {
-    const { payload } = activeFolder.value.query;
-    localConversationList = localConversationList.filter(conversation => {
-      return matchesFilters(conversation, payload);
-    });
-  }
+    if (isUnreadFilterActive.value && !conversation.unread_count) {
+      return false;
+    }
 
-  return localConversationList;
+    if (!hasAppliedFiltersOrActiveFolders.value) {
+      return applyPageFilters(conversation, conversationFilters.value);
+    }
+
+    return true;
+  });
 });
 
 const showEndOfListMessage = computed(() => {
@@ -378,6 +391,104 @@ function setFiltersFromUISettings() {
 
 function emitConversationLoaded() {
   emit('conversationLoad');
+}
+
+async function refreshUnreadConversationStats() {
+  const buildPayloadForAssigneeType = assigneeType => {
+    const payload = [];
+
+    if (activeStatus.value) {
+      payload.push({
+        attribute_key: 'status',
+        attribute_model: 'standard',
+        filter_operator: 'equal_to',
+        values: [activeStatus.value],
+        query_operator: 'and',
+        custom_attribute_type: '',
+      });
+    }
+
+    if (assigneeType === wootConstants.ASSIGNEE_TYPE.ME) {
+      payload.push({
+        attribute_key: 'assignee_id',
+        attribute_model: 'standard',
+        filter_operator: 'equal_to',
+        values: [currentUser.value.id],
+        query_operator: 'and',
+        custom_attribute_type: '',
+      });
+    } else if (assigneeType === wootConstants.ASSIGNEE_TYPE.UNASSIGNED) {
+      payload.push({
+        attribute_key: 'assignee_id',
+        attribute_model: 'standard',
+        filter_operator: 'is_not_present',
+        values: [],
+        query_operator: 'and',
+        custom_attribute_type: '',
+      });
+    }
+
+    initializeInboxTeamAndLabelFilterToModal(
+      props.conversationInbox,
+      inbox.value,
+      props.teamId,
+      activeTeam.value,
+      props.label
+    ).forEach(filter => {
+      payload.push(filter);
+    });
+
+    payload.push({
+      attribute_key: 'unread_count',
+      attribute_model: 'standard',
+      filter_operator: 'equal_to',
+      values: [true],
+      query_operator: undefined,
+      custom_attribute_type: '',
+    });
+
+    return payload;
+  };
+
+  const fetchCount = async assigneeType => {
+    const {
+      data: { meta = {} },
+    } = await ConversationApi.filter({
+      queryData: filterQueryGenerator(buildPayloadForAssigneeType(assigneeType)),
+      page: 1,
+    });
+
+    return meta.all_count || 0;
+  };
+
+  try {
+    const [mineCount, unassignedCount, allCount] = await Promise.all([
+      fetchCount(wootConstants.ASSIGNEE_TYPE.ME),
+      fetchCount(wootConstants.ASSIGNEE_TYPE.UNASSIGNED),
+      fetchCount(wootConstants.ASSIGNEE_TYPE.ALL),
+    ]);
+
+    store.dispatch('conversationStats/set', {
+      mine_count: mineCount,
+      unassigned_count: unassignedCount,
+      all_count: allCount,
+    });
+  } catch (error) {
+    // Ignore error
+  }
+}
+
+function refreshConversationStats() {
+  if (hasAppliedFiltersOrActiveFolders.value) {
+    return;
+  }
+
+  if (isUnreadFilterActive.value) {
+    refreshUnreadConversationStats();
+    return;
+  }
+
+  store.dispatch('conversationStats/get', conversationFilters.value);
 }
 
 function fetchFilteredConversations(payload) {
@@ -478,27 +589,35 @@ function fetchUnreadFilteredConversations() {
       page,
       filterType: 'unreadFilter',
     })
-    .then(emitConversationLoaded);
+    .then(() => {
+      refreshConversationStats();
+      emitConversationLoaded();
+    });
 }
 
 function fetchSavedFilteredConversations(payload) {
-  payload = useSnakeCase(payload);
   let page = (currentFiltersPage.value || 0) + 1;
   store
     .dispatch('fetchFilteredConversations', {
-      queryData: payload,
+      queryData: filterQueryGenerator(payload),
       page,
     })
     .then(emitConversationLoaded);
 }
 
 function onApplyFilter(payload) {
-  payload = useSnakeCase(payload);
+  const nextAppliedFilters = syncFiltersWithAssigneeTab(
+    payload,
+    activeAssigneeTab.value,
+    currentUserDetails.value
+  );
+  payload = useSnakeCase(nextAppliedFilters);
   resetBulkActions();
+  store.dispatch('setConversationFilters', payload);
   foldersQuery.value = filterQueryGenerator(payload);
   store.dispatch('conversationPage/reset');
   store.dispatch('emptyAllConversations');
-  fetchFilteredConversations(payload);
+  fetchFilteredConversations(nextAppliedFilters);
 }
 
 function closeAdvanceFiltersModal() {
@@ -653,8 +772,7 @@ function resetAndFetchData() {
   store.dispatch('emptyAllConversations');
   store.dispatch('clearConversationFilters');
   if (hasActiveFolders.value) {
-    const payload = activeFolder.value.query;
-    fetchSavedFilteredConversations(payload);
+    fetchSavedFilteredConversations(activeFolderFilters.value);
   }
   if (props.foldersId) {
     return;
@@ -678,8 +796,7 @@ function loadMoreConversations() {
       fetchConversations();
     }
   } else if (hasActiveFolders.value) {
-    const payload = activeFolder.value.query;
-    fetchSavedFilteredConversations(payload);
+    fetchSavedFilteredConversations(activeFolderFilters.value);
   } else if (hasAppliedFilters.value) {
     fetchFilteredConversations(appliedFilters.value);
   }
@@ -702,6 +819,17 @@ function updateAssigneeTab(selectedTab) {
     store.dispatch('emptyAllConversations');
     if (isUnreadFilterActive.value) {
       fetchUnreadFilteredConversations();
+    } else if (hasActiveFolders.value) {
+      fetchSavedFilteredConversations(activeFolderFilters.value);
+    } else if (hasAppliedFilters.value) {
+      const nextAppliedFilters = syncFiltersWithAssigneeTab(
+        appliedFilters.value,
+        selectedTab,
+        currentUserDetails.value
+      );
+
+      store.dispatch('setConversationFilters', useSnakeCase(nextAppliedFilters));
+      fetchFilteredConversations(nextAppliedFilters);
     } else if (!currentPage.value) {
       fetchConversations();
     }
@@ -798,6 +926,7 @@ async function markAsUnread(conversationId) {
     await store.dispatch('markMessagesUnread', {
       id: conversationId,
     });
+    refreshConversationStats();
     redirectToConversationList();
   } catch (error) {
     // Ignore error
@@ -808,6 +937,7 @@ async function markAsRead(conversationId) {
     await store.dispatch('markMessagesRead', {
       id: conversationId,
     });
+    refreshConversationStats();
   } catch (error) {
     // Ignore error
   }
@@ -912,8 +1042,7 @@ function toggleSelectAll(check) {
 }
 
 useEmitter('fetch_conversation_stats', () => {
-  if (hasAppliedFiltersOrActiveFolders.value) return;
-  store.dispatch('conversationStats/get', conversationFilters.value);
+  refreshConversationStats();
 });
 
 onMounted(() => {
@@ -983,7 +1112,7 @@ watch(activeFolder, (newVal, oldVal) => {
   resetAndFetchData();
 });
 
-watch(chatLists, () => {
+watch(allConversations, () => {
   chatsOnView.value = conversationList.value;
 });
 
@@ -1042,7 +1171,6 @@ watch(conversationFilters, (newVal, oldVal) => {
     />
 
     <ChatTypeTabs
-      v-if="!hasAppliedFiltersOrActiveFolders"
       :items="assigneeTabItems"
       :active-tab="activeAssigneeTab"
       is-compact
