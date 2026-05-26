@@ -40,6 +40,7 @@ import whatsappTemplates from './whatsappTemplates.json';
 import contentTemplates from './contentTemplates.json';
 import mfa from './mfa.json';
 import kanban from './kanban.json';
+import onboarding from './onboarding.json';
 import yearInReview from './yearInReview.json';
 
 export default {
@@ -85,5 +86,6 @@ export default {
   ...contentTemplates,
   ...mfa,
   ...kanban,
+  ...onboarding,
   ...yearInReview,
 };

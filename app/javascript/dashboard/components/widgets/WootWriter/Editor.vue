@@ -51,6 +51,7 @@ import {
 
 import {
   appendSignature,
+  collapseSelection,
   findNodeToInsertImage,
   getContentNode,
   insertAtCursor,
@@ -66,6 +67,7 @@ import {
 import {
   hasPressedEnterAndNotCmdOrShift,
   hasPressedCommandAndEnter,
+  isEscape,
 } from 'shared/helpers/KeyboardHelpers';
 import { createTypingIndicator } from '@chatwoot/utils';
 import { checkFileSizeLimit } from 'shared/helpers/FileHelper';
@@ -350,7 +352,12 @@ const plugins = computed(() => {
 const sendWithSignature = computed(() => {
   // this is considered the source of truth, we watch this property
   // on change, we toggle the signature in the editor
-  if (props.allowSignature && !props.isPrivate && props.channelType) {
+  if (
+    props.allowSignature &&
+    !props.isPrivate &&
+    props.channelType &&
+    !props.disabled
+  ) {
     return fetchSignatureFlagFromUISettings(props.channelType);
   }
 
@@ -473,6 +480,7 @@ function reloadState(content = props.modelValue) {
 }
 
 function addSignature() {
+  if (props.disabled) return;
   let content = props.modelValue;
   // see if the content is empty, if it is before appending the signature
   // we need to add a paragraph node and move the cursor at the start of the editor
@@ -491,6 +499,7 @@ function addSignature() {
 }
 
 function removeSignature() {
+  if (props.disabled) return;
   if (!props.signature) return;
   let content = props.modelValue;
   content = removeSignatureHelper(
@@ -545,7 +554,9 @@ function setMenubarPosition({ selection } = {}) {
 
 function checkSelection(editorState) {
   showSelectionMenu.value = false;
-  const hasSelection = editorState.selection.from !== editorState.selection.to;
+  const { selection } = editorState;
+  // Skip NodeSelection (from Esc -> selectParentNode); only text ranges count.
+  const hasSelection = !selection.empty && !selection.node;
   if (hasSelection === isTextSelected.value) return;
 
   isTextSelected.value = hasSelection;
@@ -741,12 +752,17 @@ function handleLineBreakWhenCmdAndEnterToSendEnabled(event) {
 }
 
 function onKeydown(event) {
+  if (isEscape(event)) {
+    collapseSelection(editorView);
+    return true;
+  }
   if (isEnterToSendEnabled()) {
     handleLineBreakWhenEnterToSendEnabled(event);
   }
   if (isCmdPlusEnterToSendEnabled()) {
     handleLineBreakWhenCmdAndEnterToSendEnabled(event);
   }
+  return false;
 }
 
 function createEditorView() {
@@ -774,6 +790,9 @@ function createEditorView() {
       blur: () => {
         if (props.disabled) return;
         typingIndicator.stop();
+        // PM keeps its selection on blur — clear the menu flags manually.
+        isTextSelected.value = false;
+        editorRoot.value?.classList.remove('has-selection');
         emit('blur');
       },
       paste: (view, event) => {
@@ -822,6 +841,11 @@ watch(
 );
 
 watch(
+  computed(() => props.disabled),
+  () => editorView?.setProps({})
+);
+
+watch(
   computed(() => props.updateSelectionWith),
   (newValue, oldValue) => {
     if (!editorView) return;
@@ -843,7 +867,7 @@ watch(
 
 watch(sendWithSignature, newValue => {
   // see if the allowSignature flag is true
-  if (props.allowSignature) {
+  if (props.allowSignature && !props.disabled) {
     toggleSignatureInEditor(newValue);
   }
 });
@@ -1014,7 +1038,32 @@ useEmitter(BUS_EVENTS.INSERT_INTO_RICH_EDITOR, insertContentIntoEditor);
 }
 
 .ProseMirror-woot-style {
-  @apply overflow-auto min-h-[5rem] max-h-[7.5rem];
+  @apply overflow-auto;
+}
+
+.ProseMirror-woot-style:not(
+    :where(.resizable-editor-wrapper .ProseMirror-woot-style)
+  ) {
+  @apply min-h-[5rem] max-h-[7.5rem];
+}
+
+// Resizable editor wrapper styles
+.resizable-editor-wrapper {
+  .ProseMirror-woot-style {
+    min-height: clamp(
+      var(--editor-min-allowed, var(--editor-min-height, 5rem)),
+      var(--editor-height, var(--editor-min-height, 5rem)),
+      var(--editor-max-allowed, var(--editor-max-height, 7.5rem))
+    );
+    max-height: clamp(
+      var(--editor-min-allowed, var(--editor-min-height, 5rem)),
+      var(--editor-height, var(--editor-min-height, 5rem)),
+      var(--editor-max-allowed, var(--editor-max-height, 7.5rem))
+    );
+    transition:
+      min-height var(--editor-height-transition, 180ms ease),
+      max-height var(--editor-height-transition, 180ms ease);
+  }
 }
 
 .ProseMirror-prompt-backdrop::backdrop {
