@@ -3,6 +3,8 @@ export const FILTER_OPERATOR_REQUIRED = 'FILTER_OPERATOR_REQUIRED';
 export const VALUE_REQUIRED = 'VALUE_REQUIRED';
 export const VALUE_MUST_BE_BETWEEN_1_AND_998 =
   'VALUE_MUST_BE_BETWEEN_1_AND_998';
+export const ATTRIBUTE_CHANGED_VALUES_REQUIRED =
+  'ATTRIBUTE_CHANGED_VALUES_REQUIRED';
 export const ACTION_PARAMETERS_REQUIRED = 'ACTION_PARAMETERS_REQUIRED';
 export const ATLEAST_ONE_CONDITION_REQUIRED = 'ATLEAST_ONE_CONDITION_REQUIRED';
 export const ATLEAST_ONE_ACTION_REQUIRED = 'ATLEAST_ONE_ACTION_REQUIRED';
@@ -50,6 +52,14 @@ export const validateSingleFilter = filter => {
   const operatorRequiresValue = !['is_present', 'is_not_present'].includes(
     filter.filter_operator
   );
+
+  if (filter.filter_operator === 'attribute_changed') {
+    if (isEmptyValue(filter.values?.from) || isEmptyValue(filter.values?.to)) {
+      return ATTRIBUTE_CHANGED_VALUES_REQUIRED;
+    }
+
+    return null;
+  }
 
   if (operatorRequiresValue && isEmptyValue(filter.values)) {
     return VALUE_REQUIRED;

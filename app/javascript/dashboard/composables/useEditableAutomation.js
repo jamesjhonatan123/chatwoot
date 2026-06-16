@@ -26,6 +26,31 @@ export function useEditableAutomation() {
   ) => {
     const customAttributes = filterCustomAttributes(allCustomAttributes);
     return automation.conditions.map(condition => {
+      if (condition.filter_operator === 'attribute_changed') {
+        const dropdownValues = getConditionDropdownValues(
+          condition.attribute_key
+        );
+        const attributeChangedOptions = [
+          { id: 'any', name: 'Any' },
+          { id: 'nil', name: 'Unassigned' },
+          ...dropdownValues,
+        ];
+
+        const toOption = value =>
+          attributeChangedOptions.find(
+            item => String(item.id) === String(value)
+          );
+
+        return {
+          ...condition,
+          query_operator: condition.query_operator || 'and',
+          values: {
+            from: toOption(condition.values?.from?.[0]) || null,
+            to: toOption(condition.values?.to?.[0]) || null,
+          },
+        };
+      }
+
       const customAttr = isCustomAttribute(
         customAttributes,
         condition.attribute_key

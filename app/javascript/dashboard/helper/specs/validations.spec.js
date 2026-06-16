@@ -1,5 +1,9 @@
 import { describe, it, expect } from 'vitest';
-import { validateAutomation } from '../validations';
+import {
+  ATTRIBUTE_CHANGED_VALUES_REQUIRED,
+  validateAutomation,
+  validateSingleFilter,
+} from '../validations';
 
 describe('validateAutomation', () => {
   it('should return no errors for a valid automation', () => {
@@ -82,5 +86,31 @@ describe('validateAutomation', () => {
     };
     const errors = validateAutomation(automationWithNoParamAction);
     expect(errors).toEqual({});
+  });
+
+  it('requires from and to values for attribute_changed filters', () => {
+    const error = validateSingleFilter({
+      attribute_key: 'team_id',
+      filter_operator: 'attribute_changed',
+      values: {
+        from: null,
+        to: { id: 1, name: 'Support' },
+      },
+    });
+
+    expect(error).toBe(ATTRIBUTE_CHANGED_VALUES_REQUIRED);
+  });
+
+  it('accepts complete attribute_changed filters', () => {
+    const error = validateSingleFilter({
+      attribute_key: 'team_id',
+      filter_operator: 'attribute_changed',
+      values: {
+        from: { id: 'any', name: 'Any' },
+        to: { id: 1, name: 'Support' },
+      },
+    });
+
+    expect(error).toBeNull();
   });
 });

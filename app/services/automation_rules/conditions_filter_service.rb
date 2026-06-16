@@ -92,7 +92,7 @@ class AutomationRules::ConditionsFilterService < FilterService
       @changed_attributes = @changed_attributes.with_indifferent_access
       changed_attribute = @changed_attributes[filter['attribute_key']].presence
 
-      if changed_attribute[0].in?(filter['values']['from']) && changed_attribute[1].in?(filter['values']['to'])
+      if attribute_changed_match?(changed_attribute, filter['values'])
         @attribute_changed_records = attribute_changed_filter_query(filter, records, current_attribute_changed_record)
       end
       current_attribute_changed_record = @attribute_changed_records
@@ -209,5 +209,31 @@ class AutomationRules::ConditionsFilterService < FilterService
 
   def label_conditions?
     @rule.conditions.any? { |condition| condition['attribute_key'] == 'labels' }
+  end
+
+  def attribute_changed_match?(changed_attribute, filter_values)
+    return false unless changed_attribute.is_a?(Array)
+    return false unless filter_values.is_a?(Hash)
+
+    matches_attribute_changed_value?(changed_attribute[0], filter_values['from']) &&
+      matches_attribute_changed_value?(changed_attribute[1], filter_values['to'])
+  end
+
+  def matches_attribute_changed_value?(current_value, expected_values)
+    normalized_values = Array.wrap(expected_values).map do |value|
+      case value
+      when nil, 'nil'
+        'nil'
+      when 'any'
+        'any'
+      else
+        value.to_s
+      end
+    end
+
+    return true if normalized_values.include?('any')
+
+    normalized_current_value = current_value.nil? ? 'nil' : current_value.to_s
+    normalized_values.include?(normalized_current_value)
   end
 end

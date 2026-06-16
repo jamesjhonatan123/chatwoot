@@ -64,4 +64,32 @@ describe('#filterQueryGenerator', () => {
       filterQueryGenerator(testData).payload.every(i => Array.isArray(i.values))
     ).toBe(true);
   });
+
+  it('returns from/to payload for attribute_changed filters', () => {
+    const attributeChangedData = [
+      {
+        attribute_key: 'team_id',
+        filter_operator: 'attribute_changed',
+        values: {
+          from: { id: 'any', name: 'Any' },
+          to: { id: 7, name: 'Support' },
+        },
+        query_operator: 'and',
+      },
+    ];
+
+    expect(filterQueryGenerator(attributeChangedData)).toEqual({
+      payload: [
+        {
+          attribute_key: 'team_id',
+          filter_operator: 'attribute_changed',
+          values: {
+            from: ['any'],
+            to: [7],
+          },
+          query_operator: undefined,
+        },
+      ],
+    });
+  });
 });

@@ -2,7 +2,23 @@ const setArrayValues = item => {
   return item.values[0]?.id ? item.values.map(val => val.id) : item.values;
 };
 
+const generateAttributeChangedValues = item => {
+  const fromValue = item.values?.from;
+  const toValue = item.values?.to;
+
+  return {
+    from:
+      fromValue?.id !== undefined && fromValue?.id !== null
+        ? [fromValue.id]
+        : [],
+    to: toValue?.id !== undefined && toValue?.id !== null ? [toValue.id] : [],
+  };
+};
+
 const generateValues = item => {
+  if (item.filter_operator === 'attribute_changed') {
+    return generateAttributeChangedValues(item);
+  }
   if (item.attribute_key === 'content') {
     const values = item.values || '';
     return values.split(',');

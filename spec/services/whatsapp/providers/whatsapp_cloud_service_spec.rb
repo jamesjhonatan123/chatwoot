@@ -9,6 +9,10 @@ describe Whatsapp::Providers::WhatsappCloudService do
   let(:message) do
     create(:message, conversation: conversation, message_type: :outgoing, content: 'test', inbox: whatsapp_channel.inbox, source_id: 'external_id')
   end
+  let(:message_with_url) do
+    create(:message, conversation: conversation, message_type: :outgoing,
+                     content: 'Confira https://www.chatwoot.com', inbox: whatsapp_channel.inbox)
+  end
 
   let(:message_with_reply) do
     create(:message, conversation: conversation, message_type: :outgoing, content: 'reply', inbox: whatsapp_channel.inbox,
@@ -37,6 +41,21 @@ describe Whatsapp::Providers::WhatsappCloudService do
           )
           .to_return(status: 200, body: whatsapp_response.to_json, headers: response_headers)
         expect(service.send_message('+123456789', message)).to eq 'message_id'
+      end
+
+      it 'calls message endpoints with preview_url for messages containing links' do
+        stub_request(:post, 'https://graph.facebook.com/v13.0/123456789/messages')
+          .with(
+            body: {
+              messaging_product: 'whatsapp',
+              context: nil,
+              to: '+123456789',
+              text: { body: message_with_url.content, preview_url: true },
+              type: 'text'
+            }.to_json
+          )
+          .to_return(status: 200, body: whatsapp_response.to_json, headers: response_headers)
+        expect(service.send_message('+123456789', message_with_url)).to eq 'message_id'
       end
 
       it 'calls message endpoints for a reply to messages' do

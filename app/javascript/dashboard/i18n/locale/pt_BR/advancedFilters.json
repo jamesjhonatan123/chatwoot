@@ -28,6 +28,7 @@
       "is_greater_than": "É maior que",
       "is_less_than": "É menor que",
       "days_before": "É X dias antes",
+      "attribute_changed": "Alterou de/para",
       "starts_with": "Começa com",
       "equalTo": "Igual a",
       "notEqualTo": "Diferente",
@@ -68,7 +69,8 @@
       "VALUE_REQUIRED": "Valor obrigatório",
       "ATTRIBUTE_KEY_REQUIRED": "A chave do atributo é necessária",
       "FILTER_OPERATOR_REQUIRED": "Operador do filtro é necessário",
-      "VALUE_MUST_BE_BETWEEN_1_AND_998": "O valor deve ser entre 1 e 998"
+      "VALUE_MUST_BE_BETWEEN_1_AND_998": "O valor deve ser entre 1 e 998",
+      "ATTRIBUTE_CHANGED_VALUES_REQUIRED": "Os valores De e Para são obrigatórios"
     },
     "GROUPS": {
       "STANDARD_FILTERS": "Filtros padrão",

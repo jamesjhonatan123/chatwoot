@@ -6,7 +6,7 @@ class Imap::FetchEmailService < Imap::BaseFetchEmailService
   private
 
   def authentication_type
-    channel.imap_authentication || 'plain'
+    channel.try(:imap_authentication).presence || 'plain'
   end
 
   def imap_password

@@ -790,9 +790,19 @@ function createEditorView() {
       blur: () => {
         if (props.disabled) return;
         typingIndicator.stop();
-        // PM keeps its selection on blur — clear the menu flags manually.
-        isTextSelected.value = false;
-        editorRoot.value?.classList.remove('has-selection');
+        // Defer cleanup so selection-based actions can open without losing
+        // their anchor when the editor blurs to the floating menu/button.
+        requestAnimationFrame(() => {
+          const activeElement = document.activeElement;
+          const isInteractingWithEditor =
+            showSelectionMenu.value ||
+            editorRoot.value?.contains(activeElement);
+
+          if (!isInteractingWithEditor) {
+            isTextSelected.value = false;
+            editorRoot.value?.classList.remove('has-selection');
+          }
+        });
         emit('blur');
       },
       paste: (view, event) => {

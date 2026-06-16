@@ -109,7 +109,41 @@ const getTranslatedAttributes = (type, event) => {
   });
 };
 
+const ATTRIBUTE_CHANGED_KEYS = new Set(['assignee_id', 'team_id']);
 const eventName = computed(() => automation.value?.event_name);
+
+const getAttributeChangedOperator = () => ({
+  value: 'attribute_changed',
+  label: t('FILTER.OPERATOR_LABELS.attribute_changed'),
+  hasInput: true,
+  inputOverride: 'attributeChanged',
+  icon: h('span', {
+    class: 'i-ph-arrows-left-right-bold !text-n-blue-11',
+  }),
+});
+
+const getFilterOperators = attr => {
+  const filterOperators = (attr.filterOperators || []).map(op => {
+    const enriched = operators.value[op.value];
+    if (enriched) return enriched;
+    return {
+      value: op.value,
+      label: t(`FILTER.OPERATOR_LABELS.${op.value}`),
+      hasInput: true,
+      inputOverride: null,
+      icon: h('span', { class: 'i-ph-equals-bold !text-n-blue-11' }),
+    };
+  });
+
+  if (
+    eventName.value === 'conversation_updated' &&
+    ATTRIBUTE_CHANGED_KEYS.has(attr.key)
+  ) {
+    filterOperators.push(getAttributeChangedOperator());
+  }
+
+  return filterOperators;
+};
 
 const filterTypes = computed(() => {
   const event = eventName.value;
@@ -125,18 +159,6 @@ const filterTypes = computed(() => {
     const mappedInputType = INPUT_TYPE_MAP[attr.inputType] || 'plainText';
     const options = props.getConditionDropdownValues(attr.key) || [];
 
-    const filterOperators = (attr.filterOperators || []).map(op => {
-      const enriched = operators.value[op.value];
-      if (enriched) return enriched;
-      return {
-        value: op.value,
-        label: t(`FILTER.OPERATOR_LABELS.${op.value}`),
-        hasInput: true,
-        inputOverride: null,
-        icon: h('span', { class: 'i-ph-equals-bold !text-n-blue-11' }),
-      };
-    });
-
     return {
       attributeKey: attr.key,
       value: attr.key,
@@ -144,7 +166,7 @@ const filterTypes = computed(() => {
       label: attr.name,
       inputType: mappedInputType,
       options,
-      filterOperators,
+      filterOperators: getFilterOperators(attr),
       dataType: 'text',
       attributeModel: attr.customAttributeType || 'standard',
     };

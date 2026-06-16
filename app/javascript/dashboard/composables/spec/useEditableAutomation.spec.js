@@ -14,6 +14,10 @@ describe('useEditableAutomation', () => {
           ];
         }
 
+        if (attributeKey === 'team_id') {
+          return [{ id: 1, name: 'Support' }];
+        }
+
         return [];
       }),
       getActionDropdownValues: vi.fn(actionName => {
@@ -92,6 +96,44 @@ describe('useEditableAutomation', () => {
             name: 'Last Responding Agent',
           },
         ],
+      },
+    ]);
+  });
+
+  it('rehydrates attribute_changed conditions with from/to options', () => {
+    const automation = {
+      event_name: 'conversation_updated',
+      conditions: [
+        {
+          attribute_key: 'team_id',
+          filter_operator: 'attribute_changed',
+          values: {
+            from: ['any'],
+            to: [1],
+          },
+          query_operator: null,
+        },
+      ],
+      actions: [],
+    };
+    const automationTypes = {
+      conversation_updated: {
+        conditions: [{ key: 'team_id', inputType: 'search_select' }],
+      },
+    };
+
+    const { formatAutomation } = useEditableAutomation();
+    const result = formatAutomation(automation, [], automationTypes, []);
+
+    expect(result.conditions).toEqual([
+      {
+        attribute_key: 'team_id',
+        filter_operator: 'attribute_changed',
+        values: {
+          from: { id: 'any', name: 'Any' },
+          to: { id: 1, name: 'Support' },
+        },
+        query_operator: 'and',
       },
     ]);
   });

@@ -1,8 +1,14 @@
 <script setup>
 import { computed, ref, watch, inject } from 'vue';
-import { useRouter } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import { useStore, useMapGetter } from 'dashboard/composables/store';
 import { frontendURL, conversationUrl } from 'dashboard/helper/URLHelper';
+import {
+  isOnFoldersView,
+  isOnMentionsView,
+  isOnParticipatingView,
+  isOnUnattendedView,
+} from 'dashboard/store/modules/conversations/helpers/actionHelpers';
 import ConversationCard from './widgets/conversation/ConversationCard.vue';
 import ConversationCardExpanded from 'dashboard/components-next/Conversation/ConversationCard/ConversationCardExpanded.vue';
 import ContextMenu from 'dashboard/components/ui/ContextMenu.vue';
@@ -18,6 +24,7 @@ const props = defineProps({
   showExpanded: { type: Boolean, default: false },
 });
 
+const route = useRoute();
 const router = useRouter();
 const store = useStore();
 
@@ -53,7 +60,6 @@ watch(
 
 const currentChat = useMapGetter('getSelectedChat');
 const inboxesList = useMapGetter('inboxes/getInboxes');
-const activeInbox = useMapGetter('getSelectedInbox');
 const accountId = useMapGetter('getCurrentAccountId');
 
 const chatMetadata = computed(() => props.source.meta || {});
@@ -72,23 +78,39 @@ const inbox = computed(() => {
 });
 
 const showInboxName = computed(
-  () => !activeInbox.value && inboxesList.value.length > 1
+  () => !route.params.inbox_id && inboxesList.value.length > 1
 );
-const isInboxView = computed(() => !!activeInbox.value);
+const isInboxView = computed(() => !!route.params.inbox_id);
 const showAssigneeForExpandedCard = computed(
   () => props.showExpanded || props.showAssignee
 );
 
+const routeConversationType = computed(() => {
+  if (isOnMentionsView({ route })) {
+    return 'mention';
+  }
+
+  if (isOnParticipatingView({ route })) {
+    return 'participating';
+  }
+
+  if (isOnUnattendedView({ route })) {
+    return 'unattended';
+  }
+
+  return props.conversationType;
+});
+
 const conversationPath = computed(() =>
   frontendURL(
     conversationUrl({
-      accountId: accountId.value,
-      activeInbox: activeInbox.value,
+      accountId: route.params.accountId || accountId.value,
+      activeInbox: route.params.inbox_id || 0,
       id: props.source.id,
-      label: props.label,
-      teamId: props.teamId,
-      conversationType: props.conversationType,
-      foldersId: props.foldersId,
+      label: route.params.label || props.label,
+      teamId: route.params.teamId || props.teamId,
+      conversationType: routeConversationType.value,
+      foldersId: isOnFoldersView({ route }) ? route.params.id : props.foldersId,
     })
   )
 );
@@ -201,6 +223,7 @@ const onDeleteConversation = () => {
   <ConversationCard
     v-else
     :chat="source"
+    :active-label="label"
     :current-contact="currentContact"
     :assignee="assignee"
     :inbox="inbox"

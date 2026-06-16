@@ -105,7 +105,11 @@ class Call < ApplicationRecord
   def recording_url
     return nil unless recording.attached?
 
+    ActiveStorage::Current.url_options = Rails.application.routes.default_url_options if ActiveStorage::Current.url_options.blank?
     Rails.application.routes.url_helpers.rails_blob_url(recording)
+  rescue StandardError => e
+    Rails.logger.warn("Failed to generate recording URL for call #{id}: #{e.class} - #{e.message}")
+    nil
   end
 
   def push_event_data

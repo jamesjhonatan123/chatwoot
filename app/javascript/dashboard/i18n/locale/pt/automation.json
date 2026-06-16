@@ -125,11 +125,20 @@
       "FILTER_OPERATOR_REQUIRED": "Operador do filtro é necessário",
       "VALUE_REQUIRED": "Valor obrigatório",
       "VALUE_MUST_BE_BETWEEN_1_AND_998": "O valor deve ser entre 1 e 998",
+      "ATTRIBUTE_CHANGED_VALUES_REQUIRED": "Os valores De e Para são obrigatórios",
       "ACTION_PARAMETERS_REQUIRED": "Os parâmetros de ação são obrigatórios",
       "ATLEAST_ONE_CONDITION_REQUIRED": "Pelo menos uma condição é obrigatória",
       "ATLEAST_ONE_ACTION_REQUIRED": "Pelo menos uma ação é obrigatória"
     },
     "NONE_OPTION": "Nenhuma",
+    "ATTRIBUTE_CHANGED": {
+      "ANY_OPTION": "Qualquer",
+      "UNASSIGNED_OPTION": "Não atribuído",
+      "FROM_LABEL": "De",
+      "TO_LABEL": "Para",
+      "FROM_PLACEHOLDER": "Selecione a origem",
+      "TO_PLACEHOLDER": "Selecione o destino"
+    },
     "LAST_RESPONDING_AGENT": "Last Responding Agent",
     "EVENTS": {
       "CONVERSATION_CREATED": "Conversa criada",

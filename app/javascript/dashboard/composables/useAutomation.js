@@ -106,13 +106,17 @@ export function useAutomation(startValue = null) {
    */
   const resetFilter = (index, currentCondition) => {
     const newConditions = [...automation.value.conditions];
+    const nextOperator = automationTypes[eventName.value].conditions.find(
+      condition => condition.key === currentCondition.attribute_key
+    ).filterOperators[0];
 
     newConditions[index] = {
       ...newConditions[index],
-      filter_operator: automationTypes[eventName.value].conditions.find(
-        condition => condition.key === currentCondition.attribute_key
-      ).filterOperators[0].value,
-      values: '',
+      filter_operator: nextOperator.value,
+      values:
+        nextOperator.value === 'attribute_changed'
+          ? { from: null, to: null }
+          : '',
     };
 
     automation.value.conditions = newConditions;

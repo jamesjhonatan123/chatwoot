@@ -256,5 +256,43 @@ RSpec.describe AutomationRules::ConditionsFilterService do
         expect(described_class.new(rule, conversation, { changed_attributes: {} }).perform).to be(false)
       end
     end
+
+    context 'when conditions use attribute_changed with team assignment' do
+      let(:team) { create(:team, account: account) }
+
+      before do
+        rule.conditions = [
+          {
+            'attribute_key': 'team_id',
+            'filter_operator': 'attribute_changed',
+            'values': { 'from': ['any'], 'to': [team.id] },
+            'query_operator': nil
+          }
+        ]
+        rule.save
+      end
+
+      it 'returns true when the team changes from unassigned to the target team' do
+        expect(
+          described_class.new(rule, conversation, { changed_attributes: { team_id: [nil, team.id] } }).perform
+        ).to be(true)
+      end
+
+      it 'returns false when another attribute changes while the conversation is already in the target team' do
+        conversation.update!(team: team)
+
+        expect(
+          described_class.new(rule, conversation, { changed_attributes: { labels: [%w[bug], %w[bug vip]] } }).perform
+        ).to be(false)
+      end
+
+      it 'returns true when the target team changes from another team to the target team' do
+        other_team = create(:team, account: account)
+
+        expect(
+          described_class.new(rule, conversation, { changed_attributes: { team_id: [other_team.id, team.id] } }).perform
+        ).to be(true)
+      end
+    end
   end
 end

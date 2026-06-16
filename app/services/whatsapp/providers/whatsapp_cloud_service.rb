@@ -99,6 +99,9 @@ class Whatsapp::Providers::WhatsappCloudService < Whatsapp::Providers::BaseServi
   end
 
   def send_text_message(phone_number, message)
+    text_content = { body: message.outgoing_content }
+    text_content[:preview_url] = true if message.outgoing_content.match?(%r{https?://\S+}i)
+
     response = HTTParty.post(
       "#{phone_id_path}/messages",
       headers: api_headers,
@@ -106,7 +109,7 @@ class Whatsapp::Providers::WhatsappCloudService < Whatsapp::Providers::BaseServi
         messaging_product: 'whatsapp',
         context: whatsapp_reply_context(message),
         to: phone_number,
-        text: { body: message.outgoing_content },
+        text: text_content,
         type: 'text'
       }.to_json
     )

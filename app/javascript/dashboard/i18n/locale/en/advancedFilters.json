@@ -28,6 +28,7 @@
       "is_greater_than": "Is greater than",
       "is_less_than": "Is lesser than",
       "days_before": "Is x days before",
+      "attribute_changed": "Changed from/to",
       "starts_with": "Starts with",
       "equalTo": "Equal to",
       "notEqualTo": "Not equal to",
@@ -71,7 +72,8 @@
       "VALUE_REQUIRED": "Value is required",
       "ATTRIBUTE_KEY_REQUIRED": "Attribute key is required",
       "FILTER_OPERATOR_REQUIRED": "Filter operator is required",
-      "VALUE_MUST_BE_BETWEEN_1_AND_998": "Value must be between 1 and 998"
+      "VALUE_MUST_BE_BETWEEN_1_AND_998": "Value must be between 1 and 998",
+      "ATTRIBUTE_CHANGED_VALUES_REQUIRED": "From and To values are required"
     },
     "GROUPS": {
       "STANDARD_FILTERS": "Standard filters",

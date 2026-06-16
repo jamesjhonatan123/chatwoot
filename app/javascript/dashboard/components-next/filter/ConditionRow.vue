@@ -6,6 +6,7 @@ import Input from 'dashboard/components-next/input/Input.vue';
 import FilterSelect from './inputs/FilterSelect.vue';
 import MultiSelect from './inputs/MultiSelect.vue';
 import SingleSelect from './inputs/SingleSelect.vue';
+import AttributeChangedSelect from './inputs/AttributeChangedSelect.vue';
 
 import { useSnakeCase } from 'dashboard/composables/useTransformKeys';
 import { validateSingleFilter } from 'dashboard/helper/validations.js';
@@ -59,6 +60,14 @@ const getOperator = (filter, selectedOperator) => {
   }
 
   return operatorFromOptions;
+};
+
+const getDefaultOperator = filter => {
+  return (
+    filter?.filterOperators?.find(
+      operator => operator.value === 'attribute_changed'
+    ) || filter?.filterOperators?.[0]
+  );
 };
 
 const currentOperator = computed(() =>
@@ -117,10 +126,15 @@ const resetModelOnAttributeKeyChange = newAttributeKey => {
    * to an empty array.
    */
   const filter = getFilterFromFilterTypes(newAttributeKey);
-  const newOperator = getOperator(filter, filterOperator.value);
+  const newOperator = getDefaultOperator(filter);
   const newInputType = getInputType(newOperator, filter);
   if (newInputType === 'multiSelect') {
     values.value = [];
+  } else if (newInputType === 'attributeChanged') {
+    values.value = {
+      from: null,
+      to: null,
+    };
   } else if (['searchSelect', 'booleanSelect'].includes(newInputType)) {
     values.value = {};
   } else {
@@ -190,6 +204,11 @@ defineExpose({ validate, resetValidation });
           v-model="values"
           disable-search
           :options="booleanOptions"
+        />
+        <AttributeChangedSelect
+          v-else-if="inputType === 'attributeChanged'"
+          v-model="values"
+          :options="currentFilter.options"
         />
         <Input
           v-else
