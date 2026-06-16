@@ -187,6 +187,8 @@ const activeFolderFilters = computed(() => {
 
   return useSnakeCase(syncedFilters);
 });
+const getContact = useMapGetter('contacts/getContact');
+const folderContactId = useMapGetter('customViews/getActiveFolderContactId');
 
 const activeFolderName = computed(() => {
   return activeFolder.value?.name;
@@ -331,8 +333,16 @@ const pageTitle = computed(() => {
   return t('CHAT_LIST.TAB_HEADING');
 });
 
+function sortByUnreadStatus(conversations) {
+  return [...conversations].sort((a, b) => {
+    const unreadCountDiff = (b.unread_count || 0) - (a.unread_count || 0);
+    if (unreadCountDiff !== 0) return unreadCountDiff;
+
+    return (b.last_activity_at || 0) - (a.last_activity_at || 0);
+  });
+}
 const conversationList = computed(() => {
-  return allConversations.value.filter(conversation => {
+  const localConversationList = allConversations.value.filter(conversation => {
     const matchesAssigneeTab =
       activeAssigneeTab.value === wootConstants.ASSIGNEE_TYPE.ALL ||
       (activeAssigneeTab.value === wootConstants.ASSIGNEE_TYPE.ME &&
@@ -354,6 +364,15 @@ const conversationList = computed(() => {
 
     return true;
   });
+
+  if (
+    !hasAppliedFiltersOrActiveFolders.value &&
+    activeSortBy.value === wootConstants.SORT_BY_TYPE.UNREAD
+  ) {
+    return sortByUnreadStatus(localConversationList);
+  }
+
+  return localConversationList;
 });
 
 const showEndOfListMessage = computed(() => {
@@ -669,6 +688,7 @@ function setParamsForEditFolderModal() {
     inboxes: inboxesList.value,
     labels: labels.value,
     campaigns: campaigns.value,
+    contacts: [getContact.value(folderContactId.value)],
     languages: languages,
     countries: countries,
     priority: [
