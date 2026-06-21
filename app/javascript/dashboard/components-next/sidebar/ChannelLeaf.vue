@@ -1,5 +1,5 @@
 <script setup>
-import { computed } from 'vue';
+import { computed, ref, watch } from 'vue';
 import Icon from 'next/icon/Icon.vue';
 import ChannelIcon from 'next/icon/ChannelIcon.vue';
 
@@ -22,11 +22,41 @@ const props = defineProps({
 const reauthorizationRequired = computed(() => {
   return props.inbox.reauthorization_required;
 });
+
+const isAvatarValid = ref(true);
+
+const channelAvatarUrl = computed(() => props.inbox.avatar_url);
+
+const showChannelAvatar = computed(() => {
+  return channelAvatarUrl.value && isAvatarValid.value;
+});
+
+const invalidateAvatar = () => {
+  isAvatarValid.value = false;
+};
+
+watch(
+  () => props.inbox.avatar_url,
+  () => {
+    isAvatarValid.value = true;
+  }
+);
 </script>
 
 <template>
-  <span class="size-4 grid place-content-center rounded-full">
-    <ChannelIcon :inbox="inbox" class="size-4" />
+  <span
+    class="size-4 grid place-content-center rounded-full overflow-hidden bg-n-alpha-2 flex-shrink-0"
+  >
+    <img
+      v-if="showChannelAvatar"
+      :src="channelAvatarUrl"
+      :alt="label"
+      loading="lazy"
+      decoding="async"
+      class="size-full object-cover"
+      @error="invalidateAvatar"
+    />
+    <ChannelIcon v-else :inbox="inbox" class="size-4" />
   </span>
   <div class="flex-1 truncate min-w-0">{{ label }}</div>
   <div
