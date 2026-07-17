@@ -103,6 +103,16 @@ const onCardClick = e => {
           {{ currentContactName }}
         </h4>
         <div class="flex items-center gap-2">
+          <span
+            v-if="conversation.follow_up_next_due_at"
+            v-tooltip.left="$t('FOLLOW_UPS.BADGE')"
+            class="inline-flex items-center justify-center flex-shrink-0 rounded-full bg-n-amber-9/15 text-n-amber-11 size-5"
+          >
+            <Icon
+              icon="i-lucide-corner-up-right"
+              class="flex-shrink-0 size-3"
+            />
+          </span>
           <CardPriorityIcon :priority="conversation.priority || null" />
           <div
             v-tooltip.left="inboxName"

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_05_15_000000) do
+ActiveRecord::Schema[7.1].define(version: 2026_07_17_193000) do
   # These extensions should be enabled to support this database
   enable_extension "pg_stat_statements"
   enable_extension "pg_trgm"
@@ -708,6 +708,7 @@ ActiveRecord::Schema[7.1].define(version: 2026_05_15_000000) do
     t.datetime "waiting_since"
     t.text "cached_label_list"
     t.bigint "assignee_agent_bot_id"
+    t.datetime "follow_up_next_due_at"
     t.index ["account_id", "display_id"], name: "index_conversations_on_account_id_and_display_id", unique: true
     t.index ["account_id", "id"], name: "index_conversations_on_id_and_account_id"
     t.index ["account_id", "inbox_id", "status", "assignee_id"], name: "conv_acid_inbid_stat_asgnid_idx"
@@ -717,6 +718,7 @@ ActiveRecord::Schema[7.1].define(version: 2026_05_15_000000) do
     t.index ["contact_id"], name: "index_conversations_on_contact_id"
     t.index ["contact_inbox_id"], name: "index_conversations_on_contact_inbox_id"
     t.index ["first_reply_created_at"], name: "index_conversations_on_first_reply_created_at"
+    t.index ["follow_up_next_due_at"], name: "index_conversations_on_follow_up_next_due_at"
     t.index ["identifier", "account_id"], name: "index_conversations_on_identifier_and_account_id"
     t.index ["inbox_id"], name: "index_conversations_on_inbox_id"
     t.index ["priority"], name: "index_conversations_on_priority"
@@ -852,6 +854,60 @@ ActiveRecord::Schema[7.1].define(version: 2026_05_15_000000) do
     t.datetime "updated_at", null: false
   end
 
+  create_table "follow_up_runs", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.bigint "conversation_id", null: false
+    t.bigint "follow_up_workflow_id"
+    t.bigint "user_id", null: false
+    t.integer "status", default: 0, null: false
+    t.string "run_type", default: "workflow", null: false
+    t.datetime "anchor_at", null: false
+    t.datetime "next_due_at"
+    t.integer "current_step_index", default: 0, null: false
+    t.jsonb "context", default: {}, null: false
+    t.boolean "cancel_on_incoming", default: true, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id", "status", "next_due_at"], name: "index_follow_up_runs_on_account_id_and_status_and_next_due_at"
+    t.index ["account_id"], name: "index_follow_up_runs_on_account_id"
+    t.index ["conversation_id", "status"], name: "index_follow_up_runs_on_conversation_id_and_status"
+    t.index ["conversation_id"], name: "index_follow_up_runs_on_conversation_id"
+    t.index ["follow_up_workflow_id"], name: "index_follow_up_runs_on_follow_up_workflow_id"
+    t.index ["status", "next_due_at"], name: "index_follow_up_runs_on_status_and_next_due_at"
+    t.index ["user_id"], name: "index_follow_up_runs_on_user_id"
+  end
+
+  create_table "follow_up_steps", force: :cascade do |t|
+    t.bigint "follow_up_run_id", null: false
+    t.integer "position", default: 0, null: false
+    t.datetime "due_at", null: false
+    t.integer "status", default: 0, null: false
+    t.jsonb "step_config", default: {}, null: false
+    t.jsonb "result", default: {}, null: false
+    t.text "error_message"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["follow_up_run_id", "position"], name: "index_follow_up_steps_on_follow_up_run_id_and_position"
+    t.index ["follow_up_run_id"], name: "index_follow_up_steps_on_follow_up_run_id"
+    t.index ["status", "due_at"], name: "index_follow_up_steps_on_status_and_due_at"
+  end
+
+  create_table "follow_up_workflows", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.string "name", null: false
+    t.text "description"
+    t.string "trigger_mode", default: "manual", null: false
+    t.jsonb "steps", default: [], null: false
+    t.boolean "active", default: true, null: false
+    t.boolean "system_preset", default: false, null: false
+    t.string "preset_key"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id", "active"], name: "index_follow_up_workflows_on_account_id_and_active"
+    t.index ["account_id", "preset_key"], name: "index_follow_up_workflows_on_account_id_and_preset_key", unique: true, where: "(preset_key IS NOT NULL)"
+    t.index ["account_id"], name: "index_follow_up_workflows_on_account_id"
+  end
+
   create_table "inbox_assignment_policies", force: :cascade do |t|
     t.bigint "inbox_id", null: false
     t.bigint "assignment_policy_id", null: false
@@ -904,6 +960,7 @@ ActiveRecord::Schema[7.1].define(version: 2026_05_15_000000) do
     t.integer "sender_name_type", default: 0, null: false
     t.string "business_name"
     t.jsonb "csat_config", default: {}, null: false
+    t.boolean "sign_with_agent_name", default: false, null: false
     t.index ["account_id"], name: "index_inboxes_on_account_id"
     t.index ["channel_id", "channel_type"], name: "index_inboxes_on_channel_id_and_channel_type"
     t.index ["portal_id"], name: "index_inboxes_on_portal_id"
@@ -1175,6 +1232,25 @@ ActiveRecord::Schema[7.1].define(version: 2026_05_15_000000) do
     t.index ["account_id", "metric", "date"], name: "index_rollup_timeseries"
   end
 
+  create_table "scheduled_messages", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.bigint "conversation_id", null: false
+    t.bigint "user_id", null: false
+    t.text "content", null: false
+    t.boolean "private", default: false, null: false
+    t.datetime "scheduled_at", null: false
+    t.integer "status", default: 0, null: false
+    t.bigint "message_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.jsonb "template_params", default: {}, null: false
+    t.index ["account_id"], name: "index_scheduled_messages_on_account_id"
+    t.index ["conversation_id", "status"], name: "index_scheduled_messages_on_conversation_id_and_status"
+    t.index ["conversation_id"], name: "index_scheduled_messages_on_conversation_id"
+    t.index ["status", "scheduled_at"], name: "index_scheduled_messages_on_status_and_scheduled_at"
+    t.index ["user_id"], name: "index_scheduled_messages_on_user_id"
+  end
+
   create_table "sla_events", force: :cascade do |t|
     t.bigint "applied_sla_id", null: false
     t.bigint "conversation_id", null: false
@@ -1323,7 +1399,16 @@ ActiveRecord::Schema[7.1].define(version: 2026_05_15_000000) do
 
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
+  add_foreign_key "follow_up_runs", "accounts"
+  add_foreign_key "follow_up_runs", "conversations"
+  add_foreign_key "follow_up_runs", "follow_up_workflows"
+  add_foreign_key "follow_up_runs", "users"
+  add_foreign_key "follow_up_steps", "follow_up_runs"
+  add_foreign_key "follow_up_workflows", "accounts"
   add_foreign_key "inboxes", "portals"
+  add_foreign_key "scheduled_messages", "accounts"
+  add_foreign_key "scheduled_messages", "conversations"
+  add_foreign_key "scheduled_messages", "users"
   create_trigger("accounts_after_insert_row_tr", :generated => true, :compatibility => 1).
       on("accounts").
       after(:insert).

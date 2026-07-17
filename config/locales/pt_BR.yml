@@ -181,7 +181,7 @@ pt_BR:
       avg_reply_time: Tempo médio de resposta
       resolution_count: Contagem de Resolução
     team_csv:
-      team_name: Nome do Time
+      team_name: Nome da Etapa/Time
       conversations_count: Contagem de conversas
       avg_first_response_time: Tempo médio de primeira resposta
       avg_resolution_time: Tempo médio de resolução
@@ -201,7 +201,7 @@ pt_BR:
       conversation_id: ID da conversa
       sla_policy_breached: Política SLA
       assignee: Agente atribuído
-      team: Time
+      team: Etapa/Time
       inbox: Caixa de Entrada
       labels: Etiquetas
       conversation_link: Link para a Conversa
@@ -227,6 +227,7 @@ pt_BR:
       sla_missed_first_response: 'Meta de SLA de Primeira Resposta não alcançada para a conversa (#%{display_id})'
       sla_missed_next_response: 'Meta de SLA de Próxima Resposta não alcançada para a conversa (#%{display_id})'
       sla_missed_resolution: 'Meta de SLA de Resolução não alcançada para a conversa (#%{display_id})'
+      follow_up_due: 'Follow-up pendente na conversa (#%{display_id})'
     attachment: 'Anexo'
     no_content: 'Sem conteúdo'
   conversations:
@@ -281,6 +282,11 @@ pt_BR:
       labels:
         added: '%{user_name} adicionou %{labels}'
         removed: '%{user_name} removeu %{labels}'
+      follow_up:
+        started: '%{user_name} iniciou um follow-up (%{type})'
+        completed: 'Follow-up (%{type}) concluído'
+        cancelled_condition: 'Follow-up (%{type}) cancelado porque as condições não foram atendidas'
+        cancelled_reply: 'Follow-up (%{type}) cancelado porque o contato respondeu'
       sla:
         added: '%{user_name} adicionou política de SLA %{sla_name}'
         removed: '%{user_name} removeu a política de SLA %{sla_name}'

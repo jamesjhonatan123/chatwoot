@@ -49,7 +49,7 @@
       "STATUS": "Status",
       "ASSIGNEE_NAME": "Agente atribuído",
       "INBOX_NAME": "Caixa de Entrada",
-      "TEAM_NAME": "Nome do Time",
+      "TEAM_NAME": "Nome da Etapa/Time",
       "CONVERSATION_IDENTIFIER": "Identificador da conversa",
       "CAMPAIGN_NAME": "Nome da campanha",
       "LABELS": "Etiquetas",
@@ -63,7 +63,8 @@
       "CUSTOM_ATTRIBUTE_LINK": "Link",
       "CUSTOM_ATTRIBUTE_CHECKBOX": "Checkbox",
       "CREATED_AT": "Criado em",
-      "LAST_ACTIVITY": "Última atividade"
+      "LAST_ACTIVITY": "Última atividade",
+      "FOLLOW_UP_NEXT_DUE_AT": "Follow-up vence em"
     },
     "ERRORS": {
       "VALUE_REQUIRED": "Valor obrigatório",

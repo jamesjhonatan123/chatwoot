@@ -97,7 +97,7 @@
     "ACTION": {
       "DELETE_MESSAGE": "You need to have atleast one action to save",
       "TEAM_MESSAGE_INPUT_PLACEHOLDER": "Enter your message here",
-      "TEAM_DROPDOWN_PLACEHOLDER": "Select teams",
+      "TEAM_DROPDOWN_PLACEHOLDER": "Select stages/teams",
       "EMAIL_INPUT_PLACEHOLDER": "Enter email",
       "URL_INPUT_PLACEHOLDER": "Enter URL"
     },
@@ -149,12 +149,12 @@
     },
     "ACTIONS": {
       "ASSIGN_AGENT": "Assign to Agent",
-      "ASSIGN_TEAM": "Assign a Team",
+      "ASSIGN_TEAM": "Assign a Stage/Team",
       "REMOVE_ASSIGNED_AGENT": "Remove Assigned Agent",
-      "REMOVE_ASSIGNED_TEAM": "Remove Assigned Team",
+      "REMOVE_ASSIGNED_TEAM": "Remove Assigned Stage/Team",
       "ADD_LABEL": "Add a Label",
       "REMOVE_LABEL": "Remove a Label",
-      "SEND_EMAIL_TO_TEAM": "Send an Email to Team",
+      "SEND_EMAIL_TO_TEAM": "Send an Email to Stage/Team",
       "SEND_EMAIL_TRANSCRIPT": "Send an Email Transcript",
       "MUTE_CONVERSATION": "Mute Conversation",
       "SNOOZE_CONVERSATION": "Snooze Conversation",
@@ -164,6 +164,8 @@
       "SEND_MESSAGE": "Send a Message",
       "ADD_PRIVATE_NOTE": "Add a Private Note",
       "CHANGE_PRIORITY": "Change Priority",
+      "START_FOLLOW_UP": "Start Follow-up Workflow",
+      "CANCEL_FOLLOW_UPS": "Cancel Active Follow-ups",
       "ADD_SLA": "Add SLA",
       "OPEN_CONVERSATION": "Open conversation",
       "PENDING_CONVERSATION": "Mark conversation as pending"
@@ -194,7 +196,7 @@
       "COMPANY_NAME": "Company",
       "REFERER_LINK": "Referrer Link",
       "ASSIGNEE_NAME": "Assignee",
-      "TEAM_NAME": "Team",
+      "TEAM_NAME": "Stage/Team",
       "PRIORITY": "Priority",
       "LABELS": "Labels"
     }

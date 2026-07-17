@@ -170,7 +170,6 @@ const selectedModel = computed({
       <div v-if="showLabelsSection" class="min-w-0 w-full">
         <CardLabels
           :labels="chat.labels"
-          disable-toggle
           class="my-0 [&>div]:justify-end justify-end"
         />
       </div>

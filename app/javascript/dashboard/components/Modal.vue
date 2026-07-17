@@ -1,8 +1,8 @@
 <script setup>
-// [TODO] Use Teleport to move the modal to the end of the body
 import { ref, computed, onMounted } from 'vue';
 import { useEventListener } from '@vueuse/core';
 import Button from 'dashboard/components-next/button/Button.vue';
+import TeleportWithDirection from 'dashboard/components-next/TeleportWithDirection.vue';
 
 const { modalType, closeOnBackdropClick, onClose } = defineProps({
   closeOnBackdropClick: { type: Boolean, default: true },
@@ -68,57 +68,57 @@ onMounted(() => {
 </script>
 
 <template>
-  <transition name="modal-fade">
-    <div
-      v-if="show"
-      :class="modalClassName"
-      transition="modal"
-      @mousedown="handleMouseDown"
-    >
+  <TeleportWithDirection to="body">
+    <transition name="modal-fade">
       <div
-        class="relative max-h-full overflow-auto bg-n-alpha-3 shadow-md modal-container rtl:text-right skip-context-menu"
-        :class="{
-          'rounded-xl w-[37.5rem]': !fullWidth,
-          'items-center rounded-none flex h-full justify-center w-full':
-            fullWidth,
-          [size]: true,
-        }"
-        @mouse.stop
-        @mousedown="event => event.stopPropagation()"
+        v-if="show"
+        :class="modalClassName"
+        transition="modal"
+        @mousedown="handleMouseDown"
       >
-        <Button
-          v-if="showCloseButton"
-          ghost
-          slate
-          icon="i-lucide-x"
-          class="absolute z-10 ltr:right-2 rtl:left-2 top-2"
-          @click="close"
-        />
-        <slot />
+        <div
+          class="relative overflow-auto bg-n-alpha-3 shadow-md modal-container rtl:text-right skip-context-menu"
+          :class="{
+            'rounded-xl w-full max-w-[37.5rem] my-auto': !fullWidth,
+            'items-center rounded-none flex h-full justify-center w-full':
+              fullWidth,
+            [size]: true,
+          }"
+          @mouse.stop
+          @mousedown="event => event.stopPropagation()"
+        >
+          <Button
+            v-if="showCloseButton"
+            ghost
+            slate
+            icon="i-lucide-x"
+            class="absolute z-10 ltr:right-2 rtl:left-2 top-2"
+            @click="close"
+          />
+          <slot />
+        </div>
       </div>
-    </div>
-  </transition>
+    </transition>
+  </TeleportWithDirection>
 </template>
 
 <style lang="scss">
 .modal-mask {
-  @apply flex items-center justify-center bg-n-alpha-black2 backdrop-blur-[4px] z-[9990] h-full left-0 fixed top-0 w-full;
+  /* Use overflow + my-auto centering so tall modals scroll instead of clipping on mobile */
+  @apply flex justify-center bg-n-alpha-black2 backdrop-blur-[4px] z-[9990] fixed inset-0 w-full overflow-y-auto overscroll-contain p-4;
 
   .modal-container {
     &.medium {
       @apply max-w-[80%] w-[56.25rem];
     }
 
-    // .content-box {
-    //   @apply h-auto p-0;
-    // }
     .content {
-      @apply p-8;
+      @apply p-4 sm:p-8;
     }
 
     form,
     .modal-content {
-      @apply pt-4 pb-8 px-8 self-center;
+      @apply pt-4 pb-6 px-4 sm:pb-8 sm:px-8 self-center;
 
       a {
         @apply p-4;
@@ -128,14 +128,14 @@ onMounted(() => {
 }
 
 .modal-big {
-  @apply w-full;
+  @apply w-full max-w-4xl;
 }
 
 .modal-mask.right-aligned {
-  @apply justify-end;
+  @apply justify-end p-0;
 
   .modal-container {
-    @apply rounded-none h-full w-[30rem];
+    @apply rounded-none h-full max-h-none w-full max-w-[30rem] my-0;
   }
 }
 

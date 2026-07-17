@@ -9,10 +9,14 @@ defineProps({
   },
 });
 
-const emit = defineEmits(['sendMessage', 'resetTemplate']);
+const emit = defineEmits(['sendMessage', 'scheduleMessage', 'resetTemplate']);
 
 const handleSendMessage = payload => {
   emit('sendMessage', payload);
+};
+
+const handleScheduleMessage = payload => {
+  emit('scheduleMessage', payload);
 };
 
 const handleResetTemplate = () => {
@@ -25,19 +29,36 @@ const handleResetTemplate = () => {
     <WhatsAppTemplateParser
       :template="template"
       @send-message="handleSendMessage"
+      @schedule-message="handleScheduleMessage"
       @reset-template="handleResetTemplate"
     >
-      <template #actions="{ sendMessage, resetTemplate, disabled }">
-        <footer class="flex gap-2 justify-end">
+      <template
+        #actions="{ sendMessage, scheduleMessage, resetTemplate, disabled }"
+      >
+        <footer class="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
           <NextButton
             faded
             slate
             type="reset"
+            class="w-full sm:w-auto"
             :label="$t('WHATSAPP_TEMPLATES.PARSER.GO_BACK_LABEL')"
             @click="resetTemplate"
           />
           <NextButton
+            faded
+            slate
             type="button"
+            class="w-full sm:w-auto"
+            icon="i-lucide-calendar-clock"
+            :label="
+              $t('CONVERSATION_SIDEBAR.SCHEDULED_MESSAGES.SCHEDULE_TEMPLATE')
+            "
+            :disabled="disabled"
+            @click="scheduleMessage"
+          />
+          <NextButton
+            type="button"
+            class="w-full sm:w-auto"
             :label="$t('WHATSAPP_TEMPLATES.PARSER.SEND_MESSAGE_LABEL')"
             :disabled="disabled"
             @click="sendMessage"

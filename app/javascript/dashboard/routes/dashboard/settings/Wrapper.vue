@@ -28,7 +28,10 @@ const showSettingsHeader = computed(
       class="z-20 max-w-7xl w-full mx-auto"
     />
 
-    <router-view v-slot="{ Component }" class="px-4 overflow-hidden">
+    <router-view
+      v-slot="{ Component }"
+      class="px-4 flex-1 min-h-0 overflow-y-auto pb-8"
+    >
       <component :is="Component" v-if="!keepAlive" :key="$route.fullPath" />
       <keep-alive v-else>
         <component :is="Component" :key="$route.fullPath" />

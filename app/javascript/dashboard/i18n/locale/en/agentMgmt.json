@@ -106,7 +106,7 @@
       "PLACEHOLDER": "None",
       "TITLE": {
         "AGENT": "Select agent",
-        "TEAM": "Select team"
+        "TEAM": "Select stage/team"
       },
       "LIST": {
         "NONE": "None"
@@ -114,11 +114,11 @@
       "SEARCH": {
         "NO_RESULTS": {
           "AGENT": "No agents found",
-          "TEAM": "No teams found"
+          "TEAM": "No stages/teams found"
         },
         "PLACEHOLDER": {
           "AGENT": "Search agents",
-          "TEAM": "Search teams",
+          "TEAM": "Search stages/teams",
           "INPUT": "Search for agents"
         }
       }

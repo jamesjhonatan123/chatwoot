@@ -348,18 +348,18 @@
     }
   },
   "TEAM_REPORTS": {
-    "HEADER": "Team Overview",
-    "DESCRIPTION": "Get a snapshot of your team's performance with essential metrics, including conversations, response times, resolution times, and resolved cases. Click a team name for more details.",
+    "HEADER": "Stage/Team Overview",
+    "DESCRIPTION": "Get a snapshot of your stage/team's performance with essential metrics, including conversations, response times, resolution times, and resolved cases. Click a stage/team name for more details.",
     "LOADING_CHART": "Loading chart data...",
     "NO_ENOUGH_DATA": "We've not received enough data points to generate report, Please try again later.",
-    "DOWNLOAD_TEAM_REPORTS": "Download team reports",
-    "FILTER_DROPDOWN_LABEL": "Select Team",
+    "DOWNLOAD_TEAM_REPORTS": "Download stage/team reports",
+    "FILTER_DROPDOWN_LABEL": "Select Stage/Team",
     "FILTERS": {
       "ADD_FILTER": "Add filter",
       "CLEAR_ALL": "Clear all",
       "NO_FILTER": "No filters available",
       "INPUT_PLACEHOLDER": {
-        "TEAMS": "Search teams"
+        "TEAMS": "Search stages/teams"
       }
     },
     "METRICS": {
@@ -436,7 +436,7 @@
       "INPUT_PLACEHOLDER": {
         "AGENTS": "Search agents",
         "INBOXES": "Search inboxes",
-        "TEAMS": "Search teams",
+        "TEAMS": "Search stages/teams",
         "RATINGS": "Search ratings"
       },
       "AGENTS": {
@@ -446,7 +446,7 @@
         "LABEL": "Inbox"
       },
       "TEAMS": {
-        "LABEL": "Team"
+        "LABEL": "Stage/Team"
       },
       "RATINGS": {
         "LABEL": "Rating"
@@ -559,12 +559,12 @@
       }
     },
     "TEAM_CONVERSATIONS": {
-      "ALL_TEAMS": "All Teams",
-      "HEADER": "Conversations by teams",
-      "LOADING_MESSAGE": "Loading team metrics...",
+      "ALL_TEAMS": "All Stages/Teams",
+      "HEADER": "Conversations by stages/teams",
+      "LOADING_MESSAGE": "Loading stage/team metrics...",
       "NO_TEAMS": "There is no data available",
       "TABLE_HEADER": {
-        "TEAM": "Team",
+        "TEAM": "Stage/Team",
         "OPEN": "Open",
         "UNATTENDED": "Unattended",
         "STATUS": "Status"
@@ -604,13 +604,13 @@
         "AGENTS": "Agent name",
         "INBOXES": "Inbox name",
         "LABELS": "Label name",
-        "TEAMS": "Team name"
+        "TEAMS": "Stage/Team name"
       },
       "SLA": "SLA Policy",
       "INBOXES": "Inbox",
       "AGENTS": "Agent",
       "LABELS": "Label",
-      "TEAMS": "Team"
+      "TEAMS": "Stage/Team"
     },
     "WITH": "with",
     "METRICS": {
@@ -639,7 +639,7 @@
   "SUMMARY_REPORTS": {
     "INBOX": "Inbox",
     "AGENT": "Agent",
-    "TEAM": "Team",
+    "TEAM": "Stage/Team",
     "LABEL": "Label",
     "AVG_RESOLUTION_TIME": "Avg. Resolution Time",
     "AVG_FIRST_RESPONSE_TIME": "Avg. First Response Time",

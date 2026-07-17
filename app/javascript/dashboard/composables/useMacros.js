@@ -14,6 +14,9 @@ export const useMacros = () => {
   const labels = computed(() => getters['labels/getLabels'].value);
   const teams = computed(() => getters['teams/getTeams'].value);
   const agents = computed(() => getters['agents/getVerifiedAgents'].value);
+  const followUpWorkflows = computed(
+    () => getters['followUps/getWorkflows'].value
+  );
 
   const withNoneOption = options => [
     { id: 'nil', name: t('AUTOMATION.NONE_OPTION') },
@@ -47,6 +50,18 @@ export const useMacros = () => {
         return PRIORITY_CONDITION_VALUES.map(item => ({
           id: item.id,
           name: t(`MACROS.PRIORITY_TYPES.${item.i18nKey}`),
+        }));
+      case 'change_status':
+        return ['open', 'resolved', 'pending', 'snoozed'].map(id => ({
+          id,
+          name: t(`CHAT_LIST.CHAT_STATUS_FILTER_ITEMS.${id}.TEXT`),
+        }));
+      case 'start_follow_up':
+        return (followUpWorkflows.value || []).map(workflow => ({
+          id: workflow.id,
+          name: workflow.preset_key
+            ? t(`FOLLOW_UPS.PRESETS.${workflow.preset_key}`)
+            : workflow.name,
         }));
       default:
         return [];

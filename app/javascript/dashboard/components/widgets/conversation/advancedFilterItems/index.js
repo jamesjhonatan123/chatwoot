@@ -103,6 +103,14 @@ const filterTypes = [
     attributeModel: 'standard',
   },
   {
+    attributeKey: 'follow_up_next_due_at',
+    attributeI18nKey: 'FOLLOW_UP_NEXT_DUE_AT',
+    inputType: 'date',
+    dataType: 'text',
+    filterOperators: OPERATOR_TYPES_5,
+    attributeModel: 'standard',
+  },
+  {
     attributeKey: 'referer',
     attributeI18nKey: 'REFERER_LINK',
     inputType: 'plain_text',
@@ -152,6 +160,10 @@ export const filterAttributeGroups = [
       {
         key: 'last_activity_at',
         i18nKey: 'LAST_ACTIVITY',
+      },
+      {
+        key: 'follow_up_next_due_at',
+        i18nKey: 'FOLLOW_UP_NEXT_DUE_AT',
       },
     ],
   },

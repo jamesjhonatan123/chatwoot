@@ -27,6 +27,7 @@ export default function useAutomationValues() {
   const labels = useMapGetter('labels/getLabels');
   const teams = useMapGetter('teams/getTeams');
   const slaPolicies = useMapGetter('sla/getSLA');
+  const followUpWorkflows = useMapGetter('followUps/getWorkflows');
 
   const booleanFilterOptions = computed(() => [
     { id: true, name: t('FILTER.ATTRIBUTE_LABELS.TRUE') },
@@ -137,6 +138,12 @@ export default function useAutomationValues() {
       labels: labels.value,
       teams: teams.value,
       slaPolicies: slaPolicies.value,
+      followUpWorkflows: (followUpWorkflows.value || []).map(workflow => ({
+        ...workflow,
+        name: workflow.preset_key
+          ? t(`FOLLOW_UPS.PRESETS.${workflow.preset_key}`)
+          : workflow.name,
+      })),
       languages,
       type,
       addNoneToListFn: addNoneToList,

@@ -86,6 +86,7 @@ Rails.application.routes.draw do
               post :reply_suggestion
               post :label_suggestion
               post :follow_up
+              post :generate_follow_up_workflow
             end
           end
           resource :saml_settings, only: [:show, :create, :update, :destroy]
@@ -112,6 +113,16 @@ Rails.application.routes.draw do
           resources :canned_responses, only: [:index, :create, :update, :destroy]
           resources :automation_rules, only: [:index, :create, :show, :update, :destroy] do
             post :clone
+          end
+          resources :follow_up_workflows, only: [:index, :create, :show, :update, :destroy] do
+            collection do
+              get :analytics
+            end
+          end
+          resources :follow_up_runs, only: [:index, :show] do
+            member do
+              post :retry
+            end
           end
           resources :macros, only: [:index, :create, :show, :update, :destroy] do
             post :execute, on: :member
@@ -148,6 +159,12 @@ Rails.application.routes.draw do
               resource :participants, only: [:show, :create, :update, :destroy]
               resource :direct_uploads, only: [:create]
               resource :draft_messages, only: [:show, :update, :destroy]
+              resources :scheduled_messages, only: [:index, :create, :destroy]
+              resources :follow_up_runs, only: [:index, :create, :destroy] do
+                member do
+                  post :retry
+                end
+              end
             end
             member do
               post :mute

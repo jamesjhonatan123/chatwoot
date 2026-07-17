@@ -29,6 +29,8 @@ import {
 } from '@chatwoot/utils';
 import WhatsappTemplates from './WhatsappTemplates/Modal.vue';
 import ContentTemplates from './ContentTemplates/ContentTemplatesModal.vue';
+import ScheduleMessageModal from './ScheduleMessageModal.vue';
+import FollowUpModal from './FollowUpModal.vue';
 import { MESSAGE_MAX_LENGTH } from 'shared/helpers/MessageTypeHelper';
 import inboxMixin, { INBOX_FEATURES } from 'shared/mixins/inboxMixin';
 import { trimContent, debounce, getRecipients } from '@chatwoot/utils';
@@ -74,6 +76,8 @@ export default {
     ReplyTopPanel,
     ContentTemplates,
     WhatsappTemplates,
+    ScheduleMessageModal,
+    FollowUpModal,
     WootMessageEditor,
     QuotedEmailPreview,
     CopilotEditorSection,
@@ -124,6 +128,13 @@ export default {
       doAutoSaveDraft: () => {},
       showWhatsAppTemplatesModal: false,
       showContentTemplatesModal: false,
+      showScheduleMessageModal: false,
+      showFollowUpModal: false,
+      scheduleDraft: {
+        content: '',
+        isPrivate: false,
+        templateParams: null,
+      },
       updateEditorSelectionWith: '',
       undefinedVariableMessage: '',
       showMentions: false,
@@ -745,6 +756,51 @@ export default {
     },
     hideContentTemplatesModal() {
       this.showContentTemplatesModal = false;
+    },
+    openScheduleMessageModal({ content, isPrivate, templateParams } = {}) {
+      const draftContent =
+        content ??
+        this.message
+          ?.replace(/<[^>]*>/g, ' ')
+          .replace(/\s+/g, ' ')
+          .trim() ??
+        '';
+      this.scheduleDraft = {
+        content: draftContent,
+        isPrivate: isPrivate ?? this.isPrivate,
+        templateParams: templateParams || null,
+      };
+      this.showScheduleMessageModal = true;
+    },
+    hideScheduleMessageModal() {
+      this.showScheduleMessageModal = false;
+      this.scheduleDraft = {
+        content: '',
+        isPrivate: false,
+        templateParams: null,
+      };
+    },
+    onScheduledMessageCreated() {
+      // Clear reply draft only when scheduling plain text from the editor
+      if (!this.scheduleDraft.templateParams) {
+        this.clearMessage();
+        this.removeFromDraft();
+      }
+      this.hideWhatsappTemplatesModal();
+    },
+    onScheduleWhatsAppReply(messagePayload) {
+      this.hideWhatsappTemplatesModal();
+      this.openScheduleMessageModal({
+        content: messagePayload.message,
+        isPrivate: false,
+        templateParams: messagePayload.templateParams,
+      });
+    },
+    openFollowUpModal() {
+      this.showFollowUpModal = true;
+    },
+    hideFollowUpModal() {
+      this.showFollowUpModal = false;
     },
     confirmOnSendReply() {
       if (this.isReplyButtonDisabled) {
@@ -1402,6 +1458,8 @@ export default {
         @select-content-template="openContentTemplateModal"
         @toggle-insert-article="toggleInsertArticle"
         @toggle-quoted-reply="toggleQuotedReply"
+        @schedule-message="openScheduleMessageModal"
+        @follow-up="openFollowUpModal"
       />
     </Transition>
 
@@ -1410,6 +1468,7 @@ export default {
       :show="showWhatsAppTemplatesModal"
       @close="hideWhatsappTemplatesModal"
       @on-send="onSendWhatsAppReply"
+      @on-schedule="onScheduleWhatsAppReply"
       @cancel="hideWhatsappTemplatesModal"
     />
 
@@ -1419,6 +1478,28 @@ export default {
       @close="hideContentTemplatesModal"
       @on-send="onSendContentTemplateReply"
       @cancel="hideContentTemplatesModal"
+    />
+
+    <ScheduleMessageModal
+      :show="showScheduleMessageModal"
+      :conversation-id="currentChat.id"
+      :content="scheduleDraft.content"
+      :is-private="scheduleDraft.isPrivate"
+      :template-params="scheduleDraft.templateParams"
+      @close="hideScheduleMessageModal"
+      @scheduled="onScheduledMessageCreated"
+    />
+
+    <FollowUpModal
+      :show="showFollowUpModal"
+      :conversation-id="currentChat.id"
+      :default-content="
+        message
+          ?.replace(/<[^>]*>/g, ' ')
+          .replace(/\s+/g, ' ')
+          .trim()
+      "
+      @close="hideFollowUpModal"
     />
 
     <woot-confirm-modal

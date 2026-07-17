@@ -1,10 +1,12 @@
 class MessageContentPresenter < SimpleDelegator
   def outgoing_content
-    Messages::MarkdownRendererService.new(
+    content = Messages::MarkdownRendererService.new(
       content_with_survey_link,
       conversation.inbox.channel_type,
       conversation.inbox.channel
     ).render
+
+    prepend_agent_signature(content)
   end
 
   def webhook_content
@@ -12,6 +14,39 @@ class MessageContentPresenter < SimpleDelegator
   end
 
   private
+
+  def prepend_agent_signature(content)
+    return content unless should_sign_with_agent_name?
+
+    agent_name = signature_agent_name
+    return content if agent_name.blank?
+
+    signature_prefix = "*#{agent_name}*:"
+    return content if content.to_s.start_with?(signature_prefix)
+
+    body = content.to_s
+    body.present? ? "#{signature_prefix}\n#{body}" : signature_prefix
+  end
+
+  def should_sign_with_agent_name?
+    return false unless outgoing?
+    return false if private?
+    return false if additional_attributes&.dig('template_params').present?
+    return false unless inbox&.sign_with_agent_name?
+    return false unless inbox.channel_type == 'Channel::Whatsapp'
+
+    true
+  end
+
+  def signature_agent_name
+    return if sender.blank?
+
+    if sender.respond_to?(:available_name)
+      sender.available_name.presence || sender.name
+    else
+      sender.try(:name)
+    end
+  end
 
   def content_with_survey_link
     if should_append_survey_link?

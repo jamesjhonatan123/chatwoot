@@ -94,12 +94,12 @@
       "ATLEAST_ONE_ACTION_REQUIRED": "Pelo menos uma ação é necessária"
     },
     "ACTIONS": {
-      "ASSIGN_TEAM": "Atribuir um Time",
+      "ASSIGN_TEAM": "Atribuir uma Etapa/Time",
       "ASSIGN_AGENT": "Atribuir um Agente",
       "ADD_LABEL": "Adicionar uma Etiqueta",
       "REMOVE_LABEL": "Remover uma Etiqueta",
       "REMOVE_ASSIGNED_AGENT": "Remove Assigned Agent",
-      "REMOVE_ASSIGNED_TEAM": "Remover Time Atribuído",
+      "REMOVE_ASSIGNED_TEAM": "Remover Etapa/Time Atribuído",
       "SEND_EMAIL_TRANSCRIPT": "Enviar uma transcrição por e-mail",
       "MUTE_CONVERSATION": "Silenciar Conversa",
       "SNOOZE_CONVERSATION": "Adiar Conversa",
@@ -108,6 +108,8 @@
       "SEND_MESSAGE": "Enviar uma Mensagem",
       "CHANGE_PRIORITY": "Alterar Prioridade",
       "ADD_PRIVATE_NOTE": "Adicionar uma Nota Privada",
+      "START_FOLLOW_UP": "Iniciar workflow de follow-up",
+      "CANCEL_FOLLOW_UPS": "Cancelar follow-ups ativos",
       "SEND_WEBHOOK_EVENT": "Enviar evento de Webhook"
     },
     "PRIORITY_TYPES": {

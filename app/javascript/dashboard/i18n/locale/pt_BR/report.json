@@ -348,18 +348,18 @@
     }
   },
   "TEAM_REPORTS": {
-    "HEADER": "Resumo do Time",
-    "DESCRIPTION": "Tenha uma visão geral do desempenho dos seus times com métricas essenciais, incluindo conversas, tempos de resposta, tempos de resolução e casos resolvidos. Clique no nome do time para ver mais detalhes.",
+    "HEADER": "Resumo da Etapa/Time",
+    "DESCRIPTION": "Tenha uma visão geral do desempenho das suas etapas/times com métricas essenciais, incluindo conversas, tempos de resposta, tempos de resolução e casos resolvidos. Clique no nome da etapa/time para ver mais detalhes.",
     "LOADING_CHART": "Carregando dados do gráfico...",
     "NO_ENOUGH_DATA": "Não existem dados suficientes para gerar o relatório. Tente novamente mais tarde.",
-    "DOWNLOAD_TEAM_REPORTS": "Baixar relatórios de time",
-    "FILTER_DROPDOWN_LABEL": "Selecionar Time",
+    "DOWNLOAD_TEAM_REPORTS": "Baixar relatórios de etapa/time",
+    "FILTER_DROPDOWN_LABEL": "Selecionar Etapa/Time",
     "FILTERS": {
       "ADD_FILTER": "Adicionar filtro",
       "CLEAR_ALL": "Limpar tudo",
       "NO_FILTER": "Não há filtros disponíveis",
       "INPUT_PLACEHOLDER": {
-        "TEAMS": "Pesquisar times"
+        "TEAMS": "Pesquisar etapas/times"
       }
     },
     "METRICS": {
@@ -436,7 +436,7 @@
       "INPUT_PLACEHOLDER": {
         "AGENTS": "Pesquisar agentes",
         "INBOXES": "Pesquisar caixas de entrada",
-        "TEAMS": "Pesquisar times",
+        "TEAMS": "Pesquisar etapas/times",
         "RATINGS": "Pesquisar avaliações"
       },
       "AGENTS": {
@@ -446,7 +446,7 @@
         "LABEL": "Caixa de Entrada"
       },
       "TEAMS": {
-        "LABEL": "Time"
+        "LABEL": "Etapa/Time"
       },
       "RATINGS": {
         "LABEL": "Classificação"
@@ -559,12 +559,12 @@
       }
     },
     "TEAM_CONVERSATIONS": {
-      "ALL_TEAMS": "Todos os Times",
-      "HEADER": "Conversas por times",
-      "LOADING_MESSAGE": "Carregando métricas de times...",
+      "ALL_TEAMS": "Todos os Etapas/Times",
+      "HEADER": "Conversas por etapas/times",
+      "LOADING_MESSAGE": "Carregando métricas de etapas/times...",
       "NO_TEAMS": "Não há dados disponíveis",
       "TABLE_HEADER": {
-        "TEAM": "Time",
+        "TEAM": "Etapa/Time",
         "OPEN": "Abrir",
         "UNATTENDED": "Não atendidas",
         "STATUS": "Status"
@@ -604,13 +604,13 @@
         "AGENTS": "Nome do Agente",
         "INBOXES": "Nome da Caixa de Entrada",
         "LABELS": "Nome da etiqueta",
-        "TEAMS": "Nome do Time"
+        "TEAMS": "Nome da Etapa/Time"
       },
       "SLA": "Política SLA",
       "INBOXES": "Caixa de Entrada",
       "AGENTS": "Agente",
       "LABELS": "Nome do campo",
-      "TEAMS": "Time"
+      "TEAMS": "Etapa/Time"
     },
     "WITH": "com",
     "METRICS": {
@@ -639,7 +639,7 @@
   "SUMMARY_REPORTS": {
     "INBOX": "Caixa de Entrada",
     "AGENT": "Agente",
-    "TEAM": "Time",
+    "TEAM": "Etapa/Time",
     "LABEL": "Nome do campo",
     "AVG_RESOLUTION_TIME": "Tempo Médio de Resolução",
     "AVG_FIRST_RESPONSE_TIME": "Tempo Médio de Primeira Resposta",

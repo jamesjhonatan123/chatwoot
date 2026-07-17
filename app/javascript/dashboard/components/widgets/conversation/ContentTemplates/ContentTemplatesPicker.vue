@@ -88,7 +88,7 @@ const refreshTemplates = async () => {
       </button>
     </div>
     <div
-      class="bg-n-background outline-n-container outline outline-1 rounded-lg max-h-[18.75rem] overflow-y-auto p-2.5"
+      class="bg-n-background outline-n-container outline outline-1 rounded-lg max-h-[min(18.75rem,50dvh)] overflow-y-auto p-2.5"
     >
       <div
         v-for="(template, i) in filteredTemplateMessages"

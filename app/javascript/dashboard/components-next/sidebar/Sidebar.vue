@@ -672,6 +672,12 @@ const menuItems = computed(() => {
           to: accountScopedRoute('macros_wrapper'),
         },
         {
+          name: 'Settings Follow-ups',
+          label: t('SIDEBAR.FOLLOW_UPS'),
+          icon: 'i-lucide-corner-up-right',
+          to: accountScopedRoute('follow_ups_wrapper'),
+        },
+        {
           name: 'Settings Canned Responses',
           label: t('SIDEBAR.CANNED_RESPONSES'),
           icon: 'i-lucide-message-square-quote',

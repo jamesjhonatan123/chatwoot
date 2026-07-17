@@ -53,6 +53,49 @@ RSpec.describe MessageContentPresenter do
         end
       end
     end
+
+    context 'when WhatsApp inbox has sign_with_agent_name enabled' do
+      let(:account) { create(:account) }
+      let(:agent) { create(:user, account: account, name: 'Jane Doe', display_name: 'Jane') }
+      let(:channel) do
+        create(:channel_whatsapp, account: account, sync_templates: false, validate_provider_config: false)
+      end
+      let(:inbox) { channel.inbox.tap { |record| record.update!(sign_with_agent_name: true) } }
+      let(:conversation) { create(:conversation, account: account, inbox: inbox) }
+      let(:content_type) { 'text' }
+      let(:content) { 'Hello customer' }
+      let(:message) do
+        create(
+          :message,
+          account: account,
+          inbox: inbox,
+          conversation: conversation,
+          message_type: :outgoing,
+          private: false,
+          sender: agent,
+          content_type: content_type,
+          content: content
+        )
+      end
+
+      it 'prepends the agent name in WhatsApp bold format' do
+        expect(presenter.outgoing_content).to eq("*Jane*:\nHello customer")
+      end
+
+      it 'does not sign private notes' do
+        message.update!(private: true)
+        expect(presenter.outgoing_content).to eq('Hello customer')
+      end
+
+      it 'does not sign template messages' do
+        message.update!(
+          additional_attributes: {
+            'template_params' => { 'name' => 'hello_world', 'language' => 'en' }
+          }
+        )
+        expect(presenter.outgoing_content).to eq('Hello customer')
+      end
+    end
   end
 
   describe '#webhook_content' do

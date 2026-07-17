@@ -195,7 +195,7 @@ en:
       avg_reply_time: Avg reply time
       resolution_count: Resolution Count
     team_csv:
-      team_name: Team name
+      team_name: Stage/Team name
       conversations_count: Conversations count
       avg_first_response_time: Avg first response time
       avg_resolution_time: Avg resolution time
@@ -215,7 +215,7 @@ en:
       conversation_id: Conversation ID
       sla_policy_breached: SLA Policy
       assignee: Assignee
-      team: Team
+      team: Stage/Team
       inbox: Inbox
       labels: Labels
       conversation_link: Link to the Conversation
@@ -241,6 +241,7 @@ en:
       sla_missed_first_response: 'SLA target first response missed for conversation (#%{display_id})'
       sla_missed_next_response: 'SLA target next response missed for conversation (#%{display_id})'
       sla_missed_resolution: 'SLA target resolution missed for conversation (#%{display_id})'
+      follow_up_due: 'Follow-up due for conversation (#%{display_id})'
     attachment: 'Attachment'
     no_content: 'No content'
   conversations:
@@ -295,6 +296,11 @@ en:
       labels:
         added: '%{user_name} added %{labels}'
         removed: '%{user_name} removed %{labels}'
+      follow_up:
+        started: '%{user_name} started a follow-up (%{type})'
+        completed: 'Follow-up (%{type}) completed'
+        cancelled_condition: 'Follow-up (%{type}) cancelled because conditions were not met'
+        cancelled_reply: 'Follow-up (%{type}) cancelled because the contact replied'
       sla:
         added: '%{user_name} added SLA policy %{sla_name}'
         removed: '%{user_name} removed SLA policy %{sla_name}'

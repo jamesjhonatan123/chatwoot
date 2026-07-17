@@ -89,6 +89,7 @@ export default {
       senderNameType: 'friendly',
       businessName: '',
       locktoSingleConversation: false,
+      signWithAgentName: false,
       allowMessagesAfterResolved: true,
       continuityViaEmail: true,
       selectedInboxName: '',
@@ -459,6 +460,7 @@ export default {
       this.selectedFeatureFlags = this.inbox.selected_feature_flags || [];
       this.replyTime = this.inbox.reply_time;
       this.locktoSingleConversation = this.inbox.lock_to_single_conversation;
+      this.signWithAgentName = this.inbox.sign_with_agent_name || false;
       this.selectedPortalSlug = this.inbox.help_center
         ? this.inbox.help_center.slug
         : '';
@@ -573,6 +575,7 @@ export default {
               )?.id || null
             : null,
           lock_to_single_conversation: this.locktoSingleConversation,
+          sign_with_agent_name: this.signWithAgentName,
           sender_name_type: this.senderNameType,
           business_name: this.businessName || null,
           channel: {
@@ -827,6 +830,15 @@ export default {
                 class="!mb-0"
               />
             </SettingsFieldSection>
+
+            <SettingsToggleSection
+              v-if="isAWhatsAppCloudChannel"
+              v-model="signWithAgentName"
+              :header="$t('INBOX_MGMT.SETTINGS_POPUP.SIGN_WITH_AGENT_NAME')"
+              :description="
+                $t('INBOX_MGMT.SETTINGS_POPUP.SIGN_WITH_AGENT_NAME_SUB_TEXT')
+              "
+            />
 
             <SettingsFieldSection
               :label="$t('INBOX_MGMT.HELP_CENTER.LABEL')"

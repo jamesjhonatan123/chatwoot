@@ -99,6 +99,7 @@ export const getActionOptions = ({
   teams,
   labels,
   slaPolicies,
+  followUpWorkflows,
   type,
   addNoneToListFn,
   priorityOptions,
@@ -111,6 +112,10 @@ export const getActionOptions = ({
     remove_label: generateConditionOptions(labels, 'title'),
     change_priority: priorityOptions,
     add_sla: slaPolicies,
+    start_follow_up: (followUpWorkflows || []).map(workflow => ({
+      id: workflow.id,
+      name: workflow.name,
+    })),
   };
   return actionsMap[type];
 };

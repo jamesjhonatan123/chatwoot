@@ -152,6 +152,14 @@ export const AUTOMATIONS = {
         key: 'send_attachment',
         name: 'SEND_ATTACHMENT',
       },
+      {
+        key: 'start_follow_up',
+        name: 'START_FOLLOW_UP',
+      },
+      {
+        key: 'cancel_follow_ups',
+        name: 'CANCEL_FOLLOW_UPS',
+      },
     ],
   },
   conversation_created: {
@@ -285,6 +293,14 @@ export const AUTOMATIONS = {
       {
         key: 'send_attachment',
         name: 'SEND_ATTACHMENT',
+      },
+      {
+        key: 'start_follow_up',
+        name: 'START_FOLLOW_UP',
+      },
+      {
+        key: 'cancel_follow_ups',
+        name: 'CANCEL_FOLLOW_UPS',
       },
     ],
   },
@@ -432,6 +448,14 @@ export const AUTOMATIONS = {
         key: 'send_attachment',
         name: 'SEND_ATTACHMENT',
       },
+      {
+        key: 'start_follow_up',
+        name: 'START_FOLLOW_UP',
+      },
+      {
+        key: 'cancel_follow_ups',
+        name: 'CANCEL_FOLLOW_UPS',
+      },
     ],
   },
   conversation_opened: {
@@ -568,6 +592,14 @@ export const AUTOMATIONS = {
         key: 'send_attachment',
         name: 'SEND_ATTACHMENT',
       },
+      {
+        key: 'start_follow_up',
+        name: 'START_FOLLOW_UP',
+      },
+      {
+        key: 'cancel_follow_ups',
+        name: 'CANCEL_FOLLOW_UPS',
+      },
     ],
   },
   conversation_resolved: {
@@ -682,6 +714,14 @@ export const AUTOMATIONS = {
         key: 'send_attachment',
         name: 'SEND_ATTACHMENT',
       },
+      {
+        key: 'start_follow_up',
+        name: 'START_FOLLOW_UP',
+      },
+      {
+        key: 'cancel_follow_ups',
+        name: 'CANCEL_FOLLOW_UPS',
+      },
     ],
   },
 };
@@ -794,6 +834,16 @@ export const AUTOMATION_ACTION_TYPES = [
     key: 'add_private_note',
     label: 'ADD_PRIVATE_NOTE',
     inputType: 'textarea',
+  },
+  {
+    key: 'start_follow_up',
+    label: 'START_FOLLOW_UP',
+    inputType: 'search_select',
+  },
+  {
+    key: 'cancel_follow_ups',
+    label: 'CANCEL_FOLLOW_UPS',
+    inputType: null,
   },
   {
     key: 'change_priority',

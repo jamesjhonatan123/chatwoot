@@ -106,7 +106,7 @@
       "PLACEHOLDER": "Nenhum",
       "TITLE": {
         "AGENT": "Selecionar agente",
-        "TEAM": "Selecionar time"
+        "TEAM": "Selecionar etapa/time"
       },
       "LIST": {
         "NONE": "Nenhum"
@@ -114,11 +114,11 @@
       "SEARCH": {
         "NO_RESULTS": {
           "AGENT": "Nenhum agente encontrado",
-          "TEAM": "Nenhum time encontrado"
+          "TEAM": "Nenhuma etapa/time encontrada"
         },
         "PLACEHOLDER": {
           "AGENT": "Pesquisar agentes",
-          "TEAM": "Pesquisar times",
+          "TEAM": "Pesquisar etapas/times",
           "INPUT": "Pesquisar por agentes"
         }
       }

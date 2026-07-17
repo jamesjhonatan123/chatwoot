@@ -37,7 +37,12 @@ const props = defineProps({
   },
 });
 
-const emit = defineEmits(['sendMessage', 'resetTemplate', 'back']);
+const emit = defineEmits([
+  'sendMessage',
+  'scheduleMessage',
+  'resetTemplate',
+  'back',
+]);
 
 const { t } = useI18n();
 
@@ -135,13 +140,10 @@ const updateMediaName = value => {
   processedParams.value.header.media_name = value;
 };
 
-const sendMessage = () => {
-  v$.value.$touch();
-  if (v$.value.$invalid) return;
-
+const buildMessagePayload = () => {
   const { name, category, language, namespace } = props.template;
 
-  const payload = {
+  return {
     message: renderedTemplate.value,
     templateParams: {
       name,
@@ -151,7 +153,20 @@ const sendMessage = () => {
       processed_params: processedParams.value,
     },
   };
-  emit('sendMessage', payload);
+};
+
+const sendMessage = () => {
+  v$.value.$touch();
+  if (v$.value.$invalid) return;
+
+  emit('sendMessage', buildMessagePayload());
+};
+
+const scheduleMessage = () => {
+  v$.value.$touch();
+  if (v$.value.$invalid) return;
+
+  emit('scheduleMessage', buildMessagePayload());
 };
 
 const resetTemplate = () => {
@@ -184,6 +199,7 @@ defineExpose({
   updateMediaUrl,
   updateMediaName,
   sendMessage,
+  scheduleMessage,
   resetTemplate,
   goBack,
 });
@@ -301,6 +317,7 @@ defineExpose({
     <slot
       name="actions"
       :send-message="sendMessage"
+      :schedule-message="scheduleMessage"
       :reset-template="resetTemplate"
       :go-back="goBack"
       :is-valid="!v$.$invalid"

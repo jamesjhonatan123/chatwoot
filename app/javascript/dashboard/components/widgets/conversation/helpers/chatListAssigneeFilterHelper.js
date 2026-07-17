@@ -2,9 +2,14 @@ import wootConstants from 'dashboard/constants/globals';
 
 const ASSIGNEE_ATTRIBUTE_KEY = 'assignee_id';
 
-const isAssigneeFilter = filter => filter.attributeKey === ASSIGNEE_ATTRIBUTE_KEY;
+const isAssigneeFilter = filter =>
+  filter.attributeKey === ASSIGNEE_ATTRIBUTE_KEY;
 
-const buildAssigneeFilter = (assigneeType, currentUserDetails, queryOperator) => {
+const buildAssigneeFilter = (
+  assigneeType,
+  currentUserDetails,
+  queryOperator
+) => {
   if (assigneeType === wootConstants.ASSIGNEE_TYPE.ALL) {
     return null;
   }

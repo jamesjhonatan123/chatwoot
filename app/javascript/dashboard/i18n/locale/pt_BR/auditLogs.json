@@ -50,9 +50,9 @@
       "SIGN_OUT": "{agentName} Se desconectou"
     },
     "TEAM": {
-      "ADD": "{agentName} criou um time (#{id})",
-      "EDIT": "{agentName} atualizou um time (#{id})",
-      "DELETE": "{agentName} excluiu um time (#{id})"
+      "ADD": "{agentName} criou uma etapa/time (#{id})",
+      "EDIT": "{agentName} atualizou uma etapa/time (#{id})",
+      "DELETE": "{agentName} excluiu uma etapa/time (#{id})"
     },
     "MACRO": {
       "ADD": "{agentName} criou uma nova macro (#{id})",
@@ -64,8 +64,8 @@
       "REMOVE": "{agentName} removeu {user} da caixa de entrada (#{inbox_id})"
     },
     "TEAM_MEMBER": {
-      "ADD": "{agentName} adicionou {user} ao time (#{team_id})",
-      "REMOVE": "{agentName} removeu {user} do time (#{team_id})"
+      "ADD": "{agentName} adicionou {user} à etapa/time (#{team_id})",
+      "REMOVE": "{agentName} removeu {user} da etapa/time (#{team_id})"
     },
     "ACCOUNT": {
       "EDIT": "O {agentName} atualizou a configuração da conta (#{id})"

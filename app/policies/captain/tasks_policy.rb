@@ -18,4 +18,8 @@ class Captain::TasksPolicy < ApplicationPolicy
   def follow_up?
     true
   end
+
+  def generate_follow_up_workflow?
+    true
+  end
 end

@@ -17,6 +17,7 @@ json.timezone resource.timezone
 json.callback_webhook_url resource.callback_webhook_url
 json.allow_messages_after_resolved resource.allow_messages_after_resolved
 json.lock_to_single_conversation resource.lock_to_single_conversation
+json.sign_with_agent_name resource.sign_with_agent_name
 json.sender_name_type resource.sender_name_type
 json.business_name resource.business_name
 

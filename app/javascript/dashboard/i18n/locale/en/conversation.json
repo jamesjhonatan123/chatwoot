@@ -120,7 +120,7 @@
     },
     "MENTION": {
       "AGENTS": "Agents",
-      "TEAMS": "Teams"
+      "TEAMS": "Stages/Teams"
     },
     "CUSTOM_SNOOZE": {
       "TITLE": "Snooze until",
@@ -164,7 +164,7 @@
       "ASSIGN_AGENT": "Assign agent",
       "ASSIGN_LABEL": "Assign label",
       "AGENTS_LOADING": "Loading agents...",
-      "ASSIGN_TEAM": "Assign team",
+      "ASSIGN_TEAM": "Assign stage/team",
       "DELETE": "Delete conversation",
       "OPEN_IN_NEW_TAB": "Open in new tab",
       "COPY_LINK": "Copy conversation link",
@@ -183,8 +183,8 @@
           "FAILED": "Couldn't remove label. Please try again."
         },
         "TEAM_ASSIGNMENT": {
-          "SUCCESFUL": "Assigned team \"{team}\" to conversation id {conversationId}",
-          "FAILED": "Couldn't assign team. Please try again."
+          "SUCCESFUL": "Assigned stage/team \"{team}\" to conversation id {conversationId}",
+          "FAILED": "Couldn't assign stage/team. Please try again."
         }
       }
     },
@@ -256,7 +256,7 @@
     "CHANGE_AGENT_FAILED": "Assignee change failed",
     "ASSIGN_LABEL_SUCCESFUL": "Label assigned successfully",
     "ASSIGN_LABEL_FAILED": "Label assignment failed",
-    "CHANGE_TEAM": "Conversation team changed",
+    "CHANGE_TEAM": "Conversation stage/team changed",
     "SUCCESS_DELETE_CONVERSATION": "Conversation deleted successfully",
     "FAIL_DELETE_CONVERSATION": "Couldn't delete conversation! Try again",
     "FILE_SIZE_LIMIT": "File exceeds the {MAXIMUM_SUPPORTED_FILE_UPLOAD_SIZE} MB attachment limit",
@@ -352,7 +352,7 @@
   "CONVERSATION_SIDEBAR": {
     "ASSIGNEE_LABEL": "Assigned Agent",
     "SELF_ASSIGN": "Assign to me",
-    "TEAM_LABEL": "Assigned Team",
+    "TEAM_LABEL": "Assigned Stage/Team",
     "SELECT": {
       "PLACEHOLDER": "None"
     },
@@ -365,9 +365,33 @@
       "CONTACT_ATTRIBUTES": "Contact Attributes",
       "PREVIOUS_CONVERSATION": "Previous Conversations",
       "MACROS": "Macros",
+      "SCHEDULED_MESSAGES": "Scheduled Messages",
       "LINEAR_ISSUES": "Linked Linear Issues",
       "SHOPIFY_ORDERS": "Shopify Orders",
       "SHARED_FILES": "Attachments"
+    },
+    "SCHEDULED_MESSAGES": {
+      "DESCRIPTION": "Schedule a message to be sent later in this conversation.",
+      "SCHEDULE": "Schedule",
+      "SCHEDULE_TOOLTIP": "Schedule message",
+      "SCHEDULE_TEMPLATE": "Schedule",
+      "MODAL_TITLE": "Schedule message",
+      "MODAL_SUBTITLE": "Choose when this message should be sent.",
+      "MODAL_SUBTITLE_PRIVATE": "This will be scheduled as a private note (only visible to agents).",
+      "DATETIME_LABEL": "Send at",
+      "PENDING_TITLE": "Pending scheduled messages",
+      "TEMPLATE_BADGE": "WhatsApp template",
+      "CONTENT_PLACEHOLDER": "Write the message to send...",
+      "PRIVATE_NOTE": "Send as private note",
+      "PRIVATE_BADGE": "Private note",
+      "CANCEL": "Cancel",
+      "CONFIRM": "Confirm schedule",
+      "CANCEL_SCHEDULE": "Cancel schedule",
+      "EMPTY": "No scheduled messages yet.",
+      "CREATE_SUCCESS": "Message scheduled successfully.",
+      "CREATE_ERROR": "Couldn't schedule the message. Please try again.",
+      "CANCEL_SUCCESS": "Scheduled message cancelled.",
+      "CANCEL_ERROR": "Couldn't cancel the scheduled message. Please try again."
     },
     "SHARED_FILES": {
       "EMPTY": "No attachments yet",

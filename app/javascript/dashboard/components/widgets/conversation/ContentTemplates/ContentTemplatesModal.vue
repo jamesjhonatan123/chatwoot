@@ -62,7 +62,7 @@ const onClose = () => {
       :header-title="$t('CONTENT_TEMPLATES.MODAL.TITLE')"
       :header-content="modalHeaderContent"
     />
-    <div class="px-8 py-6 row">
+    <div class="px-4 py-4 sm:px-8 sm:py-6 row">
       <TemplatesPicker
         v-if="!selectedContentTemplate"
         :inbox-id="inboxId"

@@ -102,6 +102,22 @@ class TasksAPI extends ApiClient {
       { signal }
     );
   }
+
+  /**
+   * Generates a follow-up workflow from a natural language prompt.
+   * @param {Object} options
+   * @param {string} options.prompt
+   * @param {string} [options.language]
+   * @param {AbortSignal} [signal]
+   * @returns {Promise}
+   */
+  generateFollowUpWorkflow({ prompt, language }, signal) {
+    return axios.post(
+      `${this.url}/generate_follow_up_workflow`,
+      { prompt, language },
+      { signal }
+    );
+  }
 }
 
 export default new TasksAPI();

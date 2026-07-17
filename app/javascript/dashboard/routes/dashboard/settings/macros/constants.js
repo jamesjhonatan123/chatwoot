@@ -65,6 +65,16 @@ export const MACRO_ACTION_TYPES = [
     inputType: 'textarea',
   },
   {
+    key: 'start_follow_up',
+    label: 'START_FOLLOW_UP',
+    inputType: 'search_select',
+  },
+  {
+    key: 'cancel_follow_ups',
+    label: 'CANCEL_FOLLOW_UPS',
+    inputType: null,
+  },
+  {
     key: 'change_priority',
     label: 'CHANGE_PRIORITY',
     inputType: 'search_select',

@@ -41,6 +41,7 @@ import snooze from './snooze.json';
 import teamsSettings from './teamsSettings.json';
 import webhooks from './webhooks.json';
 import whatsappTemplates from './whatsappTemplates.json';
+import followUps from './followUps.json';
 import kanban from './kanban.json';
 import yearInReview from './yearInReview.json';
 
@@ -65,6 +66,7 @@ export default {
   ...customRole,
   ...datePicker,
   ...emoji,
+  ...followUps,
   ...general,
   ...generalSettings,
   ...helpCenter,

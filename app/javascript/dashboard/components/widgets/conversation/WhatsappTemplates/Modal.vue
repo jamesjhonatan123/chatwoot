@@ -16,7 +16,7 @@ export default {
       default: undefined,
     },
   },
-  emits: ['onSend', 'cancel', 'update:show'],
+  emits: ['onSend', 'onSchedule', 'cancel', 'update:show'],
   data() {
     return {
       selectedWaTemplate: null,
@@ -49,7 +49,11 @@ export default {
     onSendMessage(message) {
       this.$emit('onSend', message);
     },
+    onScheduleMessage(message) {
+      this.$emit('onSchedule', message);
+    },
     onClose() {
+      this.selectedWaTemplate = null;
       this.$emit('cancel');
     },
   },
@@ -62,7 +66,7 @@ export default {
       :header-title="$t('WHATSAPP_TEMPLATES.MODAL.TITLE')"
       :header-content="modalHeaderContent"
     />
-    <div class="row modal-content">
+    <div class="row modal-content !px-4 !py-4 sm:!px-8 sm:!py-6">
       <TemplatesPicker
         v-if="!selectedWaTemplate"
         :inbox-id="inboxId"
@@ -73,13 +77,8 @@ export default {
         :template="selectedWaTemplate"
         @reset-template="onResetTemplate"
         @send-message="onSendMessage"
+        @schedule-message="onScheduleMessage"
       />
     </div>
   </woot-modal>
 </template>
-
-<style scoped>
-.modal-content {
-  padding: 1.5625rem 2rem;
-}
-</style>

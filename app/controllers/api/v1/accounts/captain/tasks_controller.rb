@@ -51,6 +51,20 @@ class Api::V1::Accounts::Captain::TasksController < Api::V1::Accounts::BaseContr
     render_result(result)
   end
 
+  def generate_follow_up_workflow
+    result = Captain::FollowUpWorkflowGeneratorService.new(
+      account: Current.account,
+      prompt: params[:prompt],
+      language: params[:language]
+    ).perform
+
+    if result[:error]
+      render json: { error: result[:error] }, status: :unprocessable_content
+    else
+      render json: { workflow: result[:workflow] }
+    end
+  end
+
   private
 
   def render_result(result)

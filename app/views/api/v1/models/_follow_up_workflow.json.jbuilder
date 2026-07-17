@@ -1,0 +1,10 @@
+json.id resource.id
+json.name resource.name
+json.description resource.description
+json.trigger_mode resource.trigger_mode
+json.active resource.active
+json.system_preset resource.system_preset
+json.preset_key resource.preset_key
+json.steps resource.steps
+json.created_at resource.created_at.to_i
+json.updated_at resource.updated_at.to_i

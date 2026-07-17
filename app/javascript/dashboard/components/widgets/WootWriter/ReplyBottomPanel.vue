@@ -132,6 +132,8 @@ export default {
     'selectWhatsappTemplate',
     'selectContentTemplate',
     'toggleQuotedReply',
+    'scheduleMessage',
+    'followUp',
   ],
   setup(props) {
     const { setSignatureFlagForInbox, fetchSignatureFlagFromUISettings } =
@@ -406,6 +408,26 @@ export default {
     </div>
     <div class="right-wrap">
       <NextButton
+        v-tooltip.top-end="$t('FOLLOW_UPS.TOOLTIP')"
+        icon="i-lucide-corner-up-right"
+        slate
+        faded
+        sm
+        class="flex-shrink-0"
+        @click="$emit('followUp')"
+      />
+      <NextButton
+        v-tooltip.top-end="
+          $t('CONVERSATION_SIDEBAR.SCHEDULED_MESSAGES.SCHEDULE_TOOLTIP')
+        "
+        icon="i-lucide-calendar-clock"
+        slate
+        faded
+        sm
+        class="flex-shrink-0"
+        @click="$emit('scheduleMessage')"
+      />
+      <NextButton
         :label="sendButtonText"
         type="submit"
         sm
@@ -424,7 +446,7 @@ export default {
 }
 
 .right-wrap {
-  @apply flex;
+  @apply flex items-center gap-2;
 }
 
 ::v-deep .file-uploads {

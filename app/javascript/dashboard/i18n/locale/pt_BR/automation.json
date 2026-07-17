@@ -97,7 +97,7 @@
     "ACTION": {
       "DELETE_MESSAGE": "Você precisa ter pelo menos uma ação para salvar",
       "TEAM_MESSAGE_INPUT_PLACEHOLDER": "Escreva sua mensagem aqui",
-      "TEAM_DROPDOWN_PLACEHOLDER": "Selecione times",
+      "TEAM_DROPDOWN_PLACEHOLDER": "Selecione etapas/times",
       "EMAIL_INPUT_PLACEHOLDER": "Insira o e-mail",
       "URL_INPUT_PLACEHOLDER": "Insira a URL"
     },
@@ -149,12 +149,12 @@
     },
     "ACTIONS": {
       "ASSIGN_AGENT": "Atribuir ao Agente",
-      "ASSIGN_TEAM": "Atribuir um Time",
+      "ASSIGN_TEAM": "Atribuir uma Etapa/Time",
       "REMOVE_ASSIGNED_AGENT": "Remove Assigned Agent",
-      "REMOVE_ASSIGNED_TEAM": "Remover Time Atribuído",
+      "REMOVE_ASSIGNED_TEAM": "Remover Etapa/Time Atribuído",
       "ADD_LABEL": "Adicionar uma Etiqueta",
       "REMOVE_LABEL": "Remover uma Etiqueta",
-      "SEND_EMAIL_TO_TEAM": "Enviar um e-mail para o Time",
+      "SEND_EMAIL_TO_TEAM": "Enviar um e-mail para o Etapa/Time",
       "SEND_EMAIL_TRANSCRIPT": "Enviar uma transcrição por e-mail",
       "MUTE_CONVERSATION": "Silenciar Conversa",
       "SNOOZE_CONVERSATION": "Adiar Conversa",
@@ -164,6 +164,8 @@
       "SEND_MESSAGE": "Enviar Mensagem",
       "ADD_PRIVATE_NOTE": "Adicionar uma Nota Privada",
       "CHANGE_PRIORITY": "Alterar Prioridade",
+      "START_FOLLOW_UP": "Iniciar workflow de follow-up",
+      "CANCEL_FOLLOW_UPS": "Cancelar follow-ups ativos",
       "ADD_SLA": "Adicionar SLA",
       "OPEN_CONVERSATION": "Abrir conversa",
       "PENDING_CONVERSATION": "Marcar conversa como pendente"
@@ -194,7 +196,7 @@
       "COMPANY_NAME": "Empresa",
       "REFERER_LINK": "Link de origem",
       "ASSIGNEE_NAME": "Agente atribuído",
-      "TEAM_NAME": "Time",
+      "TEAM_NAME": "Etapa/Time",
       "PRIORITY": "Prioridade",
       "LABELS": "Etiquetas"
     }

@@ -133,6 +133,22 @@ class ConversationApi extends ApiClient {
     return axios.get(`${this.url}/${conversationId}/attachments`);
   }
 
+  getScheduledMessages(conversationId) {
+    return axios.get(`${this.url}/${conversationId}/scheduled_messages`);
+  }
+
+  createScheduledMessage(conversationId, payload) {
+    return axios.post(`${this.url}/${conversationId}/scheduled_messages`, {
+      scheduled_message: payload,
+    });
+  }
+
+  deleteScheduledMessage(conversationId, id) {
+    return axios.delete(
+      `${this.url}/${conversationId}/scheduled_messages/${id}`
+    );
+  }
+
   getInboxAssistant(conversationId) {
     return axios.get(`${this.url}/${conversationId}/inbox_assistant`);
   }

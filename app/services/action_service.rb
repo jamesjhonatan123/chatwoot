@@ -93,6 +93,28 @@ class ActionService
     end
   end
 
+  def start_follow_up(params)
+    workflow_id = params.is_a?(Array) ? params[0] : params
+    return if workflow_id.blank?
+
+    FollowUpWorkflow.ensure_presets_for!(@account)
+    workflow = @account.follow_up_workflows.active.find_by(id: workflow_id)
+    return if workflow.blank?
+
+    user = Current.user || @conversation.assignee || @account.administrators.first
+    return if user.blank?
+
+    FollowUps::StartService.new(
+      conversation: @conversation,
+      user: user,
+      workflow: workflow
+    ).perform
+  end
+
+  def cancel_follow_ups(_params)
+    @conversation.follow_up_runs.active.find_each { |run| run.cancel!(reason: 'cancelled_by_action') }
+  end
+
   private
 
   def last_responding_agent_id
