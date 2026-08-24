@@ -19,14 +19,16 @@ class Whatsapp::PhoneNumberNormalizationService
     normalizer = find_normalizer_for_country(clean_number)
     return raw_number unless normalizer
 
-    # Normalize the clean number
-    normalized_clean_number = normalizer.normalize(clean_number)
+    # Try every shape the subscriber can be stored as, most-canonical first.
+    # Checking a single shape is what splits one person into two contacts: the
+    # inbound number gets normalized one way while the contact_inbox already
+    # exists in the other.
+    normalizer.variants(clean_number).each do |candidate|
+      existing_contact_inbox = find_existing_contact_inbox(format_for_provider(candidate, provider))
+      return existing_contact_inbox.source_id if existing_contact_inbox
+    end
 
-    # Format for provider and check for existing contact
-    provider_format = format_for_provider(normalized_clean_number, provider)
-    existing_contact_inbox = find_existing_contact_inbox(provider_format)
-
-    existing_contact_inbox&.source_id || raw_number
+    raw_number
   end
 
   private

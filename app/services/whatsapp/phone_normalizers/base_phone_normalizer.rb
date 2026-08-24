@@ -11,6 +11,13 @@ class Whatsapp::PhoneNormalizers::BasePhoneNormalizer
     raise NotImplementedError, 'Subclasses must implement #normalize'
   end
 
+  # Shapes the same subscriber can be stored as, most-canonical first.
+  # Contact lookup must try all of them: a number normalized one way still has
+  # to find a contact_inbox that was created in the other shape.
+  def variants(waid)
+    [normalize(waid), waid].uniq
+  end
+
   private
 
   def country_code_pattern

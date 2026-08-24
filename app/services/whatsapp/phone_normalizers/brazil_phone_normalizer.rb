@@ -18,6 +18,20 @@ class Whatsapp::PhoneNormalizers::BrazilPhoneNormalizer < Whatsapp::PhoneNormali
     normalized_number
   end
 
+  # Brazilian mobiles live in the wild in both shapes: 55 + DDD + 9 + 8 digits
+  # (current) and 55 + DDD + 8 digits (pre-2012 accounts, which is what WhatsApp
+  # still uses as the JID for most of them). Looking up only one shape splits the
+  # same person into two contacts.
+  def variants(waid)
+    return [waid] unless handles_country?(waid)
+
+    ddd = waid[COUNTRY_CODE_LENGTH, DDD_LENGTH].to_s
+    number = waid[(COUNTRY_CODE_LENGTH + DDD_LENGTH)..].to_s
+    bare = number.length == 9 && number.start_with?('9') ? number[1..] : number
+
+    ["55#{ddd}9#{bare}", "55#{ddd}#{bare}", waid].uniq
+  end
+
   private
 
   def country_code_pattern
