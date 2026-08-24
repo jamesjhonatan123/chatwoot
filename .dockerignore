@@ -11,6 +11,8 @@ tmp
 .codeclimate.yml
 public/packs
 node_modules
+.pnpm-store
+coverage
 vendor/bundle
 .DS_Store
 *.swp
