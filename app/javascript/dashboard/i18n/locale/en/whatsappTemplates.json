@@ -41,7 +41,10 @@
       "COUPON_CODE": "Enter coupon code (max 15 chars)",
       "MEDIA_URL_LABEL": "Enter {type} URL",
       "DOCUMENT_NAME_PLACEHOLDER": "Enter document filename (e.g., Invoice_2025.pdf)",
-      "BUTTON_PARAMETER": "Enter button parameter"
+      "BUTTON_PARAMETER": "Enter button parameter",
+      "PAYMENT_LINK_URI": "Enter payment link URL (e.g., https://example.com/pay/123)",
+      "PIX_DYNAMIC_CODE": "Enter Pix dynamic code for this customer",
+      "BOLETO_DIGITABLE_LINE": "Enter Boleto digitable line"
     }
   }
 }

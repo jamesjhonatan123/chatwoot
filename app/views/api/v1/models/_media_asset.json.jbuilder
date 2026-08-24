@@ -1,0 +1,14 @@
+json.id resource.id
+json.account_id resource.account_id
+json.user_id resource.user_id
+json.file_type resource.file_type
+json.file_name resource.file_name
+json.title resource.title
+json.description resource.description
+json.content_type resource.content_type
+json.byte_size resource.byte_size
+json.file_url resource.file_url
+json.thumb_url resource.thumb_url
+json.blob_signed_id resource.blob_signed_id
+json.created_at resource.created_at.to_i
+json.updated_at resource.updated_at.to_i

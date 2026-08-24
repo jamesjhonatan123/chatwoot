@@ -3,6 +3,8 @@ import {
   buildTemplateParameters,
   processVariable,
   allKeysRequired,
+  isButtonParameterComplete,
+  buildPaymentRequestButtonParameter,
 } from '../templateHelper';
 import { templates } from '../../store/modules/specs/inboxes/templateFixtures';
 
@@ -207,6 +209,98 @@ describe('templateHelper', () => {
           parameter: '',
         },
       ]);
+    });
+
+    it('should handle Brazil payment_request buttons', () => {
+      const paymentTemplate = {
+        category: 'UTILITY',
+        components: [
+          {
+            type: 'BODY',
+            text: 'Olá, {{first_name}}! Valor {{order_total}}',
+          },
+          {
+            type: 'BUTTONS',
+            buttons: [
+              { type: 'QUICK_REPLY', text: 'Reagendar pagamento' },
+              {
+                type: 'PAYMENT_REQUEST',
+                text: 'Open payment link',
+                payment_setting: {
+                  type: 'PAYMENT_LINK',
+                  payment_link: {
+                    uri: 'https://loc.fit/pagamento/{{ id }}',
+                  },
+                },
+              },
+              {
+                type: 'PAYMENT_REQUEST',
+                text: 'Copy Pix code',
+                payment_setting: {
+                  type: 'PIX_DYNAMIC_CODE',
+                  pix_dynamic_code: { code: 'sample' },
+                },
+              },
+            ],
+          },
+        ],
+      };
+
+      const result = buildTemplateParameters(paymentTemplate, false);
+
+      expect(result.body).toEqual({ first_name: '', order_total: '' });
+      expect(result.buttons[1]).toEqual({
+        type: 'payment_request',
+        index: 1,
+        label: 'Open payment link',
+        payment_setting: {
+          type: 'payment_link',
+          payment_link: { uri: '' },
+        },
+      });
+      expect(result.buttons[2]).toEqual({
+        type: 'payment_request',
+        index: 2,
+        label: 'Copy Pix code',
+        payment_setting: {
+          type: 'pix_dynamic_code',
+          pix_dynamic_code: { code: '' },
+        },
+      });
+      expect(isButtonParameterComplete(result.buttons[1])).toBe(false);
+      expect(
+        isButtonParameterComplete({
+          ...result.buttons[1],
+          payment_setting: {
+            type: 'payment_link',
+            payment_link: { uri: 'https://loc.fit/pagamento/1' },
+          },
+        })
+      ).toBe(true);
+    });
+
+    it('should build payment request button parameter from Meta template button', () => {
+      const button = buildPaymentRequestButtonParameter(
+        {
+          type: 'PAYMENT_REQUEST',
+          text: 'Copy Boleto code',
+          payment_setting: {
+            type: 'boleto',
+            boleto: { digitable_line: 'sample' },
+          },
+        },
+        0
+      );
+
+      expect(button).toEqual({
+        type: 'payment_request',
+        index: 0,
+        label: 'Copy Boleto code',
+        payment_setting: {
+          type: 'boleto',
+          boleto: { digitable_line: '' },
+        },
+      });
     });
 
     it('should handle templates with document headers', () => {

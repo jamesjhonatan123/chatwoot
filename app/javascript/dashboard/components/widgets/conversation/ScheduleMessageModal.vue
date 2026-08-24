@@ -5,6 +5,7 @@ import { useAlert } from 'dashboard/composables';
 import { useStore, useMapGetter } from 'dashboard/composables/store';
 import NextButton from 'dashboard/components-next/button/Button.vue';
 import Spinner from 'dashboard/components-next/spinner/Spinner.vue';
+import MediaLibraryPicker from 'dashboard/components/widgets/mediaLibrary/MediaLibraryPicker.vue';
 
 const props = defineProps({
   show: {
@@ -36,6 +37,10 @@ const { t } = useI18n();
 const store = useStore();
 
 const scheduledAt = ref('');
+const showMediaPicker = ref(false);
+const selectedMedia = ref(null);
+const captionOverride = ref('');
+
 const localShow = computed({
   get: () => props.show,
   set: value => {
@@ -63,10 +68,18 @@ const minDateTime = computed(() => {
   return local.toISOString().slice(0, 16);
 });
 
-const previewContent = computed(() => props.content?.trim() || '');
+const previewContent = computed(() => {
+  if (selectedMedia.value) {
+    return (captionOverride.value || props.content || '').trim();
+  }
+  return props.content?.trim() || '';
+});
+
 const canSubmit = computed(
   () =>
-    previewContent.value.length > 0 && scheduledAt.value && !isCreating.value
+    (previewContent.value.length > 0 || selectedMedia.value) &&
+    scheduledAt.value &&
+    !isCreating.value
 );
 
 const formatScheduledAt = timestamp => {
@@ -86,6 +99,8 @@ watch(
   visible => {
     if (!visible) return;
     scheduledAt.value = minDateTime.value;
+    selectedMedia.value = null;
+    captionOverride.value = props.content || '';
     store.dispatch('scheduledMessages/get', {
       conversationId: props.conversationId,
     });
@@ -93,6 +108,19 @@ watch(
 );
 
 const onClose = () => emit('close');
+
+const onMediaSelected = ({ mediaAssetId, caption, asset }) => {
+  selectedMedia.value = {
+    id: mediaAssetId,
+    caption,
+    ...asset,
+  };
+  captionOverride.value = caption || captionOverride.value;
+};
+
+const clearMedia = () => {
+  selectedMedia.value = null;
+};
 
 const onConfirm = async () => {
   if (!canSubmit.value) return;
@@ -104,6 +132,7 @@ const onConfirm = async () => {
       private: props.isPrivate,
       scheduledAt: new Date(scheduledAt.value).toISOString(),
       templateParams: props.templateParams || {},
+      mediaAssetIds: selectedMedia.value ? [selectedMedia.value.id] : [],
     });
     useAlert(t('CONVERSATION_SIDEBAR.SCHEDULED_MESSAGES.CREATE_SUCCESS'));
     emit('scheduled');
@@ -138,7 +167,7 @@ const onCancel = async id => {
     />
     <div class="flex flex-col gap-4 px-4 pb-6 sm:px-8">
       <div
-        v-if="previewContent"
+        v-if="previewContent || selectedMedia"
         class="p-3 text-sm whitespace-pre-wrap break-words rounded-lg text-n-slate-12"
         :class="
           isPrivate
@@ -161,7 +190,55 @@ const onCancel = async id => {
             {{ $t('CONVERSATION_SIDEBAR.SCHEDULED_MESSAGES.TEMPLATE_BADGE') }}
           </span>
         </div>
+        <div v-if="selectedMedia" class="flex items-center gap-2 mb-2">
+          <img
+            v-if="
+              selectedMedia.file_type === 'image' &&
+              (selectedMedia.thumb_url || selectedMedia.file_url)
+            "
+            :src="selectedMedia.thumb_url || selectedMedia.file_url"
+            :alt="selectedMedia.file_name"
+            class="object-cover w-12 h-12 rounded"
+          />
+          <span class="text-sm text-n-slate-12">
+            {{
+              $t('MEDIA_LIBRARY.SELECTED', {
+                name: selectedMedia.file_name || `#${selectedMedia.id}`,
+              })
+            }}
+          </span>
+          <NextButton
+            xs
+            faded
+            ruby
+            :label="$t('MEDIA_LIBRARY.REMOVE')"
+            @click="clearMedia"
+          />
+        </div>
         {{ previewContent }}
+      </div>
+
+      <div v-if="!isTemplate" class="flex flex-wrap gap-2">
+        <NextButton
+          xs
+          faded
+          slate
+          icon="i-lucide-images"
+          :label="$t('MEDIA_LIBRARY.ATTACH')"
+          @click="showMediaPicker = true"
+        />
+      </div>
+
+      <div v-if="selectedMedia && !isTemplate" class="flex flex-col gap-1">
+        <label class="text-xs text-n-slate-11">
+          {{ $t('MEDIA_LIBRARY.CAPTION_LABEL') }}
+        </label>
+        <textarea
+          v-model="captionOverride"
+          rows="3"
+          class="px-3 py-2 text-sm rounded-lg outline outline-1 outline-n-weak bg-n-alpha-black2 text-n-slate-12"
+          :placeholder="$t('MEDIA_LIBRARY.CAPTION_PLACEHOLDER')"
+        />
       </div>
 
       <div class="flex flex-col gap-2">
@@ -240,6 +317,12 @@ const onCancel = async id => {
                     $t('CONVERSATION_SIDEBAR.SCHEDULED_MESSAGES.TEMPLATE_BADGE')
                   }}
                 </span>
+                <span
+                  v-if="message.media_asset_ids?.length"
+                  class="inline-block px-1.5 py-0.5 text-xs rounded bg-n-slate-3 text-n-slate-11"
+                >
+                  {{ $t('MEDIA_LIBRARY.ATTACH') }}
+                </span>
               </div>
               <p
                 class="mb-0 text-sm whitespace-pre-wrap break-words text-n-slate-12"
@@ -262,4 +345,13 @@ const onCancel = async id => {
       </div>
     </div>
   </woot-modal>
+
+  <MediaLibraryPicker
+    v-if="showMediaPicker"
+    :show="showMediaPicker"
+    :initial-caption="captionOverride || content"
+    :selected-media-asset-id="selectedMedia?.id"
+    @close="showMediaPicker = false"
+    @select="onMediaSelected"
+  />
 </template>

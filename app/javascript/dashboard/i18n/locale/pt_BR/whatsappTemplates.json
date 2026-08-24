@@ -41,7 +41,10 @@
       "COUPON_CODE": "Digite o código do cupom (máx. 15 caracteres)",
       "MEDIA_URL_LABEL": "Digite a URL {type}",
       "DOCUMENT_NAME_PLACEHOLDER": "Informe o nome do arquivo do documento (ex.: Comprovante_2025.pdf)",
-      "BUTTON_PARAMETER": "Insira o parâmetro do botão"
+      "BUTTON_PARAMETER": "Insira o parâmetro do botão",
+      "PAYMENT_LINK_URI": "Informe a URL do link de pagamento (ex.: https://loc.fit/pagamento/123)",
+      "PIX_DYNAMIC_CODE": "Informe o código Pix dinâmico deste cliente",
+      "BOLETO_DIGITABLE_LINE": "Informe a linha digitável do boleto"
     }
   }
 }

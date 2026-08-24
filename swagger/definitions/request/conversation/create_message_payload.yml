@@ -85,9 +85,38 @@ properties:
               properties:
                 type:
                   type: string
-                  enum: ['url', 'copy_code']
-                  description: Type of button parameter
+                  enum: ['url', 'copy_code', 'payment_request']
+                  description: Type of button parameter. Use payment_request for Brazil Payment Request CTA (Pix, Payment Link, Boleto).
                 parameter:
                   type: string
-                  description: Dynamic parameter value for the button
+                  description: Dynamic parameter value for url/copy_code buttons
                   example: 'SSFSDFSD'
+                index:
+                  type: integer
+                  description: Optional WhatsApp button index when the array position differs from the Meta button index
+                payment_setting:
+                  type: object
+                  description: Required for payment_request buttons (Brazil Payment Request CTA)
+                  properties:
+                    type:
+                      type: string
+                      enum: ['payment_link', 'pix_dynamic_code', 'boleto']
+                    payment_link:
+                      type: object
+                      properties:
+                        uri:
+                          type: string
+                          format: uri
+                          example: 'https://example.com/pay/123'
+                    pix_dynamic_code:
+                      type: object
+                      properties:
+                        code:
+                          type: string
+                          example: '00020101021226700014br.gov.bcb.pix...'
+                    boleto:
+                      type: object
+                      properties:
+                        digitable_line:
+                          type: string
+                          example: '03399026944140000002628346101018898510000008848'

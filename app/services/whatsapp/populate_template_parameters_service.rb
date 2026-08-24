@@ -13,7 +13,7 @@ class Whatsapp::PopulateTemplateParametersService
   def build_button_parameter(button)
     return { type: 'text', text: '' } if button.blank?
 
-    case button['type']
+    case button['type'].to_s
     when 'copy_code'
       coupon_code = button['parameter'].to_s.strip
       raise ArgumentError, 'Coupon code cannot be empty' if coupon_code.blank?
@@ -23,6 +23,8 @@ class Whatsapp::PopulateTemplateParametersService
         type: 'coupon_code',
         coupon_code: coupon_code
       }
+    when 'payment_request'
+      build_payment_request_parameter(button)
     else
       # For URL buttons and other button types, treat parameter as text
       # If parameter is blank, use empty string (required for URL buttons)
@@ -45,6 +47,67 @@ class Whatsapp::PopulateTemplateParametersService
   end
 
   private
+
+  # Brazil Payment Request CTA templates (PAYMENT_REQUEST buttons).
+  # https://developers.facebook.com/documentation/business-messaging/whatsapp/payments/payments-br/payment-request-cta/
+  def build_payment_request_parameter(button)
+    payment_setting = button['payment_setting']
+    raise ArgumentError, 'payment_setting is required for payment_request buttons' if payment_setting.blank?
+
+    setting_type = normalize_payment_setting_type(payment_setting['type'])
+    raise ArgumentError, 'payment_setting.type is required' if setting_type.blank?
+
+    {
+      type: 'action',
+      action: {
+        payment_request: {
+          payment_setting: build_payment_setting_payload(setting_type, payment_setting)
+        }
+      }
+    }
+  end
+
+  def build_payment_setting_payload(setting_type, payment_setting)
+    case setting_type
+    when 'payment_link'
+      uri = payment_setting.dig('payment_link', 'uri').presence || payment_setting['uri'].to_s
+      uri = uri.to_s.strip
+      raise ArgumentError, 'payment_link.uri cannot be empty' if uri.blank?
+
+      normalized_uri = normalize_url(uri)
+      validate_url(normalized_uri)
+
+      {
+        type: 'payment_link',
+        payment_link: { uri: normalized_uri }
+      }
+    when 'pix_dynamic_code'
+      code = payment_setting.dig('pix_dynamic_code', 'code').presence || payment_setting['code'].to_s
+      code = code.to_s.strip
+      raise ArgumentError, 'pix_dynamic_code.code cannot be empty' if code.blank?
+      raise ArgumentError, 'pix_dynamic_code.code is too long (max 512 characters)' if code.length > 512
+
+      {
+        type: 'pix_dynamic_code',
+        pix_dynamic_code: { code: code }
+      }
+    when 'boleto'
+      digitable_line = payment_setting.dig('boleto', 'digitable_line').presence || payment_setting['digitable_line'].to_s
+      digitable_line = digitable_line.to_s.strip
+      raise ArgumentError, 'boleto.digitable_line cannot be empty' if digitable_line.blank?
+
+      {
+        type: 'boleto',
+        boleto: { digitable_line: digitable_line }
+      }
+    else
+      raise ArgumentError, "Unsupported payment_setting type: #{setting_type}"
+    end
+  end
+
+  def normalize_payment_setting_type(value)
+    value.to_s.strip.downcase
+  end
 
   def build_string_parameter(value)
     sanitized_value = sanitize_parameter(value)

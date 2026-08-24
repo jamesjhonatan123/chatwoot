@@ -33,17 +33,21 @@ const handleMouseDown = () => {
 };
 
 const close = () => {
+  if (!show.value) return;
   show.value = false;
   emit('close');
-  onClose();
+  onClose?.();
 };
 
 const onMouseUp = () => {
-  if (mousedDownOnBackdrop.value) {
+  if (!show.value || !mousedDownOnBackdrop.value) {
     mousedDownOnBackdrop.value = false;
-    if (closeOnBackdropClick) {
-      close();
-    }
+    return;
+  }
+
+  mousedDownOnBackdrop.value = false;
+  if (closeOnBackdropClick) {
+    close();
   }
 };
 
@@ -84,7 +88,6 @@ onMounted(() => {
               fullWidth,
             [size]: true,
           }"
-          @mouse.stop
           @mousedown="event => event.stopPropagation()"
         >
           <Button
@@ -92,8 +95,8 @@ onMounted(() => {
             ghost
             slate
             icon="i-lucide-x"
-            class="absolute z-10 ltr:right-2 rtl:left-2 top-2"
-            @click="close"
+            class="absolute z-50 ltr:right-2 rtl:left-2 top-2"
+            @click.stop="close"
           />
           <slot />
         </div>

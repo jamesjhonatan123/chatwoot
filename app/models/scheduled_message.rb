@@ -3,7 +3,8 @@
 # Table name: scheduled_messages
 #
 #  id              :bigint           not null, primary key
-#  content         :text             not null
+#  content         :text
+#  media_asset_ids :jsonb            not null
 #  private         :boolean          default(FALSE), not null
 #  scheduled_at    :datetime         not null
 #  status          :integer          default("pending"), not null
@@ -38,9 +39,10 @@ class ScheduledMessage < ApplicationRecord
 
   enum status: { pending: 0, sent: 1, cancelled: 2, failed: 3 }
 
-  validates :content, presence: true, length: { maximum: 150_000 }
+  validates :content, length: { maximum: 150_000 }, allow_blank: true
   validates :scheduled_at, presence: true
   validate :scheduled_at_must_be_future, on: :create
+  validate :content_or_media_present
 
   scope :pending_for_conversation, ->(conversation_id) { pending.where(conversation_id: conversation_id).order(:scheduled_at) }
 
@@ -55,12 +57,18 @@ class ScheduledMessage < ApplicationRecord
   def deliver!
     return unless pending?
 
+    blobs = MediaAssets::ResolveBlobsService.new(
+      account: account,
+      media_asset_ids: media_asset_ids
+    ).perform
+
     builder_params = {
       content: content,
       private: self[:private],
       message_type: 'outgoing'
     }
     builder_params[:template_params] = template_params if template_params.present?
+    builder_params[:attachments] = blobs if blobs.present?
 
     message = Messages::MessageBuilder.new(user, conversation, builder_params).perform
 
@@ -76,6 +84,12 @@ class ScheduledMessage < ApplicationRecord
   end
 
   private
+
+  def content_or_media_present
+    return if content.present? || media_asset_ids.present? || template_params.present?
+
+    errors.add(:base, 'content or media is required')
+  end
 
   def scheduled_at_must_be_future
     return if scheduled_at.blank?

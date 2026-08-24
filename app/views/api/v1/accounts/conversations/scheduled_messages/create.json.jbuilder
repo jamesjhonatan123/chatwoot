@@ -6,6 +6,7 @@ json.status @scheduled_message.status
 json.scheduled_at @scheduled_message.scheduled_at.to_i
 json.created_at @scheduled_message.created_at.to_i
 json.template_params @scheduled_message.template_params
+json.media_asset_ids @scheduled_message.media_asset_ids
 json.user do
   json.id @scheduled_message.user.id
   json.name @scheduled_message.user.name

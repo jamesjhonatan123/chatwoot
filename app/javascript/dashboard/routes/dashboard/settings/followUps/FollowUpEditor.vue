@@ -132,11 +132,21 @@ const serializeSendMessageAction = action => {
     params &&
     typeof params === 'object' &&
     !Array.isArray(params) &&
-    params.template_params
+    (params.template_params || params.media_asset_id)
   ) {
+    const payload = {
+      message: params.message || '',
+    };
+    if (params.template_params) {
+      payload.template_params = params.template_params;
+      payload.inbox_id = params.inbox_id;
+    }
+    if (params.media_asset_id) {
+      payload.media_asset_id = params.media_asset_id;
+    }
     return {
       action_name: 'send_message',
-      action_params: [params],
+      action_params: [payload],
     };
   }
 

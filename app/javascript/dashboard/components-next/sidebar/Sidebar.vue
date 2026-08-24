@@ -672,6 +672,12 @@ const menuItems = computed(() => {
           to: accountScopedRoute('macros_wrapper'),
         },
         {
+          name: 'Settings Media Library',
+          label: t('SIDEBAR.MEDIA_LIBRARY'),
+          icon: 'i-lucide-images',
+          to: accountScopedRoute('media_library_wrapper'),
+        },
+        {
           name: 'Settings Follow-ups',
           label: t('SIDEBAR.FOLLOW_UPS'),
           icon: 'i-lucide-corner-up-right',

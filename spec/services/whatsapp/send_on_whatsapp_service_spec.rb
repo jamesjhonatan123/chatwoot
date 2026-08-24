@@ -235,6 +235,73 @@ describe Whatsapp::SendOnWhatsappService do
         expect(message.reload.source_id).to eq('123456789')
       end
 
+      it 'handles Brazil payment_request button parameters' do
+        processed_params = {
+          'body' => { '1' => '3' },
+          'buttons' => [
+            nil,
+            {
+              'type' => 'payment_request',
+              'index' => 1,
+              'payment_setting' => {
+                'type' => 'payment_link',
+                'payment_link' => { 'uri' => 'https://loc.fit/pagamento/22327' }
+              }
+            },
+            {
+              'type' => 'payment_request',
+              'index' => 2,
+              'payment_setting' => {
+                'type' => 'pix_dynamic_code',
+                'pix_dynamic_code' => { 'code' => '00020101021226700014br.gov.bcb.pix' }
+              }
+            }
+          ]
+        }
+        button_template_params = build_sample_template_params(processed_params)
+        message = create_message_with_template('', button_template_params)
+
+        components = [
+          { type: 'body', parameters: [{ type: 'text', text: '3' }] },
+          {
+            type: 'button',
+            sub_type: 'payment_request',
+            index: 1,
+            parameters: [{
+              type: 'action',
+              action: {
+                payment_request: {
+                  payment_setting: {
+                    type: 'payment_link',
+                    payment_link: { uri: 'https://loc.fit/pagamento/22327' }
+                  }
+                }
+              }
+            }]
+          },
+          {
+            type: 'button',
+            sub_type: 'payment_request',
+            index: 2,
+            parameters: [{
+              type: 'action',
+              action: {
+                payment_request: {
+                  payment_setting: {
+                    type: 'pix_dynamic_code',
+                    pix_dynamic_code: { code: '00020101021226700014br.gov.bcb.pix' }
+                  }
+                }
+              }
+            }]
+          }
+        ]
+        stub_sample_template_request(components)
+
+        described_class.new(message: message).perform
+        expect(message.reload.source_id).to eq('123456789')
+      end
+
       it 'processes template parameters correctly via integration' do
         processed_params = {
           'body' => { '1' => '5' },

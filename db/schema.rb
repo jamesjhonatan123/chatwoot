@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_07_17_193000) do
+ActiveRecord::Schema[7.1].define(version: 2026_07_17_201000) do
   # These extensions should be enabled to support this database
   enable_extension "pg_stat_statements"
   enable_extension "pg_trgm"
@@ -1031,6 +1031,23 @@ ActiveRecord::Schema[7.1].define(version: 2026_07_17_193000) do
     t.index ["account_id"], name: "index_macros_on_account_id"
   end
 
+  create_table "media_assets", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.bigint "user_id", null: false
+    t.integer "file_type", default: 0, null: false
+    t.string "file_name", default: "", null: false
+    t.string "title"
+    t.text "description"
+    t.bigint "byte_size", default: 0, null: false
+    t.string "content_type", default: "", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id", "created_at"], name: "index_media_assets_on_account_id_and_created_at"
+    t.index ["account_id", "file_type"], name: "index_media_assets_on_account_id_and_file_type"
+    t.index ["account_id"], name: "index_media_assets_on_account_id"
+    t.index ["user_id"], name: "index_media_assets_on_user_id"
+  end
+
   create_table "mentions", force: :cascade do |t|
     t.bigint "user_id", null: false
     t.bigint "conversation_id", null: false
@@ -1236,7 +1253,7 @@ ActiveRecord::Schema[7.1].define(version: 2026_07_17_193000) do
     t.bigint "account_id", null: false
     t.bigint "conversation_id", null: false
     t.bigint "user_id", null: false
-    t.text "content", null: false
+    t.text "content"
     t.boolean "private", default: false, null: false
     t.datetime "scheduled_at", null: false
     t.integer "status", default: 0, null: false
@@ -1244,6 +1261,7 @@ ActiveRecord::Schema[7.1].define(version: 2026_07_17_193000) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.jsonb "template_params", default: {}, null: false
+    t.jsonb "media_asset_ids", default: [], null: false
     t.index ["account_id"], name: "index_scheduled_messages_on_account_id"
     t.index ["conversation_id", "status"], name: "index_scheduled_messages_on_conversation_id_and_status"
     t.index ["conversation_id"], name: "index_scheduled_messages_on_conversation_id"
@@ -1406,6 +1424,8 @@ ActiveRecord::Schema[7.1].define(version: 2026_07_17_193000) do
   add_foreign_key "follow_up_steps", "follow_up_runs"
   add_foreign_key "follow_up_workflows", "accounts"
   add_foreign_key "inboxes", "portals"
+  add_foreign_key "media_assets", "accounts"
+  add_foreign_key "media_assets", "users"
   add_foreign_key "scheduled_messages", "accounts"
   add_foreign_key "scheduled_messages", "conversations"
   add_foreign_key "scheduled_messages", "users"

@@ -1,5 +1,6 @@
 <script>
 import { ref } from 'vue';
+import { vOnClickOutside } from '@vueuse/components';
 import { useUISettings } from 'dashboard/composables/useUISettings';
 import { useKeyboardEvents } from 'dashboard/composables/useKeyboardEvents';
 import FileUpload from 'vue-upload-component';
@@ -12,10 +13,14 @@ import VideoCallButton from '../VideoCallButton.vue';
 import { INBOX_TYPES } from 'dashboard/helper/inbox';
 import { mapGetters } from 'vuex';
 import NextButton from 'dashboard/components-next/button/Button.vue';
+import DropdownMenu from 'dashboard/components-next/dropdown-menu/DropdownMenu.vue';
 
 export default {
   name: 'ReplyBottomPanel',
-  components: { NextButton, FileUpload, VideoCallButton },
+  components: { NextButton, FileUpload, VideoCallButton, DropdownMenu },
+  directives: {
+    onClickOutside: vOnClickOutside,
+  },
   mixins: [inboxMixin],
   props: {
     isNote: {
@@ -134,27 +139,21 @@ export default {
     'toggleQuotedReply',
     'scheduleMessage',
     'followUp',
+    'openMediaLibrary',
   ],
   setup(props) {
     const { setSignatureFlagForInbox, fetchSignatureFlagFromUISettings } =
       useUISettings();
 
     const uploadRef = ref(false);
+    const showAttachMenu = ref(false);
 
     const keyboardEvents = {
       '$mod+Alt+KeyA': {
         action: () => {
           // Skip if editor is disabled (e.g., WhatsApp 24-hour window expired)
           if (props.isEditorDisabled) return;
-
-          // TODO: This is really hacky, we need to replace the file picker component with
-          // a custom one, where the logic and the component markup is isolated.
-          // Once we have the custom component, we can remove the hacky logic below.
-
-          const uploadTriggerButton = document.querySelector(
-            '#conversationAttachment'
-          );
-          if (uploadTriggerButton) uploadTriggerButton.click();
+          showAttachMenu.value = !showAttachMenu.value;
         },
         allowOnFocusedInput: true,
       },
@@ -166,6 +165,7 @@ export default {
       setSignatureFlagForInbox,
       fetchSignatureFlagFromUISettings,
       uploadRef,
+      showAttachMenu,
     };
   },
   data() {
@@ -187,6 +187,20 @@ export default {
     showAttachButton() {
       if (this.isEditorDisabled) return false;
       return this.showFileUpload || this.isNote;
+    },
+    attachMenuItems() {
+      return [
+        {
+          action: 'library',
+          label: this.$t('CONVERSATION.REPLYBOX.ATTACH_FROM_LIBRARY'),
+          icon: 'i-lucide-images',
+        },
+        {
+          action: 'device',
+          label: this.$t('CONVERSATION.REPLYBOX.ATTACH_FROM_DEVICE'),
+          icon: 'i-lucide-monitor-smartphone',
+        },
+      ];
     },
     showAudioRecorderButton() {
       if (this.isEditorDisabled) return false;
@@ -281,6 +295,28 @@ export default {
     toggleInsertArticle() {
       this.$emit('toggleInsertArticle');
     },
+    toggleAttachMenu() {
+      this.showAttachMenu = !this.showAttachMenu;
+    },
+    closeAttachMenu() {
+      this.showAttachMenu = false;
+    },
+    onAttachMenuAction(item) {
+      this.closeAttachMenu();
+      if (item.action === 'library') {
+        this.$emit('openMediaLibrary');
+        return;
+      }
+      if (item.action === 'device') {
+        this.openDeviceFilePicker();
+      }
+    },
+    openDeviceFilePicker() {
+      const uploadTriggerButton = document.querySelector(
+        '#conversationAttachment'
+      );
+      if (uploadTriggerButton) uploadTriggerButton.click();
+    },
   },
 };
 </script>
@@ -297,31 +333,41 @@ export default {
         sm
         @click="toggleEmojiPicker"
       />
-      <FileUpload
+      <div
         v-if="showAttachButton"
-        ref="uploadRef"
-        v-tooltip.top-end="$t('CONVERSATION.REPLYBOX.TIP_ATTACH_ICON')"
-        input-id="conversationAttachment"
-        :size="4096 * 4096"
-        :accept="allowedFileTypes"
-        :multiple="enableMultipleFileUpload"
-        :drop="enableDragAndDrop"
-        :drop-directory="false"
-        :data="{
-          direct_upload_url: '/rails/active_storage/direct_uploads',
-          direct_upload: true,
-        }"
-        @input-file="onFileUpload"
+        v-on-click-outside="closeAttachMenu"
+        class="relative"
       >
         <NextButton
-          v-if="showAttachButton"
           v-tooltip.top-end="$t('CONVERSATION.REPLYBOX.TIP_ATTACH_ICON')"
           icon="i-ph-paperclip"
           slate
           faded
           sm
+          @click="toggleAttachMenu"
         />
-      </FileUpload>
+        <DropdownMenu
+          v-if="showAttachMenu"
+          :menu-items="attachMenuItems"
+          class="bottom-9 left-0 z-50 w-56"
+          @action="onAttachMenuAction"
+        />
+        <FileUpload
+          ref="uploadRef"
+          class="absolute w-px h-px overflow-hidden opacity-0 pointer-events-none"
+          input-id="conversationAttachment"
+          :size="4096 * 4096"
+          :accept="allowedFileTypes"
+          :multiple="enableMultipleFileUpload"
+          :drop="enableDragAndDrop"
+          :drop-directory="false"
+          :data="{
+            direct_upload_url: '/rails/active_storage/direct_uploads',
+            direct_upload: true,
+          }"
+          @input-file="onFileUpload"
+        />
+      </div>
       <NextButton
         v-if="showAudioRecorderButton"
         v-tooltip.top-end="$t('CONVERSATION.REPLYBOX.TIP_AUDIORECORDER_ICON')"

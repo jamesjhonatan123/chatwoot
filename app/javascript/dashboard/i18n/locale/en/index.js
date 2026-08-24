@@ -27,6 +27,7 @@ import integrations from './integrations.json';
 import labelsMgmt from './labelsMgmt.json';
 import login from './login.json';
 import macros from './macros.json';
+import mediaLibrary from './mediaLibrary.json';
 import followUps from './followUps.json';
 import report from './report.json';
 import resetPassword from './resetPassword.json';
@@ -75,6 +76,7 @@ export default {
   ...labelsMgmt,
   ...login,
   ...macros,
+  ...mediaLibrary,
   ...report,
   ...resetPassword,
   ...search,

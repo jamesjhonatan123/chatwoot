@@ -1,0 +1,31 @@
+{
+  "MEDIA_LIBRARY": {
+    "HEADER": "Media library",
+    "DESCRIPTION": "Upload and reuse images and documents in macros, follow-ups and scheduled messages.",
+    "HEADER_BTN_TXT": "Upload file",
+    "SEARCH_PLACEHOLDER": "Search media...",
+    "FILTERS": {
+      "ALL": "All",
+      "IMAGE": "Images",
+      "FILE": "Documents"
+    },
+    "EMPTY": "No media yet. Upload your first file.",
+    "UPLOAD_SUCCESS": "File uploaded to the library.",
+    "UPLOAD_ERROR": "Could not upload the file.",
+    "DELETE_SUCCESS": "File deleted.",
+    "DELETE_ERROR": "Could not delete the file.",
+    "DELETE": "Delete",
+    "PICKER_TITLE": "Choose from media library",
+    "PICKER_SUBTITLE": "Select a file to attach. Optionally add a caption.",
+    "PICKER_CONFIRM": "Use selected",
+    "PICKER_CANCEL": "Cancel",
+    "CAPTION_LABEL": "Caption (optional)",
+    "CAPTION_PLACEHOLDER": "Message caption sent with the file...",
+    "SELECTED": "Selected: {name}",
+    "ATTACH": "Attach from library",
+    "CHANGE": "Change",
+    "REMOVE": "Remove attachment",
+    "NO_SELECTION": "Select a file to continue",
+    "ATTACH_SOURCE_TITLE": "Attach file"
+  }
+}

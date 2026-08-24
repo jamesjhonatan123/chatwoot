@@ -68,7 +68,9 @@ class Whatsapp::TemplateParameterConverterService
     return true if buttons.nil?
     return false unless buttons.is_a?(Array)
 
-    buttons.all? { |b| b.is_a?(Hash) && b['type'] }
+    # Sparse arrays are valid: QUICK_REPLY (no params) leaves null/blank slots
+    # while URL / COPY_CODE / PAYMENT_REQUEST buttons keep their index.
+    buttons.all? { |button| button.blank? || (button.is_a?(Hash) && button['type'].present?) }
   end
 
   def convert_legacy_to_enhanced(legacy_params, _template)

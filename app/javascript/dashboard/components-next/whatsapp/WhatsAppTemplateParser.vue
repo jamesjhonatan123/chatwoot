@@ -18,6 +18,9 @@ import {
   buildTemplateParameters,
   allKeysRequired,
   replaceTemplateVariables,
+  isButtonParameterComplete,
+  inferPaymentSettingType,
+  PAYMENT_SETTING_TYPES,
   DEFAULT_LANGUAGE,
   DEFAULT_CATEGORY,
   COMPONENT_TYPES,
@@ -85,12 +88,25 @@ const hasVariables = computed(() => {
   return bodyText.value?.match(/{{([^}]+)}}/g) !== null;
 });
 
+const hasButtonParameters = computed(() => {
+  return (
+    Array.isArray(processedParams.value.buttons) &&
+    processedParams.value.buttons.some(button => Boolean(button))
+  );
+});
+
+const showParameterForm = computed(() => {
+  return (
+    hasVariables.value || hasMediaHeader.value || hasButtonParameters.value
+  );
+});
+
 const renderedTemplate = computed(() => {
   return replaceTemplateVariables(bodyText.value, processedParams.value);
 });
 
 const isFormInvalid = computed(() => {
-  if (!hasVariables.value && !hasMediaHeader.value) return false;
+  if (!showParameterForm.value) return false;
 
   if (hasMediaHeader.value && !processedParams.value.header?.media_url) {
     return true;
@@ -105,13 +121,34 @@ const isFormInvalid = computed(() => {
 
   if (processedParams.value.buttons) {
     const hasEmptyButtonParameter = processedParams.value.buttons.some(
-      button => !button.parameter
+      button => button && !isButtonParameterComplete(button)
     );
     if (hasEmptyButtonParameter) return true;
   }
 
   return false;
 });
+
+const paymentSettingType = button => inferPaymentSettingType(button?.payment_setting);
+
+const paymentButtonLabel = (button, index) => {
+  if (button?.label) return button.label;
+  return t('WHATSAPP_TEMPLATES.PARSER.BUTTON_LABEL', { index: index + 1 });
+};
+
+const paymentFieldPlaceholder = button => {
+  const settingType = paymentSettingType(button);
+  if (settingType === PAYMENT_SETTING_TYPES.PAYMENT_LINK) {
+    return t('WHATSAPP_TEMPLATES.PARSER.PAYMENT_LINK_URI');
+  }
+  if (settingType === PAYMENT_SETTING_TYPES.PIX_DYNAMIC_CODE) {
+    return t('WHATSAPP_TEMPLATES.PARSER.PIX_DYNAMIC_CODE');
+  }
+  if (settingType === PAYMENT_SETTING_TYPES.BOLETO) {
+    return t('WHATSAPP_TEMPLATES.PARSER.BOLETO_DIGITABLE_LINE');
+  }
+  return t('WHATSAPP_TEMPLATES.PARSER.BUTTON_PARAMETER');
+};
 
 const v$ = useVuelidate(
   {
@@ -230,7 +267,7 @@ defineExpose({
       </div>
     </div>
 
-    <div v-if="hasVariables || hasMediaHeader">
+    <div v-if="showParameterForm">
       <div v-if="hasMediaHeader" class="mb-4">
         <p class="mb-2.5 text-sm font-semibold">
           {{
@@ -289,22 +326,64 @@ defineExpose({
       </div>
 
       <!-- Button Variables Section -->
-      <div v-if="processedParams.buttons">
+      <div v-if="hasButtonParameters">
         <p class="mb-2.5 text-sm font-semibold">
           {{ t('WHATSAPP_TEMPLATES.PARSER.BUTTON_PARAMETERS') }}
         </p>
-        <div
+        <template
           v-for="(button, index) in processedParams.buttons"
           :key="`button-${index}`"
-          class="flex items-center mb-2.5"
         >
-          <Input
-            v-model="processedParams.buttons[index].parameter"
-            type="text"
-            class="flex-1"
-            :placeholder="t('WHATSAPP_TEMPLATES.PARSER.BUTTON_PARAMETER')"
-          />
-        </div>
+          <div v-if="button" class="mb-3">
+            <p
+              v-if="button.type === 'payment_request'"
+              class="mb-1.5 text-xs font-medium text-n-slate-11"
+            >
+              {{ paymentButtonLabel(button, index) }}
+            </p>
+
+            <Input
+              v-if="button.type === 'payment_request' && paymentSettingType(button) === 'payment_link'"
+              v-model="processedParams.buttons[index].payment_setting.payment_link.uri"
+              type="url"
+              class="flex-1"
+              :placeholder="paymentFieldPlaceholder(button)"
+            />
+            <Input
+              v-else-if="
+                button.type === 'payment_request' &&
+                paymentSettingType(button) === 'pix_dynamic_code'
+              "
+              v-model="
+                processedParams.buttons[index].payment_setting.pix_dynamic_code
+                  .code
+              "
+              type="text"
+              class="flex-1"
+              :placeholder="paymentFieldPlaceholder(button)"
+            />
+            <Input
+              v-else-if="
+                button.type === 'payment_request' &&
+                paymentSettingType(button) === 'boleto'
+              "
+              v-model="
+                processedParams.buttons[index].payment_setting.boleto
+                  .digitable_line
+              "
+              type="text"
+              class="flex-1"
+              :placeholder="paymentFieldPlaceholder(button)"
+            />
+            <Input
+              v-else
+              v-model="processedParams.buttons[index].parameter"
+              type="text"
+              class="flex-1"
+              :placeholder="t('WHATSAPP_TEMPLATES.PARSER.BUTTON_PARAMETER')"
+            />
+          </div>
+        </template>
       </div>
       <p
         v-if="v$.$dirty && v$.$invalid"

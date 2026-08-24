@@ -8,17 +8,24 @@ class FollowUps::ActionService < ActionService
     payload = params.is_a?(Array) ? params[0] : params
 
     content = nil
+    media_asset_id = nil
     template_params = @run.context['template_params']
 
     if payload.is_a?(Hash)
       payload = payload.with_indifferent_access
       content = payload[:message].presence || payload[:content]
+      media_asset_id = payload[:media_asset_id]
       template_params = payload[:template_params].presence || template_params
     else
       content = payload
     end
 
-    return if content.blank? && template_params.blank?
+    blobs = MediaAssets::ResolveBlobsService.new(
+      account: @account,
+      media_asset_ids: [media_asset_id]
+    ).perform
+
+    return if content.blank? && template_params.blank? && blobs.blank?
 
     builder_params = {
       content: content,
@@ -26,6 +33,7 @@ class FollowUps::ActionService < ActionService
       message_type: 'outgoing'
     }
     builder_params[:template_params] = template_params if template_params.present?
+    builder_params[:attachments] = blobs if blobs.present?
 
     Messages::MessageBuilder.new(@run.user, @conversation, builder_params).perform
   end

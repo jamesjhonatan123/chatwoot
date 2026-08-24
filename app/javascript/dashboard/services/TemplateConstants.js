@@ -25,6 +25,9 @@ export const WA_MEDIA_FORMATS = [
 
 export const WA_BUTTON_TYPES = {
   COPY_CODE: 'COPY_CODE',
+  PAYMENT_REQUEST: 'PAYMENT_REQUEST',
+  URL: 'URL',
+  QUICK_REPLY: 'QUICK_REPLY',
 };
 
 export const WA_PARAM_FORMATS = {

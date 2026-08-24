@@ -8,13 +8,30 @@ const allElementsNumbers = arr => {
 
 const formatArray = params => {
   if (params.length <= 0) {
-    params = [];
-  } else if (allElementsString(params) || allElementsNumbers(params)) {
-    params = [...params];
-  } else {
-    params = params.map(val => val.id);
+    return [];
   }
-  return params;
+  if (allElementsString(params) || allElementsNumbers(params)) {
+    return [...params];
+  }
+
+  // Preserve media library payloads used by send_attachment / send_message
+  if (
+    params.every(
+      val => val && typeof val === 'object' && (val.media_asset_id || val.id)
+    )
+  ) {
+    return params.map(val => {
+      if (val.media_asset_id) {
+        return {
+          media_asset_id: val.media_asset_id,
+          caption: val.caption || '',
+        };
+      }
+      return val.id;
+    });
+  }
+
+  return params.map(val => val.id);
 };
 
 const generatePayloadForObject = item => {

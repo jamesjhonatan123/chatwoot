@@ -35,7 +35,14 @@ export const actions = {
 
   async create(
     { commit },
-    { conversationId, content, private: isPrivate, scheduledAt, templateParams }
+    {
+      conversationId,
+      content,
+      private: isPrivate,
+      scheduledAt,
+      templateParams,
+      mediaAssetIds,
+    }
   ) {
     commit(types.SET_SCHEDULED_MESSAGES_UI_FLAG, { isCreating: true });
     try {
@@ -46,6 +53,7 @@ export const actions = {
           private: isPrivate,
           scheduled_at: scheduledAt,
           template_params: templateParams || {},
+          media_asset_ids: mediaAssetIds || [],
         }
       );
       commit(types.ADD_SCHEDULED_MESSAGE, { conversationId, data });

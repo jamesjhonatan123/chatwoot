@@ -12,7 +12,8 @@ class Api::V1::Accounts::Conversations::ScheduledMessagesController < Api::V1::A
       content: scheduled_message_params[:content],
       private: scheduled_message_params[:private] || false,
       scheduled_at: Time.zone.parse(scheduled_message_params[:scheduled_at].to_s),
-      template_params: scheduled_message_params[:template_params] || {}
+      template_params: scheduled_message_params[:template_params] || {},
+      media_asset_ids: Array(scheduled_message_params[:media_asset_ids]).compact
     )
   rescue ActiveRecord::RecordInvalid => e
     render_could_not_create_error(e.message)
@@ -34,6 +35,7 @@ class Api::V1::Accounts::Conversations::ScheduledMessagesController < Api::V1::A
       :content,
       :private,
       :scheduled_at,
+      media_asset_ids: [],
       template_params: {}
     ).tap do |whitelisted|
       # Allow nested processed_params for WhatsApp templates

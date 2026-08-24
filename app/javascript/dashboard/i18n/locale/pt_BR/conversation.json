@@ -212,6 +212,8 @@
       "REPLYING_TO": "Respondendo a:",
       "TIP_EMOJI_ICON": "Mostrar seletor de emoji",
       "TIP_ATTACH_ICON": "Anexar arquivos",
+      "ATTACH_FROM_LIBRARY": "Da galeria de mídia",
+      "ATTACH_FROM_DEVICE": "Do computador ou celular",
       "TIP_AUDIORECORDER_ICON": "Gravar áudio",
       "TIP_AUDIORECORDER_PERMISSION": "Permitir acesso ao áudio",
       "TIP_AUDIORECORDER_ERROR": "Não foi possível abrir o áudio",

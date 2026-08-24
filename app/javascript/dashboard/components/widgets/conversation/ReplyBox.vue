@@ -31,6 +31,7 @@ import WhatsappTemplates from './WhatsappTemplates/Modal.vue';
 import ContentTemplates from './ContentTemplates/ContentTemplatesModal.vue';
 import ScheduleMessageModal from './ScheduleMessageModal.vue';
 import FollowUpModal from './FollowUpModal.vue';
+import MediaLibraryPicker from 'dashboard/components/widgets/mediaLibrary/MediaLibraryPicker.vue';
 import { MESSAGE_MAX_LENGTH } from 'shared/helpers/MessageTypeHelper';
 import inboxMixin, { INBOX_FEATURES } from 'shared/mixins/inboxMixin';
 import { trimContent, debounce, getRecipients } from '@chatwoot/utils';
@@ -78,6 +79,7 @@ export default {
     WhatsappTemplates,
     ScheduleMessageModal,
     FollowUpModal,
+    MediaLibraryPicker,
     WootMessageEditor,
     QuotedEmailPreview,
     CopilotEditorSection,
@@ -130,6 +132,7 @@ export default {
       showContentTemplatesModal: false,
       showScheduleMessageModal: false,
       showFollowUpModal: false,
+      showMediaLibraryPicker: false,
       scheduleDraft: {
         content: '',
         isPrivate: false,
@@ -1087,6 +1090,75 @@ export default {
         });
       };
     },
+    openMediaLibraryPicker() {
+      this.showMediaLibraryPicker = true;
+    },
+    async attachFromMediaLibrary({ mediaAssetId, caption, asset } = {}) {
+      this.showMediaLibraryPicker = false;
+
+      if (!this.showFileUpload && !this.isOnPrivateNote) {
+        useAlert(this.$t('CONVERSATION.REPLYBOX.TIP_ATTACH_ICON'));
+        return;
+      }
+
+      let resolvedAsset = asset;
+      if (!resolvedAsset?.blob_signed_id && mediaAssetId) {
+        await this.$store.dispatch('mediaAssets/get');
+        resolvedAsset =
+          this.$store.getters['mediaAssets/getMediaAsset'](mediaAssetId) ||
+          resolvedAsset;
+      }
+
+      if (!resolvedAsset?.blob_signed_id) {
+        useAlert(this.$t('MEDIA_LIBRARY.UPLOAD_ERROR'));
+        return;
+      }
+
+      const alreadyAttached = this.attachedFiles.some(
+        file =>
+          file.blobSignedId === resolvedAsset.blob_signed_id ||
+          file.resource?.mediaAssetId === resolvedAsset.id
+      );
+      if (alreadyAttached) return;
+
+      const fileName =
+        resolvedAsset.file_name || resolvedAsset.title || 'attachment';
+      const contentType =
+        resolvedAsset.content_type ||
+        (resolvedAsset.file_type === 'image'
+          ? 'image/*'
+          : 'application/octet-stream');
+
+      this.attachedFiles.push({
+        currentChatId: this.currentChat.id,
+        resource: {
+          mediaAssetId: resolvedAsset.id,
+          filename: fileName,
+          name: fileName,
+          file_name: fileName,
+          content_type: contentType,
+          type: contentType,
+          file_type: resolvedAsset.file_type,
+          byte_size: resolvedAsset.byte_size || 0,
+          size: resolvedAsset.byte_size || 0,
+        },
+        isPrivate: this.isPrivate,
+        thumb: resolvedAsset.thumb_url || resolvedAsset.file_url || '',
+        blobSignedId: resolvedAsset.blob_signed_id,
+        isRecordedAudio: false,
+      });
+
+      if (caption?.trim() && !this.message?.trim()) {
+        this.message = caption.trim();
+      }
+    },
+    resolveAttachmentFile(attachment) {
+      if (attachment.blobSignedId) return attachment.blobSignedId;
+      if (this.globalConfig.directUploadsEnabled) {
+        return attachment.blobSignedId;
+      }
+      return attachment.resource?.file;
+    },
     removeAttachment(attachments) {
       this.attachedFiles = attachments;
     },
@@ -1110,9 +1182,7 @@ export default {
         let caption =
           this.isAnInstagramChannel || this.isATiktokChannel ? '' : message;
         this.attachedFiles.forEach(attachment => {
-          const attachedFile = this.globalConfig.directUploadsEnabled
-            ? attachment.blobSignedId
-            : attachment.resource.file;
+          const attachedFile = this.resolveAttachmentFile(attachment);
           let attachmentPayload = {
             conversationId: this.currentChat.id,
             files: [attachedFile],
@@ -1166,11 +1236,7 @@ export default {
       if (this.attachedFiles && this.attachedFiles.length) {
         messagePayload.files = [];
         this.attachedFiles.forEach(attachment => {
-          if (this.globalConfig.directUploadsEnabled) {
-            messagePayload.files.push(attachment.blobSignedId);
-          } else {
-            messagePayload.files.push(attachment.resource.file);
-          }
+          messagePayload.files.push(this.resolveAttachmentFile(attachment));
         });
       }
 
@@ -1460,6 +1526,7 @@ export default {
         @toggle-quoted-reply="toggleQuotedReply"
         @schedule-message="openScheduleMessageModal"
         @follow-up="openFollowUpModal"
+        @open-media-library="openMediaLibraryPicker"
       />
     </Transition>
 
@@ -1500,6 +1567,19 @@ export default {
           .trim()
       "
       @close="hideFollowUpModal"
+    />
+
+    <MediaLibraryPicker
+      v-if="showMediaLibraryPicker"
+      :show="showMediaLibraryPicker"
+      :initial-caption="
+        message
+          ?.replace(/<[^>]*>/g, ' ')
+          .replace(/\s+/g, ' ')
+          .trim()
+      "
+      @close="showMediaLibraryPicker = false"
+      @select="attachFromMediaLibrary"
     />
 
     <woot-confirm-modal

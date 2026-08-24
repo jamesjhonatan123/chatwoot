@@ -36,12 +36,12 @@ const formatFileSize = file => {
 };
 
 const isTypeImage = file => {
-  const type = file.content_type || file.type;
-  return type.includes('image');
+  const type = file?.content_type || file?.type || '';
+  return type.includes('image') || file?.file_type === 'image';
 };
 
 const fileName = file => {
-  return file.filename || file.name;
+  return file?.filename || file?.name || file?.file_name || file?.title || '';
 };
 </script>
 
@@ -49,7 +49,12 @@ const fileName = file => {
   <div class="flex flex-wrap gap-y-1 gap-x-2 overflow-auto max-h-[12.5rem]">
     <div
       v-for="(attachment, index) in nonRecordedAudioAttachments"
-      :key="attachment.id"
+      :key="
+        attachment.blobSignedId ||
+        attachment.resource?.mediaAssetId ||
+        attachment.resource?.signed_id ||
+        index
+      "
       class="flex items-center p-1 bg-n-slate-3 gap-1 rounded-md w-[15rem]"
     >
       <div class="max-w-[4rem] flex-shrink-0 w-6 flex items-center">

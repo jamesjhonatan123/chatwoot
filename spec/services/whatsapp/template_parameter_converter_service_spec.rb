@@ -213,6 +213,25 @@ describe Whatsapp::TemplateParameterConverterService do
       converter = described_class.new({}, template)
       expect(converter.send(:enhanced_format?, invalid)).to be false
     end
+
+    it 'returns true for sparse button arrays with blank slots' do
+      enhanced = {
+        'body' => { 'first_name' => 'Ana' },
+        'buttons' => [
+          nil,
+          {
+            'type' => 'payment_request',
+            'index' => 1,
+            'payment_setting' => {
+              'type' => 'payment_link',
+              'payment_link' => { 'uri' => 'https://loc.fit/pagamento/1' }
+            }
+          }
+        ]
+      }
+      converter = described_class.new({}, button_template)
+      expect(converter.send(:enhanced_format?, enhanced)).to be true
+    end
   end
 
   describe 'simplified conversion methods' do

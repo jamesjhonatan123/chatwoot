@@ -67,4 +67,71 @@ describe Whatsapp::PopulateTemplateParametersService do
       end
     end
   end
+
+  describe '#build_button_parameter' do
+    it 'builds coupon_code parameters for copy_code buttons' do
+      result = service.build_button_parameter('type' => 'copy_code', 'parameter' => 'SAVE20')
+
+      expect(result).to eq(type: 'coupon_code', coupon_code: 'SAVE20')
+    end
+
+    it 'builds payment_link action for Brazil payment_request buttons' do
+      result = service.build_button_parameter(
+        'type' => 'payment_request',
+        'payment_setting' => {
+          'type' => 'payment_link',
+          'payment_link' => { 'uri' => 'https://loc.fit/pagamento/22327' }
+        }
+      )
+
+      expect(result).to eq(
+        type: 'action',
+        action: {
+          payment_request: {
+            payment_setting: {
+              type: 'payment_link',
+              payment_link: { uri: 'https://loc.fit/pagamento/22327' }
+            }
+          }
+        }
+      )
+    end
+
+    it 'builds pix_dynamic_code action for Brazil payment_request buttons' do
+      result = service.build_button_parameter(
+        'type' => 'payment_request',
+        'payment_setting' => {
+          'type' => 'PIX_DYNAMIC_CODE',
+          'pix_dynamic_code' => { 'code' => '00020101021226700014br.gov.bcb.pix' }
+        }
+      )
+
+      expect(result.dig(:action, :payment_request, :payment_setting, :type)).to eq('pix_dynamic_code')
+      expect(result.dig(:action, :payment_request, :payment_setting, :pix_dynamic_code, :code))
+        .to eq('00020101021226700014br.gov.bcb.pix')
+    end
+
+    it 'builds boleto action for Brazil payment_request buttons' do
+      result = service.build_button_parameter(
+        'type' => 'payment_request',
+        'payment_setting' => {
+          'type' => 'boleto',
+          'boleto' => { 'digitable_line' => '03399026944140000002628346101018898510000008848' }
+        }
+      )
+
+      expect(result.dig(:action, :payment_request, :payment_setting, :type)).to eq('boleto')
+      expect(result.dig(:action, :payment_request, :payment_setting, :boleto, :digitable_line))
+        .to eq('03399026944140000002628346101018898510000008848')
+    end
+
+    it 'raises when payment_link uri is missing' do
+      expect do
+        service.build_button_parameter(
+          'type' => 'payment_request',
+          'payment_setting' => { 'type' => 'payment_link', 'payment_link' => { 'uri' => '' } }
+        )
+      end.to raise_error(ArgumentError, /payment_link.uri/)
+    end
+  end
 end

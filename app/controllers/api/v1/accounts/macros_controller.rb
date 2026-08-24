@@ -56,10 +56,7 @@ class Api::V1::Accounts::MacrosController < Api::V1::Accounts::BaseController
   private
 
   def permitted_params
-    params.permit(
-      :name, :visibility,
-      actions: [:action_name, { action_params: [] }]
-    )
+    params.permit(:name, :visibility)
   end
 
   def macros_with_user

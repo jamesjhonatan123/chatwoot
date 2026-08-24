@@ -47,20 +47,45 @@ class Macros::ExecutionService < ActionService
     mb.perform
   end
 
-  def send_attachment(blob_ids)
+  def send_attachment(params)
     return if conversation_a_tweet?
 
-    return unless @macro.files.attached?
-
-    blobs = ActiveStorage::Blob.where(id: blob_ids)
-
+    caption, media_asset_id, blob_ids = normalize_attachment_params(params)
+    blobs = resolve_attachment_blobs(media_asset_id, blob_ids)
     return if blobs.blank?
 
-    params = { content: nil, private: false, attachments: blobs }
+    builder_params = { content: caption.presence, private: false, attachments: blobs }
+    Messages::MessageBuilder.new(@user, @conversation.reload, builder_params).perform
+  end
 
-    # Added reload here to ensure conversation us persistent with the latest updates
-    mb = Messages::MessageBuilder.new(@user, @conversation.reload, params)
-    mb.perform
+  def normalize_attachment_params(params)
+    payload = params.is_a?(Array) ? params[0] : params
+
+    if payload.is_a?(Hash)
+      payload = payload.with_indifferent_access
+      return [
+        payload[:caption].to_s,
+        payload[:media_asset_id],
+        Array(payload[:blob_ids] || payload[:blob_id]).compact
+      ]
+    end
+
+    # Legacy: action_params is an array of numeric blob ids
+    ['', nil, Array(params).compact]
+  end
+
+  def resolve_attachment_blobs(media_asset_id, blob_ids)
+    if media_asset_id.present?
+      return MediaAssets::ResolveBlobsService.new(
+        account: @account,
+        media_asset_ids: [media_asset_id]
+      ).perform
+    end
+
+    return [] if blob_ids.blank?
+    return [] unless @macro.files.attached?
+
+    ActiveStorage::Blob.where(id: blob_ids)
   end
 
   def send_webhook_event(webhook_url)
