@@ -17,7 +17,9 @@
     "MORE_INBOXES": "+{n}",
     "FILTERS": {
       "ALL_INBOXES": "Todas as caixas de entrada",
-      "ALL_LANGUAGES": "Todos os idiomas"
+      "ALL_LANGUAGES": "Todos os idiomas",
+      "ALL_CATEGORIES": "Todas as categorias",
+      "NO_CATEGORY": "Sem categoria"
     },
     "TYPES": {
       "TEXT": "Texto",
@@ -42,6 +44,12 @@
       "LANGUAGE": "Idioma",
       "INBOXES": "Caixas de Entrada",
       "LAST_SYNC_ATTEMPT": "Última tentativa de sincronização"
-    }
+    },
+    "CATEGORY": {
+      "NONE": "Sem categoria",
+      "REMOVE": "Tirar da categoria",
+      "CHANGE": "Alterar a categoria de {name}"
+    },
+    "CATEGORY_ERROR": "Não foi possível alterar a categoria do template. Tente de novo."
   }
 }

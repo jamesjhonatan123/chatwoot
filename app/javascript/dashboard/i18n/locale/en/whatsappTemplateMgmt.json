@@ -24,7 +24,9 @@
     "FILTERS": {
       "ALL_INBOXES": "All inboxes",
       "ALL_LANGUAGES": "All languages",
-      "ALL_TYPES": "All types"
+      "ALL_TYPES": "All types",
+      "ALL_CATEGORIES": "All categories",
+      "NO_CATEGORY": "Uncategorized"
     },
     "TYPES": {
       "TEXT": "Text",
@@ -48,6 +50,12 @@
       "CATEGORY": "Category",
       "LANGUAGE": "Language",
       "INBOXES": "Inboxes"
-    }
+    },
+    "CATEGORY": {
+      "NONE": "Uncategorized",
+      "REMOVE": "Remove from category",
+      "CHANGE": "Change the category of {name}"
+    },
+    "CATEGORY_ERROR": "Could not change the template category. Please try again."
   }
 }

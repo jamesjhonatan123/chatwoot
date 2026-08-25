@@ -9,6 +9,7 @@ import { useMapGetter, useStore } from 'dashboard/composables/store';
 import { useAbortableRequest } from 'dashboard/composables/useAbortableRequest';
 import { INBOX_TYPES, TWILIO_CHANNEL_MEDIUM } from 'dashboard/helper/inbox';
 import InboxesAPI from 'dashboard/api/inboxes';
+import WhatsappTemplateCategoriesAPI from 'dashboard/api/whatsappTemplateCategories';
 import Button from 'dashboard/components-next/button/Button.vue';
 import DropdownMenu from 'dashboard/components-next/dropdown-menu/DropdownMenu.vue';
 import Icon from 'dashboard/components-next/icon/Icon.vue';
@@ -44,6 +45,8 @@ const searchQuery = ref('');
 const selectedInboxId = ref('all');
 const selectedLanguage = ref('all');
 const selectedType = ref('all');
+const selectedCategoryId = ref('all');
+const categories = ref([]);
 const selectedTemplate = ref(null);
 const openFilterMenu = ref(null);
 const previewPanelRef = ref(null);
@@ -57,6 +60,51 @@ const {
 } = useAbortableRequest();
 
 const hasTemplates = computed(() => templates.value.length > 0);
+
+const categoryByTemplateName = computed(() => {
+  const map = new Map();
+  categories.value.forEach(category => {
+    (category.template_names || []).forEach(name => map.set(name, category));
+  });
+  return map;
+});
+
+const categoryFor = template => categoryByTemplateName.value.get(template.name);
+
+const categoryOptions = computed(() => [
+  { value: 'all', label: t('WHATSAPP_TEMPLATE_MGMT.FILTERS.ALL_CATEGORIES') },
+  ...categories.value.map(category => ({
+    value: String(category.id),
+    label: category.name,
+  })),
+  { value: 'none', label: t('WHATSAPP_TEMPLATE_MGMT.FILTERS.NO_CATEGORY') },
+]);
+
+const fetchCategories = async () => {
+  try {
+    const { data } = await WhatsappTemplateCategoriesAPI.get();
+    categories.value = data.payload || [];
+  } catch (error) {
+    categories.value = [];
+  }
+};
+
+const assignCategory = async ({ template, categoryId }) => {
+  const previous = categoryFor(template);
+  try {
+    if (categoryId === null) {
+      if (!previous) return;
+      await WhatsappTemplateCategoriesAPI.unassign(previous.id, [
+        template.name,
+      ]);
+    } else {
+      await WhatsappTemplateCategoriesAPI.assign(categoryId, [template.name]);
+    }
+    await fetchCategories();
+  } catch (error) {
+    useAlert(t('WHATSAPP_TEMPLATE_MGMT.CATEGORY_ERROR'));
+  }
+};
 
 const lastSyncAttemptAt = computed(() => {
   const timestamps = Object.values(lastSyncAttemptsByInboxId.value)
@@ -146,6 +194,12 @@ const filterMenus = computed(() =>
       options: typeOptions.value,
       active: selectedType.value,
     },
+    {
+      key: 'category',
+      icon: 'i-lucide-folder',
+      options: categoryOptions.value,
+      active: selectedCategoryId.value,
+    },
   ].map(menu => {
     const items = menu.options.map(option => ({
       ...option,
@@ -178,6 +232,7 @@ const handleFilterAction = ({ action, value }) => {
   closeFilterMenu();
   if (action === 'inbox') selectedInboxId.value = value;
   else if (action === 'language') selectedLanguage.value = value;
+  else if (action === 'category') selectedCategoryId.value = value;
   else selectedType.value = value;
 };
 
@@ -199,6 +254,14 @@ const filteredTemplates = computed(() => {
   if (selectedType.value !== 'all') {
     records = records.filter(
       template => templateTypeKey(template) === selectedType.value
+    );
+  }
+
+  if (selectedCategoryId.value === 'none') {
+    records = records.filter(template => !categoryFor(template));
+  } else if (selectedCategoryId.value !== 'all') {
+    records = records.filter(
+      template => String(categoryFor(template)?.id) === selectedCategoryId.value
     );
   }
 
@@ -327,7 +390,10 @@ const syncTemplates = async () => {
   isSyncing.value = false;
 };
 
-onActivated(fetchTemplates);
+onActivated(() => {
+  fetchTemplates();
+  fetchCategories();
+});
 onDeactivated(abortTemplateRequest);
 </script>
 
@@ -431,7 +497,12 @@ onDeactivated(abortTemplateRequest);
           v-for="template in filteredTemplates"
           :key="template.key"
           :template="template"
+          :category="categoryFor(template)"
+          :categories="categories"
           @preview="openPreview(template)"
+          @assign-category="
+            categoryId => assignCategory({ template, categoryId })
+          "
         />
       </div>
     </template>

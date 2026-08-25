@@ -79,6 +79,8 @@ class Account < ApplicationRecord
   has_many :follow_up_workflows, dependent: :destroy_async
   has_many :follow_up_runs, dependent: :destroy_async
   has_many :media_assets, dependent: :destroy_async
+  has_many :whatsapp_template_categories, dependent: :destroy_async
+  has_many :whatsapp_template_category_items, dependent: :destroy_async
   has_many :csat_survey_responses, dependent: :destroy_async
   has_many :custom_attribute_definitions, dependent: :destroy_async
   has_many :custom_filters, dependent: :destroy_async

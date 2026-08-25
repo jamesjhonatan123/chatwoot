@@ -342,6 +342,12 @@ Rails.application.routes.draw do
             end
           end
           resources :labels, only: [:index, :show, :create, :update, :destroy]
+          resources :whatsapp_template_categories, only: [:index, :create, :update, :destroy] do
+            member do
+              post :assign
+              post :unassign
+            end
+          end
 
           resources :notifications, only: [:index, :update, :destroy] do
             collection do

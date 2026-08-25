@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2026_08_14_000000) do
+ActiveRecord::Schema[7.2].define(version: 2026_08_25_175249) do
   # These extensions should be enabled to support this database
   enable_extension "pg_stat_statements"
   enable_extension "pg_trgm"
@@ -1667,6 +1667,27 @@ ActiveRecord::Schema[7.2].define(version: 2026_08_14_000000) do
     t.index ["account_id", "url"], name: "index_webhooks_on_account_id_and_url", unique: true
   end
 
+  create_table "whatsapp_template_categories", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.string "name", null: false
+    t.string "color", default: "#1f93ff", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id", "name"], name: "index_whatsapp_template_categories_on_account_id_and_name", unique: true
+    t.index ["account_id"], name: "index_whatsapp_template_categories_on_account_id"
+  end
+
+  create_table "whatsapp_template_category_items", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.bigint "whatsapp_template_category_id", null: false
+    t.string "template_name", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id", "template_name"], name: "index_wa_template_items_on_account_and_name", unique: true
+    t.index ["account_id"], name: "index_whatsapp_template_category_items_on_account_id"
+    t.index ["whatsapp_template_category_id"], name: "index_wa_template_items_on_category"
+  end
+
   create_table "working_hours", force: :cascade do |t|
     t.bigint "inbox_id"
     t.bigint "account_id"
@@ -1702,6 +1723,9 @@ ActiveRecord::Schema[7.2].define(version: 2026_08_14_000000) do
   add_foreign_key "scheduled_messages", "conversations"
   add_foreign_key "scheduled_messages", "users"
   add_foreign_key "user_sessions", "users"
+  add_foreign_key "whatsapp_template_categories", "accounts"
+  add_foreign_key "whatsapp_template_category_items", "accounts"
+  add_foreign_key "whatsapp_template_category_items", "whatsapp_template_categories"
   create_trigger("accounts_after_insert_row_tr", :generated => true, :compatibility => 1).
       on("accounts").
       after(:insert).

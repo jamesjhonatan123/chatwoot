@@ -1,9 +1,12 @@
 <script setup>
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { vOnClickOutside } from '@vueuse/components';
 
 import Button from 'dashboard/components-next/button/Button.vue';
 import ChannelIcon from 'dashboard/components-next/icon/ChannelIcon.vue';
+import DropdownMenu from 'dashboard/components-next/dropdown-menu/DropdownMenu.vue';
+import Icon from 'dashboard/components-next/icon/Icon.vue';
 import {
   formatTemplateLabel,
   formatTemplateLanguage,
@@ -16,10 +19,43 @@ const props = defineProps({
     type: Object,
     required: true,
   },
+  // Categoria propria da conta ("Vendas", "Cobranca"), nao a da Meta.
+  category: {
+    type: Object,
+    default: null,
+  },
+  categories: {
+    type: Array,
+    default: () => [],
+  },
 });
 
-const emit = defineEmits(['preview']);
+const emit = defineEmits(['preview', 'assignCategory']);
 const { t } = useI18n();
+
+const isCategoryMenuOpen = ref(false);
+
+const closeCategoryMenu = () => {
+  isCategoryMenuOpen.value = false;
+};
+
+const categoryMenuItems = computed(() => [
+  ...props.categories.map(category => ({
+    label: category.name,
+    value: category.id,
+    isSelected: category.id === props.category?.id,
+  })),
+  {
+    label: t('WHATSAPP_TEMPLATE_MGMT.CATEGORY.REMOVE'),
+    value: null,
+    isSelected: !props.category,
+  },
+]);
+
+const onCategoryAction = ({ value }) => {
+  closeCategoryMenu();
+  emit('assignCategory', value);
+};
 
 const showStatus = computed(
   () => props.template.status?.toLowerCase() !== 'approved'
@@ -77,16 +113,51 @@ const statusLabel = computed(() =>
         </div>
       </div>
     </div>
-    <Button
-      v-tooltip.top="$t('WHATSAPP_TEMPLATE_MGMT.PREVIEW.TITLE')"
-      icon="i-lucide-eye"
-      color="slate"
-      size="sm"
-      class="shrink-0"
-      :aria-label="
-        $t('WHATSAPP_TEMPLATE_MGMT.PREVIEW.OPEN', { name: template.name })
-      "
-      @click.stop="emit('preview')"
-    />
+    <div class="flex items-center gap-2 shrink-0">
+      <div v-on-click-outside="closeCategoryMenu" class="relative">
+        <button
+          type="button"
+          class="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium border rounded-md border-n-weak text-n-slate-11 hover:bg-n-alpha-1"
+          :aria-label="
+            $t('WHATSAPP_TEMPLATE_MGMT.CATEGORY.CHANGE', {
+              name: template.name,
+            })
+          "
+          @click.stop="isCategoryMenuOpen = !isCategoryMenuOpen"
+        >
+          <span
+            v-if="category"
+            class="rounded-full size-2 shrink-0"
+            :style="{ backgroundColor: category.color }"
+          />
+          <span class="truncate max-w-32">
+            {{
+              category
+                ? category.name
+                : $t('WHATSAPP_TEMPLATE_MGMT.CATEGORY.NONE')
+            }}
+          </span>
+          <Icon icon="i-lucide-chevron-down" class="shrink-0 size-3" />
+        </button>
+        <DropdownMenu
+          v-if="isCategoryMenuOpen"
+          :menu-items="categoryMenuItems"
+          class="mt-2 min-w-44 top-full ltr:right-0 rtl:left-0"
+          @action="onCategoryAction"
+          @click.stop
+        />
+      </div>
+      <Button
+        v-tooltip.top="$t('WHATSAPP_TEMPLATE_MGMT.PREVIEW.TITLE')"
+        icon="i-lucide-eye"
+        color="slate"
+        size="sm"
+        class="shrink-0"
+        :aria-label="
+          $t('WHATSAPP_TEMPLATE_MGMT.PREVIEW.OPEN', { name: template.name })
+        "
+        @click.stop="emit('preview')"
+      />
+    </div>
   </div>
 </template>
