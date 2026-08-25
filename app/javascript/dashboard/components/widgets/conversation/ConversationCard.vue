@@ -11,6 +11,7 @@ import {
   isOnUnattendedView,
 } from 'dashboard/store/modules/conversations/helpers/actionHelpers';
 import Avatar from 'next/avatar/Avatar.vue';
+import Icon from 'dashboard/components-next/icon/Icon.vue';
 import MessagePreview from './MessagePreview.vue';
 import InboxName from '../InboxName.vue';
 import ConversationContextMenu from './contextMenu/Index.vue';
@@ -130,7 +131,16 @@ const showMetaSection = computed(() => {
   );
 });
 
-const hasSlaPolicyId = computed(() => props.chat?.sla_policy_id);
+const isAgentBotAssignee = computed(
+  () => props.chat?.meta?.assignee_type === 'AgentBot'
+);
+
+// currentContact aqui vem da store, nao de prop: este card e o que a lista usa
+// desde o Kanban. props.currentContact seria sempre undefined e o contato
+// bloqueado voltaria a exibir o SLA.
+const hasSlaPolicyId = computed(
+  () => props.chat?.applied_sla?.id && !currentContact.value?.blocked
+);
 
 const showLabelsSection = computed(() => {
   return props.chat.labels?.length > 0 || hasSlaPolicyId.value;
@@ -341,10 +351,15 @@ const deleteConversation = () => {
         >
           <span
             v-if="showAssignee && assignee.name"
-            class="text-n-slate-11 text-xs font-medium leading-3 py-0.5 px-0 inline-flex items-center truncate"
+            class="text-n-slate-11 text-xs font-medium leading-3 py-0.5 px-0 inline-flex items-center gap-px truncate"
           >
-            <fluent-icon icon="person" size="12" class="text-n-slate-11" />
-            {{ assignee.name }}
+            <Icon
+              :icon="
+                isAgentBotAssignee ? 'i-lucide-bot' : 'i-lucide-user-round'
+              "
+              class="size-3 text-n-slate-11 flex-shrink-0"
+            />
+            <span class="truncate">{{ assignee.name }}</span>
           </span>
           <CardPriorityIcon
             :priority="chat.priority"
