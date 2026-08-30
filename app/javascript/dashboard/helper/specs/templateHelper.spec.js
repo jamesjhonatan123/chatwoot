@@ -4,6 +4,7 @@ import {
   processVariable,
   allKeysRequired,
   isButtonParameterComplete,
+  isWhatsAppTemplateComplete,
   buildPaymentRequestButtonParameter,
 } from '../templateHelper';
 import { templates } from '../../store/modules/specs/inboxes/templateFixtures';
@@ -158,12 +159,18 @@ describe('templateHelper', () => {
       ]);
     });
 
-    it('should handle templates with no variables', () => {
+    it('should handle templates with no variables but a media header', () => {
       const emptyTemplate = templates.find(
         t => t.name === 'no_variable_template'
       );
-      const result = buildTemplateParameters(emptyTemplate, false);
-      expect(result).toEqual({});
+      const result = buildTemplateParameters(emptyTemplate);
+      // hasMediaHeader is derived from the template, so the document header is kept.
+      expect(result.body).toBeUndefined();
+      expect(result.header).toEqual({
+        media_url: '',
+        media_type: 'document',
+        media_name: '',
+      });
     });
 
     it('should build parameters for templates with multiple component types', () => {
@@ -458,6 +465,105 @@ describe('templateHelper', () => {
       const result = replaceTemplateVariables(templateText, partialParams);
       expect(result).toBe('Hi John, order {{order_id}} is ready');
       expect(result).toContain('{{order_id}}'); // Unreplaced variable preserved
+    });
+  });
+  // O CTA de pagamento do Brasil nao existe no helper compartilhado
+  // (@chatwoot/utils): entra por cima dele. Estes testes guardam essa camada,
+  // que e a que mais sofre quando o upstream mexe em template.
+  describe('botao de Payment Request', () => {
+    const templateComPix = {
+      name: 'aviso_mensalidade',
+      components: [
+        { type: 'BODY', text: 'Olá {{nome}}' },
+        {
+          type: 'BUTTONS',
+          buttons: [
+            { type: 'QUICK_REPLY', text: 'Reagendar' },
+            {
+              type: 'PAYMENT_REQUEST',
+              text: 'Copiar código Pix',
+              payment_setting: { type: 'PIX_DYNAMIC_CODE' },
+            },
+          ],
+        },
+      ],
+    };
+
+    it('monta o botao de pagamento na mesma posicao que a Meta usa', () => {
+      const params = buildTemplateParameters(templateComPix);
+
+      expect(params.body).toEqual({ nome: '' });
+      expect(params.buttons[0]).toBeUndefined();
+      expect(params.buttons[1]).toEqual({
+        type: 'payment_request',
+        index: 1,
+        label: 'Copiar código Pix',
+        payment_setting: {
+          type: 'pix_dynamic_code',
+          pix_dynamic_code: { code: '' },
+        },
+      });
+    });
+
+    it('nao considera completo enquanto o codigo Pix estiver vazio', () => {
+      const params = buildTemplateParameters(templateComPix);
+      params.body.nome = 'Ana';
+
+      expect(isWhatsAppTemplateComplete(templateComPix, params)).toBe(false);
+
+      params.buttons[1].payment_setting.pix_dynamic_code.code = '000201';
+      expect(isWhatsAppTemplateComplete(templateComPix, params)).toBe(true);
+    });
+
+    it('nao cobra `parameter` do botao de pagamento', () => {
+      // isWhatsAppComplete sozinho exige button.parameter, que o CTA de
+      // pagamento nunca tem — sem a nossa camada o formulario travava.
+      const params = buildTemplateParameters(templateComPix);
+      params.body.nome = 'Ana';
+      params.buttons[1].payment_setting.pix_dynamic_code.code = '000201';
+
+      expect(params.buttons[1].parameter).toBeUndefined();
+      expect(isWhatsAppTemplateComplete(templateComPix, params)).toBe(true);
+    });
+
+    it('ainda cobra o parametro dos botoes comuns', () => {
+      const templateComUrl = {
+        name: 'rastreio',
+        components: [
+          { type: 'BODY', text: 'Pedido enviado' },
+          {
+            type: 'BUTTONS',
+            buttons: [
+              {
+                type: 'URL',
+                text: 'Rastrear',
+                url: 'https://loc.fit/{{codigo}}',
+              },
+            ],
+          },
+        ],
+      };
+
+      const params = buildTemplateParameters(templateComUrl);
+      expect(isWhatsAppTemplateComplete(templateComUrl, params)).toBe(false);
+
+      params.buttons[0].parameter = 'ABC123';
+      expect(isWhatsAppTemplateComplete(templateComUrl, params)).toBe(true);
+    });
+
+    it('ignora botao de pagamento sem tipo reconhecivel', () => {
+      const semTipo = {
+        name: 'sem_tipo',
+        components: [
+          { type: 'BODY', text: 'Olá' },
+          {
+            type: 'BUTTONS',
+            buttons: [{ type: 'PAYMENT_REQUEST', text: 'Pagar' }],
+          },
+        ],
+      };
+
+      expect(buildTemplateParameters(semTipo).buttons).toBeUndefined();
     });
   });
 });

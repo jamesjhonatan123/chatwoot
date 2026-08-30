@@ -7,7 +7,7 @@ import TeleportWithDirection from 'dashboard/components-next/TeleportWithDirecti
 const { modalType, closeOnBackdropClick, onClose } = defineProps({
   closeOnBackdropClick: { type: Boolean, default: true },
   showCloseButton: { type: Boolean, default: true },
-  onClose: { type: Function, required: true },
+  onClose: { type: Function, default: null },
   fullWidth: { type: Boolean, default: false },
   modalType: { type: String, default: 'centered' },
   size: { type: String, default: '' },
@@ -125,6 +125,10 @@ onMounted(() => {
 
       a {
         @apply p-4;
+      }
+
+      .ProseMirror a {
+        @apply p-0;
       }
     }
   }

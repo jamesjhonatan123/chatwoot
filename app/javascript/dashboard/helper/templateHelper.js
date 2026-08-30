@@ -1,24 +1,26 @@
-// Constants
+import {
+  processVariable,
+  buildWhatsAppProcessedParams,
+  isWhatsAppComplete,
+  COMPONENT_TYPES,
+} from '@chatwoot/utils';
+
+// Constants and pure template helpers are shared with the mobile app via
+// @chatwoot/utils so the logic lives in one place.
+export {
+  MEDIA_FORMATS,
+  COMPONENT_TYPES,
+  findComponentByType,
+  processVariable,
+  renderTemplatePreview,
+} from '@chatwoot/utils';
+
 export const DEFAULT_LANGUAGE = 'en';
 export const DEFAULT_CATEGORY = 'UTILITY';
-export const COMPONENT_TYPES = {
-  HEADER: 'HEADER',
-  BODY: 'BODY',
-  BUTTONS: 'BUTTONS',
-};
-export const MEDIA_FORMATS = ['IMAGE', 'VIDEO', 'DOCUMENT'];
-
 export const PAYMENT_SETTING_TYPES = {
   PAYMENT_LINK: 'payment_link',
   PIX_DYNAMIC_CODE: 'pix_dynamic_code',
   BOLETO: 'boleto',
-};
-
-export const findComponentByType = (template, type) =>
-  template.components?.find(component => component.type === type);
-
-export const processVariable = str => {
-  return str.replace(/{{|}}/g, '');
 };
 
 export const allKeysRequired = value => {
@@ -35,10 +37,7 @@ export const replaceTemplateVariables = (templateText, processedParams) => {
 
 export const normalizePaymentSettingType = rawType => {
   const type = (rawType || '').toString().trim().toLowerCase();
-  if (
-    type === PAYMENT_SETTING_TYPES.PAYMENT_LINK ||
-    type === 'paymentlink'
-  ) {
+  if (type === PAYMENT_SETTING_TYPES.PAYMENT_LINK || type === 'paymentlink') {
     return PAYMENT_SETTING_TYPES.PAYMENT_LINK;
   }
   if (
@@ -112,85 +111,47 @@ export const isButtonParameterComplete = button => {
   return Boolean(button.parameter);
 };
 
-export const buildTemplateParameters = (template, hasMediaHeaderValue) => {
-  const allVariables = {};
-
-  const bodyComponent = findComponentByType(template, COMPONENT_TYPES.BODY);
-  const headerComponent = findComponentByType(template, COMPONENT_TYPES.HEADER);
-
-  if (!bodyComponent) return allVariables;
-
-  const templateString = bodyComponent.text;
-
-  // Process body variables
-  const matchedVariables = templateString.match(/{{([^}]+)}}/g);
-  if (matchedVariables) {
-    allVariables.body = {};
-    matchedVariables.forEach(variable => {
-      const key = processVariable(variable);
-      allVariables.body[key] = '';
-    });
-  }
-
-  if (hasMediaHeaderValue) {
-    if (!allVariables.header) allVariables.header = {};
-    allVariables.header.media_url = '';
-    allVariables.header.media_type = headerComponent.format.toLowerCase();
-
-    // For document templates, include media_name field for filename support
-    if (headerComponent.format.toLowerCase() === 'document') {
-      allVariables.header.media_name = '';
-    }
-  }
-
-  // Process button variables
-  const buttonComponents = template.components.filter(
+// O CTA de pagamento do Brasil so existe aqui: o helper compartilhado monta os
+// botoes de URL e COPY_CODE, e estes entram por cima, na mesma posicao do
+// buttons[] que a Meta usa.
+export const addPaymentRequestButtons = (template, params) => {
+  const buttonComponents = (template.components || []).filter(
     component => component.type === COMPONENT_TYPES.BUTTONS
   );
 
   buttonComponents.forEach(buttonComponent => {
-    if (buttonComponent.buttons) {
-      buttonComponent.buttons.forEach((button, index) => {
-        // Handle URL buttons with variables
-        if (button.type === 'URL' && button.url && button.url.includes('{{')) {
-          const buttonVars = button.url.match(/{{([^}]+)}}/g) || [];
-          if (buttonVars.length > 0) {
-            if (!allVariables.buttons) allVariables.buttons = [];
-            allVariables.buttons[index] = {
-              type: 'url',
-              parameter: '',
-              url: button.url,
-              variables: buttonVars.map(v => processVariable(v)),
-            };
-          }
-        }
+    (buttonComponent.buttons || []).forEach((button, index) => {
+      if (
+        button.type !== 'PAYMENT_REQUEST' &&
+        button.type !== 'payment_request'
+      )
+        return;
 
-        // Handle copy code buttons
-        if (button.type === 'COPY_CODE') {
-          if (!allVariables.buttons) allVariables.buttons = [];
-          allVariables.buttons[index] = {
-            type: 'copy_code',
-            parameter: '',
-          };
-        }
+      const paymentButton = buildPaymentRequestButtonParameter(button, index);
+      if (!paymentButton) return;
 
-        // Brazil Payment Request CTA (Pix / Payment Link / Boleto)
-        if (
-          button.type === 'PAYMENT_REQUEST' ||
-          button.type === 'payment_request'
-        ) {
-          const paymentButton = buildPaymentRequestButtonParameter(
-            button,
-            index
-          );
-          if (paymentButton) {
-            if (!allVariables.buttons) allVariables.buttons = [];
-            allVariables.buttons[index] = paymentButton;
-          }
-        }
-      });
-    }
+      if (!params.buttons) params.buttons = [];
+      params.buttons[index] = paymentButton;
+    });
   });
 
-  return allVariables;
+  return params;
+};
+
+// O segundo argumento (hasMediaHeader) e ignorado: o helper compartilhado deduz
+// isso do proprio template. Fica na assinatura pelas chamadas antigas.
+export const buildTemplateParameters = template =>
+  addPaymentRequestButtons(template, buildWhatsAppProcessedParams(template));
+
+// isWhatsAppComplete valida corpo, cabecalho e midia, mas so aceita botao com
+// `parameter` preenchido — e o botao de pagamento nao tem parameter. Por isso os
+// botoes saem da conta dele e passam pela nossa regra.
+export const isWhatsAppTemplateComplete = (template, processedParams) => {
+  const { buttons, ...rest } = processedParams;
+
+  if (!isWhatsAppComplete(template, rest)) return false;
+
+  return (buttons || []).every(
+    button => !button || isButtonParameterComplete(button)
+  );
 };

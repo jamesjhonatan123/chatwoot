@@ -148,6 +148,10 @@ class AutomationRules::ConditionsFilterService < FilterService
 
     return unread_count_filter_query(query_hash, table_name) if attribute_key == 'unread_count'
 
+    if attribute_key == 'assignee_id' && query_hash['filter_operator'].in?(%w[is_present is_not_present])
+      return assignee_presence_filter(table_name, query_hash)
+    end
+
     filter_operator_value = filter_operation(query_hash, current_index)
 
     case current_filter['attribute_type']

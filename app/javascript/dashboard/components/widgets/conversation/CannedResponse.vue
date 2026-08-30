@@ -1,108 +1,136 @@
-<script>
-import { mapGetters } from 'vuex';
-import MentionBox from '../mentions/MentionBox.vue';
+<script setup>
+import { computed, ref, onMounted } from 'vue';
+import { useI18n } from 'vue-i18n';
+import { picoSearch } from '@chatwoot/pico-search';
+import { useStore, useMapGetter } from 'dashboard/composables/store';
+import {
+  resolveVariablesInMessage,
+  stripUnsupportedFormatting,
+} from 'dashboard/helper/editorHelper';
+import { useMessageFormatter } from 'shared/composables/useMessageFormatter';
+import CaretAnchoredPicker from 'dashboard/components-next/preview-picker/CaretAnchoredPicker.vue';
 
-export default {
-  components: { MentionBox },
-  props: {
-    searchKey: {
-      type: String,
-      default: '',
-    },
+const props = defineProps({
+  caretPosition: {
+    type: Object,
+    default: null,
   },
-  emits: ['replace'],
-  data() {
-    return {
-      allCannedMessages: [],
-    };
+  searchKey: {
+    type: String,
+    default: '',
   },
-  computed: {
-    ...mapGetters({
-      cannedMessages: 'getCannedResponses',
-    }),
-    items() {
-      const normalizedSearch = this.normalizeValue(this.searchKey);
-      const cannedMessages = normalizedSearch
-        ? [...this.allCannedMessages]
-            .map(cannedMessage => ({
-              cannedMessage,
-              score: this.scoreCannedMessage(cannedMessage, normalizedSearch),
-            }))
-            .filter(({ score }) => score > 0)
-            .sort((left, right) => right.score - left.score)
-            .map(({ cannedMessage }) => cannedMessage)
-        : this.allCannedMessages;
-
-      return cannedMessages.map(cannedMessage => ({
-        label: cannedMessage.short_code,
-        key: cannedMessage.short_code,
-        description: cannedMessage.content,
-      }));
-    },
+  variables: {
+    type: Object,
+    default: () => ({}),
   },
-  async mounted() {
-    await this.fetchCannedResponses();
+  schema: {
+    type: Object,
+    default: null,
   },
-  methods: {
-    normalizeValue(value = '') {
-      return value
-        .normalize('NFD')
-        .replace(/[\u0300-\u036f]/g, '')
-        .toLowerCase()
-        .trim();
-    },
-    scoreCannedMessage(cannedMessage, normalizedSearch) {
-      const normalizedShortCode = this.normalizeValue(cannedMessage.short_code);
-      const normalizedContent = this.normalizeValue(cannedMessage.content);
+});
 
-      if (!normalizedShortCode && !normalizedContent) return 0;
-      if (!normalizedSearch) return 1;
+const emit = defineEmits(['replace', 'close', 'removeTrigger']);
 
-      const searchTerms = normalizedSearch.split(/\s+/).filter(Boolean);
-      const shortCodeWords = normalizedShortCode
-        .split(/[^a-z0-9]+/)
-        .filter(Boolean);
-      const contentWords = normalizedContent
-        .split(/[^a-z0-9]+/)
-        .filter(Boolean);
+// Characters kept before the match when a snippet has to skip ahead
+const SNIPPET_LEAD = 24;
+const HIGHLIGHT_CLASS = 'text-n-blue-text';
 
-      let score = 0;
+const store = useStore();
+const { t } = useI18n();
+const { getPlainText, formatMessage, highlightContent } = useMessageFormatter();
 
-      if (normalizedShortCode === normalizedSearch) score += 1000;
-      if (normalizedShortCode.startsWith(normalizedSearch)) score += 600;
-      if (normalizedContent.startsWith(normalizedSearch)) score += 250;
-      if (normalizedShortCode.includes(normalizedSearch)) score += 180;
-      if (normalizedContent.includes(normalizedSearch)) score += 80;
+const cannedResponses = useMapGetter('getCannedResponses');
+const uiFlags = useMapGetter('getUIFlags');
+// The trigger can already be followed by text, from a draft or a caret moved back onto it
+const searchQuery = ref(props.searchKey);
 
-      searchTerms.forEach(term => {
-        if (shortCodeWords.some(word => word.startsWith(term))) score += 120;
-        else if (normalizedShortCode.includes(term)) score += 50;
+const searchTerm = computed(() => searchQuery.value.trim());
 
-        if (contentWords.some(word => word.startsWith(term))) score += 40;
-        else if (normalizedContent.includes(term)) score += 15;
-      });
+// An empty term makes `highlightContent`'s regex match at every position, wrapping the
+// whole string in empty spans
+const highlightMatches = text =>
+  searchTerm.value
+    ? highlightContent(text, searchTerm.value, HIGHLIGHT_CLASS)
+    : text;
 
-      return score;
-    },
-    async fetchCannedResponses() {
-      await this.$store.dispatch('getCannedResponse', {
-        searchKey: '',
-      });
-      this.allCannedMessages = [...this.cannedMessages];
-    },
-    handleMentionClick(item = {}) {
-      this.$emit('replace', item.description);
-    },
-  },
+const buildSnippet = text => {
+  const term = searchTerm.value;
+  if (!term) return text;
+
+  const index = text.toLowerCase().indexOf(term.toLowerCase());
+  if (index <= SNIPPET_LEAD) return text;
+
+  return `…${text.slice(index - SNIPPET_LEAD)}`;
 };
+
+// Both steps mirror what insertion does: variables are substituted, then formatting the
+// channel's schema cannot carry is stripped. Previewing the raw content would advertise
+// styling the message never ends up with.
+const resolveContent = message =>
+  stripUnsupportedFormatting(
+    resolveVariablesInMessage(message, props.variables),
+    props.schema
+  );
+
+const records = computed(() =>
+  cannedResponses.value.map(({ id, short_code: shortCode, content }) => {
+    const resolved = resolveContent(content);
+    return {
+      id,
+      content,
+      resolved,
+      shortCode,
+      plainText: getPlainText(resolved).replace(/\s+/g, ' ').trim(),
+    };
+  })
+);
+
+const filteredRecords = computed(() => {
+  if (!searchTerm.value) return records.value;
+
+  return picoSearch(records.value, searchTerm.value, [
+    { name: 'shortCode', weight: 1 },
+    'plainText',
+  ]);
+});
+
+const items = computed(() =>
+  filteredRecords.value.map(record => ({
+    id: record.id,
+    content: record.content,
+    resolved: record.resolved,
+    label: `/${record.shortCode}`,
+    title: highlightMatches(`/${record.shortCode}`),
+    subtitle: highlightMatches(buildSnippet(record.plainText)),
+  }))
+);
+
+const onSelect = item => emit('replace', item.content);
+
+onMounted(() => store.dispatch('getCannedResponse'));
 </script>
 
-<!-- eslint-disable-next-line vue/no-root-v-if -->
 <template>
-  <MentionBox
-    v-if="items.length"
+  <CaretAnchoredPicker
+    v-model:search="searchQuery"
+    :caret-position="caretPosition"
     :items="items"
-    size="expanded"
-    @mention-select="handleMentionClick"
-  />
+    :search-placeholder="t('COMBOBOX.SEARCH_PLACEHOLDER')"
+    :is-loading="uiFlags.fetchingList"
+    :empty-label="
+      searchTerm
+        ? t('COMBOBOX.EMPTY_SEARCH_RESULTS', { searchTerm })
+        : t('COMBOBOX.EMPTY_STATE')
+    "
+    @select="onSelect"
+    @close="emit('close')"
+    @remove-trigger="emit('removeTrigger')"
+  >
+    <template #preview="{ item }">
+      <div
+        v-dompurify-html="formatMessage(item?.resolved || '')"
+        class="px-4 py-3 prose prose-bubble !max-w-none prose-a:text-n-brand"
+      />
+    </template>
+  </CaretAnchoredPicker>
 </template>

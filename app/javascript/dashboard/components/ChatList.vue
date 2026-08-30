@@ -171,22 +171,8 @@ const activeFolder = computed(() => {
   return undefined;
 });
 
-const activeFolderFilters = computed(() => {
-  const payload = activeFolder.value?.query?.payload;
-
-  if (!Array.isArray(payload)) {
-    return [];
-  }
-
-  const normalizedFilters = payload.map(filter => useCamelCase(filter));
-  const syncedFilters = syncFiltersWithAssigneeTab(
-    normalizedFilters,
-    activeAssigneeTab.value,
-    currentUserDetails.value
-  );
-
-  return useSnakeCase(syncedFilters);
-});
+const getContact = useMapGetter('contacts/getContact');
+const folderContactId = useMapGetter('customViews/getActiveFolderContactId');
 
 const activeFolderName = computed(() => {
   return activeFolder.value?.name;
@@ -203,6 +189,23 @@ const hasAppliedFiltersOrActiveFolders = computed(() => {
 const currentUserDetails = computed(() => {
   const { id, name } = currentUser.value;
   return { id, name };
+});
+
+const activeFolderFilters = computed(() => {
+  const payload = activeFolder.value?.query?.payload;
+
+  if (!Array.isArray(payload)) {
+    return [];
+  }
+
+  const normalizedFilters = payload.map(filter => useCamelCase(filter));
+  const syncedFilters = syncFiltersWithAssigneeTab(
+    normalizedFilters,
+    activeAssigneeTab.value,
+    currentUserDetails.value
+  );
+
+  return useSnakeCase(syncedFilters);
 });
 
 const userPermissions = computed(() => {
@@ -331,8 +334,17 @@ const pageTitle = computed(() => {
   return t('CHAT_LIST.TAB_HEADING');
 });
 
+function sortByUnreadStatus(conversations) {
+  return [...conversations].sort((a, b) => {
+    const unreadCountDiff = (b.unread_count || 0) - (a.unread_count || 0);
+    if (unreadCountDiff !== 0) return unreadCountDiff;
+
+    return (b.last_activity_at || 0) - (a.last_activity_at || 0);
+  });
+}
+
 const conversationList = computed(() => {
-  return allConversations.value.filter(conversation => {
+  const filteredConversations = allConversations.value.filter(conversation => {
     const matchesAssigneeTab =
       activeAssigneeTab.value === wootConstants.ASSIGNEE_TYPE.ALL ||
       (activeAssigneeTab.value === wootConstants.ASSIGNEE_TYPE.ME &&
@@ -354,6 +366,15 @@ const conversationList = computed(() => {
 
     return true;
   });
+
+  if (
+    !hasAppliedFiltersOrActiveFolders.value &&
+    activeSortBy.value === wootConstants.SORT_BY_TYPE.UNREAD
+  ) {
+    return sortByUnreadStatus(filteredConversations);
+  }
+
+  return filteredConversations;
 });
 
 const showEndOfListMessage = computed(() => {
@@ -454,7 +475,9 @@ async function refreshUnreadConversationStats() {
     const {
       data: { meta = {} },
     } = await ConversationApi.filter({
-      queryData: filterQueryGenerator(buildPayloadForAssigneeType(assigneeType)),
+      queryData: filterQueryGenerator(
+        buildPayloadForAssigneeType(assigneeType)
+      ),
       page: 1,
     });
 
@@ -516,7 +539,10 @@ function fetchFilteredConversations(payload) {
       page,
       filterType,
     })
-    .then(emitConversationLoaded);
+    .catch(() => useAlert(t('CHAT_LIST.FETCH_ERROR')))
+    // emit even on failure so a deep-linked conversation still loads via
+    // fetchConversationIfUnavailable
+    .finally(emitConversationLoaded);
 
   showAdvancedFilters.value = false;
 }
@@ -602,7 +628,8 @@ function fetchSavedFilteredConversations(payload) {
       queryData: filterQueryGenerator(payload),
       page,
     })
-    .then(emitConversationLoaded);
+    .catch(() => useAlert(t('CHAT_LIST.FETCH_ERROR')))
+    .finally(emitConversationLoaded);
 }
 
 function onApplyFilter(payload) {
@@ -669,6 +696,7 @@ function setParamsForEditFolderModal() {
     inboxes: inboxesList.value,
     labels: labels.value,
     campaigns: campaigns.value,
+    contacts: [getContact.value(folderContactId.value)],
     languages: languages,
     countries: countries,
     priority: [
@@ -828,7 +856,10 @@ function updateAssigneeTab(selectedTab) {
         currentUserDetails.value
       );
 
-      store.dispatch('setConversationFilters', useSnakeCase(nextAppliedFilters));
+      store.dispatch(
+        'setConversationFilters',
+        useSnakeCase(nextAppliedFilters)
+      );
       fetchFilteredConversations(nextAppliedFilters);
     } else if (!currentPage.value) {
       fetchConversations();
