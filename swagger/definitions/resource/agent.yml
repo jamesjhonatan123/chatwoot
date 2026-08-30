@@ -31,6 +31,12 @@ properties:
     type: string
     enum: ['agent', 'administrator']
     description: The role of the agent
+  skip_agent_signature:
+    type: boolean
+    description: >-
+      When true, outgoing messages sent by this agent are not prefixed with the
+      agent name on inboxes that sign with the agent name. Used by automation
+      and AI accounts that share an inbox with human agents.
   thumbnail:
     type: string
     description: The thumbnail of the agent

@@ -127,6 +127,19 @@ RSpec.describe 'Agents API', type: :request do
         expect(other_agent.reload.name).to eq(params[:name])
       end
 
+      # A flag mora em `users`, nao em `account_users`: quem nao assina e a conta
+      # de automacao inteira, em qualquer conta a que ela pertenca.
+      it 'marks an agent to skip the outgoing signature' do
+        put "/api/v1/accounts/#{account.id}/agents/#{other_agent.id}",
+            params: { skip_agent_signature: true },
+            headers: admin.create_new_auth_token,
+            as: :json
+
+        expect(response).to have_http_status(:success)
+        expect(response.parsed_body['skip_agent_signature']).to be(true)
+        expect(other_agent.reload.skip_agent_signature).to be(true)
+      end
+
       it 'modifies an agents account user attributes' do
         put "/api/v1/accounts/#{account.id}/agents/#{other_agent.id}",
             params: { role: 'administrator', availability: 'busy', auto_offline: false },
