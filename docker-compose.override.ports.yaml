@@ -1,0 +1,17 @@
+# Ajustes locais desta maquina. Dois problemas do compose padrao:
+#
+# 1) O Compose SOMA listas de ports em vez de substituir: o docker-compose.yaml
+#    publica 5432 e o override.local acrescenta 5433, entao o postgres tentava
+#    as duas. Aqui a 5432 esta com um Postgres nativo e a 5433 com o
+#    maeduca_postgres_v2. O `!override` troca a lista inteira por uma porta livre.
+#
+# 2) O volume `postgres` e montado em /data/postgres, mas o PGDATA do container
+#    e /var/lib/postgresql/data. Ou seja: o volume nomeado fica vazio e o banco
+#    de desenvolvimento mora na camada gravavel do container — some em qualquer
+#    `compose down` que remova o container, ou num prune. Foi o que aconteceu.
+services:
+  postgres:
+    ports: !override
+      - "5434:5432"
+    volumes: !override
+      - postgres:/var/lib/postgresql/data
