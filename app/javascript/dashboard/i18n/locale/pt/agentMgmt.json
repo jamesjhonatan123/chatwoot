@@ -82,6 +82,10 @@
           "PLACEHOLDER": "Por favor, selecione um estado de disponibilidade",
           "ERROR": "Disponibilidade é necessária"
         },
+        "SKIP_AGENT_SIGNATURE": {
+          "LABEL": "Não assinar as mensagens com este nome",
+          "HELP": "Para contas de automação e da IA. Os atendentes da mesma caixa continuam a assinar."
+        },
         "SUBMIT": "Editar agente"
       },
       "BUTTON_TEXT": "Editar",

@@ -38,6 +38,10 @@ const props = defineProps({
     type: Number,
     default: null,
   },
+  skipAgentSignature: {
+    type: Boolean,
+    default: false,
+  },
 });
 
 const emit = defineEmits(['close']);
@@ -51,6 +55,7 @@ const agentName = ref(props.name);
 const agentAvailability = ref(props.availability);
 const selectedRoleId = ref(props.customRoleId || props.type);
 const agentCredentials = ref({ email: props.email });
+const skipSignature = ref(props.skipAgentSignature);
 
 const rules = {
   agentName: { required, minLength: minLength(1) },
@@ -126,6 +131,7 @@ const editAgent = async () => {
       id: props.id,
       name: agentName.value,
       availability: agentAvailability.value,
+      skip_agent_signature: skipSignature.value,
     };
 
     if (selectedRole.value.name.startsWith('custom_')) {
@@ -200,6 +206,23 @@ const resetPassword = async () => {
           </select>
           <span v-if="v$.agentAvailability.$error" class="message">
             {{ $t('AGENT_MGMT.EDIT.FORM.AGENT_AVAILABILITY.ERROR') }}
+          </span>
+        </label>
+      </div>
+
+      <div class="w-full">
+        <label for="skipAgentSignature" class="flex items-start gap-2">
+          <input
+            id="skipAgentSignature"
+            v-model="skipSignature"
+            type="checkbox"
+            class="checkbox mt-0.5"
+          />
+          <span class="flex flex-col">
+            {{ $t('AGENT_MGMT.EDIT.FORM.SKIP_AGENT_SIGNATURE.LABEL') }}
+            <span class="text-sm text-n-slate-11">
+              {{ $t('AGENT_MGMT.EDIT.FORM.SKIP_AGENT_SIGNATURE.HELP') }}
+            </span>
           </span>
         </label>
       </div>

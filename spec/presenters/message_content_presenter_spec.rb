@@ -95,6 +95,22 @@ RSpec.describe MessageContentPresenter do
         )
         expect(presenter.outgoing_content).to eq('Hello customer')
       end
+
+      # A caixa oficial e compartilhada: a conta de automacao manda pela mesma
+      # caixa em que os atendentes atendem. Desligar a assinatura da CAIXA
+      # calaria a assinatura deles junto.
+      it 'does not sign messages from a sender marked to skip the signature' do
+        agent.update!(skip_agent_signature: true)
+        expect(presenter.outgoing_content).to eq('Hello customer')
+      end
+
+      it 'keeps signing the other agents of the same inbox' do
+        agent.update!(skip_agent_signature: true)
+        outro = create(:user, account: account, name: 'Brenda', display_name: 'Brenda')
+        message.update!(sender: outro)
+
+        expect(presenter.outgoing_content).to eq("*Brenda*:\nHello customer")
+      end
     end
   end
 

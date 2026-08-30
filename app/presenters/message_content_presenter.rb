@@ -28,14 +28,28 @@ class MessageContentPresenter < SimpleDelegator
     body.present? ? "#{signature_prefix}\n#{body}" : signature_prefix
   end
 
+  # A caixa oficial e compartilhada: os atendentes assinam, a automacao nao.
+  # Por isso a excecao e do REMETENTE, e nao da caixa nem do papel — desligar a
+  # assinatura da caixa calaria a assinatura dos atendentes na mesma caixa, e
+  # "administrador" tambem nao serve porque parte da equipe e administradora.
   def should_sign_with_agent_name?
     return false unless outgoing?
     return false if private?
-    return false if additional_attributes&.dig('template_params').present?
+    return false if signature_suppressed?
     return false unless inbox&.sign_with_agent_name?
     return false unless inbox.channel_type == 'Channel::Whatsapp'
 
     true
+  end
+
+  # Dois motivos independentes de nao assinar: mensagem de template (regra que
+  # ja existia) e conta de automacao.
+  def signature_suppressed?
+    additional_attributes&.dig('template_params').present? || sender_skips_signature?
+  end
+
+  def sender_skips_signature?
+    sender.present? && sender.try(:skip_agent_signature).present?
   end
 
   def signature_agent_name

@@ -82,6 +82,10 @@
           "PLACEHOLDER": "Please select an availability status",
           "ERROR": "Availability is required"
         },
+        "SKIP_AGENT_SIGNATURE": {
+          "LABEL": "Do not sign messages with this name",
+          "HELP": "For automation and AI accounts. Human agents on the same inbox keep their signature."
+        },
         "SUBMIT": "Edit Agent"
       },
       "BUTTON_TEXT": "Edit",

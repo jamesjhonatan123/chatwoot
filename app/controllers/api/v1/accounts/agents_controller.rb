@@ -23,7 +23,7 @@ class Api::V1::Accounts::AgentsController < Api::V1::Accounts::BaseController
   end
 
   def update
-    @agent.update!(agent_params.slice(:name).compact)
+    @agent.update!(agent_params.slice(*user_attributes).compact)
     @agent.current_account_user.update!(agent_params.slice(*account_user_attributes).compact)
   end
 
@@ -71,8 +71,14 @@ class Api::V1::Accounts::AgentsController < Api::V1::Accounts::BaseController
     [:role, :availability, :auto_offline]
   end
 
+  # Mora em `users`, nao em `account_users`: quem nao assina e a conta de
+  # automacao inteira, nao o vinculo dela com uma conta.
+  def user_attributes
+    [:name, :skip_agent_signature]
+  end
+
   def allowed_agent_params
-    [:name, :email, :role, :availability, :auto_offline]
+    [:name, :email, :role, :availability, :auto_offline, :skip_agent_signature]
   end
 
   def agent_params
