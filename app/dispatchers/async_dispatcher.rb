@@ -16,6 +16,7 @@ class AsyncDispatcher < BaseDispatcher
       FollowUpListener.instance,
       HookListener.instance,
       InstallationWebhookListener.instance,
+      MetaCapiListener.instance,
       NotificationListener.instance,
       ParticipationListener.instance,
       Conversations::UnreadCounts::Listener.instance,
