@@ -68,7 +68,7 @@ describe MetaCapiListener, type: :service do
     inbox.messages.last
   end
 
-  it 'turns a real CTWA webhook into a Lead carrying the click id' do
+  it 'turns a real CTWA webhook into a LeadSubmitted carrying the click id' do
     allow(MetaCapi::SendEventJob).to receive(:perform_later)
     message = ingest_ad_message
 
@@ -76,7 +76,7 @@ describe MetaCapiListener, type: :service do
 
     expect(MetaCapi::SendEventJob).to have_received(:perform_later) do |args|
       expect(args[:phone_number_id]).to eq('1171321216059936')
-      expect(args[:event][:event_name]).to eq('Lead')
+      expect(args[:event][:event_name]).to eq('LeadSubmitted')
       expect(args[:event][:user_data][:ctwa_clid]).to eq(ctwa_clid)
       expect(args[:event][:user_data][:ph]).to eq(Digest::SHA256.hexdigest(sender_number))
     end

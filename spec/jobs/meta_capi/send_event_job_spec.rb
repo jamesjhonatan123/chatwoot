@@ -6,7 +6,7 @@ describe MetaCapi::SendEventJob do
   let(:endpoint) { 'https://graph.facebook.com/v21.0/550018626702869/events' }
   let(:event) do
     {
-      event_name: 'Lead', event_id: 'lead-1', event_time: 1_725_480_000,
+      event_name: 'LeadSubmitted', event_id: 'lead-1', event_time: 1_725_480_000,
       action_source: 'business_messaging', messaging_channel: 'whatsapp',
       user_data: { ctwa_clid: 'AfhcQdP2E4A8wWpeb1FqUzUi', page_id: '1', ph: 'hash' }
     }
@@ -73,7 +73,7 @@ describe MetaCapi::SendEventJob do
     serialized = ActiveJob::Arguments.serialize([{ phone_number_id: '1171321216059936', event: event }])
     deserialized = ActiveJob::Arguments.deserialize(serialized).first
 
-    expect(deserialized[:event][:event_name]).to eq('Lead')
+    expect(deserialized[:event][:event_name]).to eq('LeadSubmitted')
     expect(deserialized[:event][:user_data][:ctwa_clid]).to eq('AfhcQdP2E4A8wWpeb1FqUzUi')
   end
 end

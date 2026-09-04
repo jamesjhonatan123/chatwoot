@@ -52,7 +52,7 @@ describe MetaCapiListener do
       expect(MetaCapi::SendEventJob).to receive(:perform_later).with(
         phone_number_id: '1171321216059936',
         event: hash_including(
-          event_name: 'Lead',
+          event_name: 'LeadSubmitted',
           event_id: "lead-#{message.id}",
           action_source: 'business_messaging',
           messaging_channel: 'whatsapp',

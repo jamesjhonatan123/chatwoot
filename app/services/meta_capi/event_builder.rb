@@ -11,6 +11,11 @@ class MetaCapi::EventBuilder
   ACTION_SOURCE = 'business_messaging'.freeze
   MESSAGING_CHANNEL = 'whatsapp'.freeze
 
+  # Com action_source business_messaging a Meta usa outra taxonomia de eventos: "Lead" e
+  # recusado com "tipo de evento invalido" (subcode 2804066). O nome aceito e LeadSubmitted.
+  LEAD_EVENT = 'LeadSubmitted'.freeze
+  PURCHASE_EVENT = 'Purchase'.freeze
+
   def initialize(praca:, conversation:, ctwa_clid:)
     @praca = praca
     @conversation = conversation
@@ -19,12 +24,12 @@ class MetaCapi::EventBuilder
 
   # O event_id sai do id da mensagem: uma reentrega do job manda o mesmo id e a Meta deduplica.
   def lead(message)
-    build('Lead', "lead-#{message.id}", message.created_at)
+    build(LEAD_EVENT, "lead-#{message.id}", message.created_at)
   end
 
   # Idem, mas por conversa: a venda e uma so, mesmo que a etiqueta seja reaplicada.
   def purchase(custom_data: nil)
-    build('Purchase', "purchase-#{@conversation.id}", Time.current, custom_data)
+    build(PURCHASE_EVENT, "purchase-#{@conversation.id}", Time.current, custom_data)
   end
 
   private
@@ -42,12 +47,25 @@ class MetaCapi::EventBuilder
     event
   end
 
+  # A Meta exige page_id OU whatsapp_business_account_id (subcode 2804116) — nao e opcional.
+  # Qual dos dois depende de como o dataset foi criado: um dataset vinculado a WABA aceita o
+  # whatsapp_business_account_id; o pixel do site so aceita o page_id. Por isso o page_id
+  # configurado tem precedencia, e a WABA da inbox e o fallback.
   def user_data
-    {
-      ctwa_clid: @ctwa_clid,
-      page_id: @praca.page_id,
-      ph: hashed_phone
-    }.compact
+    identity = if @praca.page_id.present?
+                 { page_id: @praca.page_id }
+               else
+                 { whatsapp_business_account_id: whatsapp_business_account_id }
+               end
+
+    { ctwa_clid: @ctwa_clid, ph: hashed_phone }.merge(identity).compact
+  end
+
+  def whatsapp_business_account_id
+    channel = @conversation&.inbox&.channel
+    return unless channel.is_a?(Channel::Whatsapp)
+
+    channel.provider_config['business_account_id'].presence
   end
 
   # A Meta exige E.164 sem o '+', sem espacos e sem pontuacao, hasheado em SHA-256.
