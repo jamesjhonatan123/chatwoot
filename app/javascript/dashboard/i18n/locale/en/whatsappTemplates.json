@@ -22,7 +22,12 @@
       "LABELS": {
         "LANGUAGE": "Language",
         "TEMPLATE_BODY": "Template Body",
-        "CATEGORY": "Category"
+        "CATEGORY": "Category",
+        "CATEGORY_FILTER": "Filter by category",
+        "ALL_CATEGORIES": "All categories",
+        "NO_CATEGORY": "No category",
+        "SEARCH_CATEGORY": "Search category",
+        "NO_CATEGORY_FOUND": "No category found"
       }
     },
     "PARSER": {

@@ -87,31 +87,42 @@ const helpURL = getHelpUrlForFeature(props.featureName);
   </div>
   <div
     v-if="searchPlaceholder || slots.actions || slots.tabs"
-    class="gap-3 flex flex-wrap sm:flex-nowrap justify-between sm:mt-4 min-w-0"
+    class="gap-3 flex flex-wrap justify-between sm:mt-4 min-w-0"
   >
     <div
       v-if="slots.tabs || searchPlaceholder"
-      class="flex items-center gap-3 min-w-0"
+      class="flex flex-wrap items-center gap-3 min-w-0"
       :class="{
         'hidden sm:flex': !slots.tabs,
       }"
     >
       <slot name="tabs" />
-      <Input
+      <!-- O layout fica no wrapper, e nao no <Input>: o componente repassa
+           $attrs para o <input> interno, entao `hidden sm:flex` e `w-56` caiam
+           no proprio campo e brigavam com o `w-full` dele. O que e do campo vai
+           por `custom-input-class`, que e a porta do componente para isso.
+           `min-w-44` e o piso: os filtros no slot #tabs disputam a mesma linha
+           e, sem ele, a busca encolhia ate virar um risco. -->
+      <div
         v-if="searchPlaceholder"
-        v-model="searchQuery"
-        :placeholder="searchPlaceholder"
-        class="group w-56 min-w-0 hidden sm:flex [&>input]:ltr:!pl-8 [&>input]:rtl:!pr-8 [&>input]:!rounded-[0.625rem]"
-        size="sm"
-        type="search"
+        class="group relative hidden w-56 min-w-44 sm:flex"
       >
-        <template #prefix>
-          <Icon
-            icon="i-lucide-search"
-            class="absolute top-1/2 -translate-y-1/2 text-n-slate-11 group-focus-within:text-n-brand size-3.5 ltr:left-2.5 rtl:right-2.5"
-          />
-        </template>
-      </Input>
+        <Input
+          v-model="searchQuery"
+          :placeholder="searchPlaceholder"
+          class="w-full"
+          custom-input-class="ltr:!pl-8 rtl:!pr-8 !rounded-[0.625rem]"
+          size="sm"
+          type="search"
+        >
+          <template #prefix>
+            <Icon
+              icon="i-lucide-search"
+              class="absolute top-1/2 -translate-y-1/2 text-n-slate-11 group-focus-within:text-n-brand size-3.5 ltr:left-2.5 rtl:right-2.5"
+            />
+          </template>
+        </Input>
+      </div>
     </div>
     <div
       class="flex items-center gap-3 shrink-0"

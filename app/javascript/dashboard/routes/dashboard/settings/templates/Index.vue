@@ -4,6 +4,7 @@ import { picoSearch } from '@chatwoot/pico-search';
 import { useI18n } from 'vue-i18n';
 import { vOnClickOutside } from '@vueuse/components';
 
+import { useAdmin } from 'dashboard/composables/useAdmin';
 import { useAlert } from 'dashboard/composables';
 import { useMapGetter, useStore } from 'dashboard/composables/store';
 import { useAbortableRequest } from 'dashboard/composables/useAbortableRequest';
@@ -15,6 +16,7 @@ import DropdownMenu from 'dashboard/components-next/dropdown-menu/DropdownMenu.v
 import Icon from 'dashboard/components-next/icon/Icon.vue';
 import BaseSettingsHeader from '../components/BaseSettingsHeader.vue';
 import SettingsLayout from '../SettingsLayout.vue';
+import CategoryManagerDialog from './CategoryManagerDialog.vue';
 import TemplateCard from './TemplateCard.vue';
 import TemplatePreviewDrawer from './TemplatePreviewDrawer.vue';
 import {
@@ -38,6 +40,7 @@ const TEMPLATE_LEARN_MORE_URL =
 
 const store = useStore();
 const { t } = useI18n();
+const { isAdmin } = useAdmin();
 
 const inboxes = useMapGetter('inboxes/getInboxes');
 const templates = ref([]);
@@ -50,6 +53,7 @@ const categories = ref([]);
 const selectedTemplate = ref(null);
 const openFilterMenu = ref(null);
 const previewPanelRef = ref(null);
+const categoryManagerRef = ref(null);
 const templateRecordsByInboxId = new Map();
 const lastSyncAttemptsByInboxId = ref({});
 const isSyncing = ref(false);
@@ -470,6 +474,15 @@ onDeactivated(abortTemplateRequest);
         </template>
         <template #actions>
           <Button
+            v-if="isAdmin"
+            :label="$t('WHATSAPP_TEMPLATE_MGMT.CATEGORY_MANAGER.OPEN')"
+            icon="i-lucide-tags"
+            color="slate"
+            variant="faded"
+            size="sm"
+            @click="categoryManagerRef?.open()"
+          />
+          <Button
             :label="$t('WHATSAPP_TEMPLATE_MGMT.SYNC_TEMPLATES')"
             icon="i-lucide-refresh-cw"
             color="slate"
@@ -508,5 +521,12 @@ onDeactivated(abortTemplateRequest);
     </template>
 
     <TemplatePreviewDrawer ref="previewPanelRef" :template="selectedTemplate" />
+
+    <CategoryManagerDialog
+      v-if="isAdmin"
+      ref="categoryManagerRef"
+      :categories="categories"
+      @changed="fetchCategories"
+    />
   </SettingsLayout>
 </template>

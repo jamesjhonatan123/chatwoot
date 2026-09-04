@@ -56,6 +56,27 @@
       "REMOVE": "Remove from category",
       "CHANGE": "Change the category of {name}"
     },
+    "CATEGORY_MANAGER": {
+      "OPEN": "Categories",
+      "TITLE": "Template categories",
+      "DESCRIPTION": "Your own categories to organise templates by area. They are not the Meta category (UTILITY, MARKETING, AUTHENTICATION).",
+      "EMPTY": "No category yet. Create the first one below.",
+      "NAME_PLACEHOLDER": "Category name",
+      "ADD": "Add",
+      "RENAME": "Rename",
+      "SAVE": "Save",
+      "CANCEL": "Cancel",
+      "DONE": "Done",
+      "DELETE": "Delete",
+      "DELETE_CONFIRM": "Delete \"{name}\"? The templates go back to having no category.",
+      "DUPLICATED": "There is already a category with this name.",
+      "IN_USE": "{n} templates",
+      "CREATE_ERROR": "Could not create the category. Try again.",
+      "UPDATE_ERROR": "Could not save the category. Try again.",
+      "DELETE_ERROR": "Could not delete the category. Try again.",
+      "SEARCH": "Search category",
+      "NO_RESULTS": "No category matches this search."
+    },
     "CATEGORY_ERROR": "Could not change the template category. Please try again."
   }
 }

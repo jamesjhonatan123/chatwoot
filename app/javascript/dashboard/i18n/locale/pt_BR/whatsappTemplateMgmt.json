@@ -50,6 +50,27 @@
       "REMOVE": "Tirar da categoria",
       "CHANGE": "Alterar a categoria de {name}"
     },
+    "CATEGORY_MANAGER": {
+      "OPEN": "Categorias",
+      "TITLE": "Categorias de template",
+      "DESCRIPTION": "Categorias suas, para organizar os templates por área. Não são a categoria da Meta (UTILITY, MARKETING, AUTHENTICATION).",
+      "EMPTY": "Nenhuma categoria ainda. Crie a primeira aqui embaixo.",
+      "NAME_PLACEHOLDER": "Nome da categoria",
+      "ADD": "Adicionar",
+      "RENAME": "Renomear",
+      "SAVE": "Salvar",
+      "CANCEL": "Cancelar",
+      "DONE": "Pronto",
+      "DELETE": "Excluir",
+      "DELETE_CONFIRM": "Excluir \"{name}\"? Os templates voltam a ficar sem categoria.",
+      "DUPLICATED": "Já existe uma categoria com esse nome.",
+      "IN_USE": "{n} templates",
+      "CREATE_ERROR": "Não foi possível criar a categoria. Tente de novo.",
+      "UPDATE_ERROR": "Não foi possível salvar a categoria. Tente de novo.",
+      "DELETE_ERROR": "Não foi possível excluir a categoria. Tente de novo.",
+      "SEARCH": "Buscar categoria",
+      "NO_RESULTS": "Nenhuma categoria corresponde a esta busca."
+    },
     "CATEGORY_ERROR": "Não foi possível alterar a categoria do template. Tente de novo."
   }
 }
