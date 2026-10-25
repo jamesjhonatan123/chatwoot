@@ -44,6 +44,7 @@ import whatsappTemplateMgmt from './whatsappTemplateMgmt.json';
 import contentTemplates from './contentTemplates.json';
 import mfa from './mfa.json';
 import kanban from './kanban.json';
+import liaSuggestion from './liaSuggestion.json';
 import onboarding from './onboarding.json';
 import sessionLimit from './sessionLimit.json';
 import yearInReview from './yearInReview.json';
@@ -95,6 +96,7 @@ export default {
   ...contentTemplates,
   ...mfa,
   ...kanban,
+  ...liaSuggestion,
   ...onboarding,
   ...sessionLimit,
   ...yearInReview,

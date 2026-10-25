@@ -150,6 +150,16 @@ class ConversationApi extends ApiClient {
     );
   }
 
+  getLiaSuggestion(conversationId) {
+    return axios.get(`${this.url}/${conversationId}/lia_suggestion`);
+  }
+
+  dismissLiaSuggestion(conversationId, suggestionId) {
+    return axios.post(`${this.url}/${conversationId}/lia_suggestion/dismiss`, {
+      suggestion_id: suggestionId,
+    });
+  }
+
   getInboxAssistant(conversationId) {
     return axios.get(`${this.url}/${conversationId}/inbox_assistant`);
   }
