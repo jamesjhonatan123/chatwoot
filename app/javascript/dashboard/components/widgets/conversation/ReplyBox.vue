@@ -7,6 +7,7 @@ import { useTrack } from 'dashboard/composables';
 import keyboardEventListenerMixins from 'shared/mixins/keyboardEventListenerMixins';
 
 import ReplyToMessage from './ReplyToMessage.vue';
+import LiaSuggestionBand from './LiaSuggestionBand.vue';
 import AttachmentPreview from 'dashboard/components/widgets/AttachmentsPreview.vue';
 import ReplyTopPanel from 'dashboard/components/widgets/WootWriter/ReplyTopPanel.vue';
 import ReplyEmailHead from './ReplyEmailHead.vue';
@@ -80,6 +81,7 @@ export default {
     ReplyBottomPanel,
     ReplyEmailHead,
     ReplyToMessage,
+    LiaSuggestionBand,
     ReplyTopPanel,
     ContentTemplates,
     WhatsappTemplates,
@@ -105,6 +107,7 @@ export default {
 
     const replyEditor = useTemplateRef('replyEditor');
     const messageEditor = useTemplateRef('messageEditor');
+    const liaSuggestionBand = useTemplateRef('liaSuggestionBand');
     const copilot = useCopilotReply();
     const macroExecution = useMacroExecution();
     const shortcutKey = useKbd(['$mod', '+', 'enter']);
@@ -117,6 +120,7 @@ export default {
       fetchQuotedReplyFlagFromUISettings,
       replyEditor,
       messageEditor,
+      liaSuggestionBand,
       copilot,
       shortcutKey,
       macroExecution,
@@ -425,6 +429,14 @@ export default {
     },
     conversationId() {
       return this.currentChat.id;
+    },
+    // Id da ultima mensagem recebida do contato: dispara nova busca da sugestao da LIA.
+    lastIncomingMessageId() {
+      const messages = this.currentChat?.messages || [];
+      for (let i = messages.length - 1; i >= 0; i -= 1) {
+        if (messages[i].message_type === 0) return messages[i].id;
+      }
+      return null;
     },
     conversationIdByRoute() {
       return this.conversationId;
@@ -768,6 +780,10 @@ export default {
           },
           allowOnFocusedInput: true,
         },
+        Tab: {
+          action: e => this.onLiaSuggestionTab(e),
+          allowOnFocusedInput: true,
+        },
         '$mod+KeyK': {
           action: e => {
             e.preventDefault();
@@ -807,6 +823,25 @@ export default {
         this.isFocused &&
         this.isEditorHotKeyEnabled(selectedKey)
       );
+    },
+    // Tab so aceita a sugestao da LIA quando nenhum menu do editor esta aberto
+    // (mencoes, respostas prontas, variaveis, macros) e o editor esta vazio e focado.
+    onLiaSuggestionTab(e) {
+      const canUse =
+        !this.showUserMentions &&
+        !this.showMentions &&
+        !this.showCannedMenu &&
+        !this.showVariablesMenu &&
+        !this.showMacrosMenu &&
+        !e.shiftKey &&
+        this.isFocused &&
+        !this.hasMeaningfulEditorContent;
+      if (!canUse || !this.liaSuggestionBand?.useSuggestion()) return;
+      e.preventDefault();
+    },
+    onUseLiaSuggestion(text) {
+      this.message = text;
+      this.$nextTick(() => this.messageEditor?.focusEditorInputField('end'));
     },
     onPaste(e) {
       // Don't handle paste if compose new conversation modal is open
@@ -1478,6 +1513,15 @@ export default {
       @toggle-editor-size="toggleEditorSize"
       @toggle-copilot="copilot.toggleEditor"
       @execute-copilot-action="executeCopilotAction"
+    />
+    <LiaSuggestionBand
+      ref="liaSuggestionBand"
+      :conversation-id="conversationId"
+      :last-incoming-id="lastIncomingMessageId"
+      :is-resolved="currentChat.status === 'resolved'"
+      :is-private-note="isOnPrivateNote"
+      :has-content="hasMeaningfulEditorContent"
+      @use="onUseLiaSuggestion"
     />
     <ArticleSearchPopover
       v-if="showArticleSearchPopover && connectedPortalSlug"

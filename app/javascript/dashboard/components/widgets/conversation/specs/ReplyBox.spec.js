@@ -95,6 +95,7 @@ const mountWith = ({
   drafts,
   inboxes,
   isMetaMessageSendingDisabled,
+  extraStubs = {},
 }) => {
   const store = buildStore({
     inbox,
@@ -110,7 +111,7 @@ const mountWith = ({
       mocks: { $t: key => key },
       // The bottom panel sits inside a <Transition>, which shallowMount stubs
       // without rendering its children.
-      stubs: { transition: false },
+      stubs: { transition: false, ...extraStubs },
     },
   });
   return { wrapper, store };
@@ -429,6 +430,86 @@ describe('ReplyBox', () => {
       expect(store.getters['draftMessages/getReplyEditorMode']).toBe(
         REPLY_EDITOR_MODES.NOTE
       );
+    });
+  });
+  describe('LIA suggestion Tab shortcut', () => {
+    const useSuggestion = vi.fn(() => true);
+    const BandStub = {
+      name: 'LiaSuggestionBand',
+      template: '<div />',
+      methods: { useSuggestion },
+    };
+    const focusEditorInputField = vi.fn();
+    const EditorStub = {
+      name: 'WootMessageEditor',
+      template: '<div />',
+      methods: { focusEditorInputField },
+    };
+    const mountForTab = async () => {
+      const { wrapper } = mountWith({
+        inbox: { channel_type: 'Channel::Api' },
+        extraStubs: {
+          LiaSuggestionBand: BandStub,
+          WootMessageEditor: EditorStub,
+        },
+      });
+      await nextTick();
+      wrapper.vm.isFocused = true;
+      return wrapper;
+    };
+    const tab = () => ({ shiftKey: false, preventDefault: vi.fn() });
+
+    beforeEach(() => useSuggestion.mockClear());
+
+    it('consumes Tab with preventDefault when the editor is empty and focused', async () => {
+      const wrapper = await mountForTab();
+      const event = tab();
+      wrapper.vm.onLiaSuggestionTab(event);
+      expect(useSuggestion).toHaveBeenCalledTimes(1);
+      expect(event.preventDefault).toHaveBeenCalled();
+    });
+
+    it.each([
+      'showCannedMenu',
+      'showMentions',
+      'showUserMentions',
+      'showVariablesMenu',
+      'showMacrosMenu',
+    ])('does not consume Tab while %s is open', async menu => {
+      const wrapper = await mountForTab();
+      wrapper.vm[menu] = true;
+      const event = tab();
+      wrapper.vm.onLiaSuggestionTab(event);
+      expect(useSuggestion).not.toHaveBeenCalled();
+      expect(event.preventDefault).not.toHaveBeenCalled();
+    });
+
+    it('does not consume Tab when the editor has content or is not focused', async () => {
+      const wrapper = await mountForTab();
+      wrapper.vm.message = 'já escrevi algo';
+      const event = tab();
+      wrapper.vm.onLiaSuggestionTab(event);
+      wrapper.vm.message = '';
+      wrapper.vm.isFocused = false;
+      wrapper.vm.onLiaSuggestionTab(event);
+      expect(useSuggestion).not.toHaveBeenCalled();
+      expect(event.preventDefault).not.toHaveBeenCalled();
+    });
+
+    it('does not prevent Tab when the band has nothing to use', async () => {
+      useSuggestion.mockReturnValueOnce(false);
+      const wrapper = await mountForTab();
+      const event = tab();
+      wrapper.vm.onLiaSuggestionTab(event);
+      expect(event.preventDefault).not.toHaveBeenCalled();
+    });
+
+    it('puts the suggestion text in the editor', async () => {
+      const wrapper = await mountForTab();
+      wrapper.vm.onUseLiaSuggestion('Texto da LIA');
+      await nextTick();
+      expect(wrapper.vm.message).toBe('Texto da LIA');
+      expect(focusEditorInputField).toHaveBeenCalled();
     });
   });
 });

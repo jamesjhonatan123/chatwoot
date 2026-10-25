@@ -190,6 +190,9 @@ Rails.application.routes.draw do
               resource :direct_uploads, only: [:create]
               resource :draft_messages, only: [:show, :update, :destroy]
               resources :scheduled_messages, only: [:index, :create, :destroy]
+              resource :lia_suggestion, only: [:show] do
+                post :dismiss
+              end
               resources :follow_up_runs, only: [:index, :create, :destroy] do
                 member do
                   post :retry

@@ -1,0 +1,11 @@
+{
+  "LIA_SUGGESTION": {
+    "TITLE": "Suggested reply",
+    "USE": "Use",
+    "DISMISS": "Dismiss suggestion",
+    "SOURCE_QUICK_REPLY": "from a quick reply",
+    "SOURCE_HISTORY": "from a previous team reply",
+    "SOURCE_CANNED": "from a canned response",
+    "KEY_TAB": "Tab"
+  }
+}

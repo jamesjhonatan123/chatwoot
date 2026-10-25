@@ -46,6 +46,7 @@ import webhooks from './webhooks.json';
 import whatsappTemplates from './whatsappTemplates.json';
 import followUps from './followUps.json';
 import kanban from './kanban.json';
+import liaSuggestion from './liaSuggestion.json';
 import whatsappTemplateMgmt from './whatsappTemplateMgmt.json';
 import yearInReview from './yearInReview.json';
 
@@ -98,6 +99,7 @@ export default {
   ...webhooks,
   ...whatsappTemplates,
   ...kanban,
+  ...liaSuggestion,
   ...whatsappTemplateMgmt,
   ...yearInReview,
 };
