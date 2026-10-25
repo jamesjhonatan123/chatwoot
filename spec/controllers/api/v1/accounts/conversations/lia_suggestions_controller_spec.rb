@@ -41,7 +41,7 @@ RSpec.describe 'Conversation LIA Suggestion API', type: :request do
         end
 
         expect(response).to have_http_status(:success)
-        expect(response.parsed_body).to eq('suggestion' => nil, 'reason' => 'disabled')
+        expect(response.parsed_body).to eq('suggestion' => nil, 'options' => [], 'options_id' => nil, 'reason' => 'disabled')
         expect(stub).not_to have_been_requested
       end
 
@@ -59,7 +59,8 @@ RSpec.describe 'Conversation LIA Suggestion API', type: :request do
         expect(stub).to have_been_requested
         expect(response).to have_http_status(:success)
         expect(response.parsed_body).to eq(
-          'suggestion' => { 'id' => suggestion_id, 'text' => 'Oi!', 'source' => 'canned' }, 'reason' => 'ok'
+          'suggestion' => { 'id' => suggestion_id, 'text' => 'Oi!', 'source' => 'canned' },
+          'options' => [], 'options_id' => nil, 'reason' => 'ok'
         )
       end
 
@@ -69,7 +70,44 @@ RSpec.describe 'Conversation LIA Suggestion API', type: :request do
 
         get show_url, headers: agent.create_new_auth_token, as: :json
 
-        expect(response.parsed_body).to eq('suggestion' => nil, 'reason' => 'no_pending')
+        expect(response.parsed_body).to eq('suggestion' => nil, 'options' => [], 'options_id' => nil, 'reason' => 'no_pending')
+      end
+
+      it 'passes options through, cutting at 3, dropping extra keys and invalid items' do
+        options = [
+          { text: 'Opcao 1', source: 'canned', score: 0.9 },
+          { text: 'Opcao 2', source: 'history' },
+          { text: '', source: 'canned' },
+          { text: { x: 1 }, source: 'canned' },
+          { text: 'Opcao 3', source: 'quick_reply' },
+          { text: 'Opcao 4', source: 'canned' }
+        ]
+        stub_request(:post, suggestion_endpoint)
+          .to_return(status: 200, body: { suggestion: nil, options: options, options_id: suggestion_id, reason: 'options' }.to_json,
+                     headers: { 'Content-Type' => 'application/json' })
+
+        get show_url, headers: agent.create_new_auth_token, as: :json
+
+        expect(response.parsed_body).to eq(
+          'suggestion' => nil,
+          'options' => [
+            { 'text' => 'Opcao 1', 'source' => 'canned' },
+            { 'text' => 'Opcao 2', 'source' => 'history' },
+            { 'text' => 'Opcao 3', 'source' => 'quick_reply' }
+          ],
+          'options_id' => suggestion_id,
+          'reason' => 'options'
+        )
+      end
+
+      it 'turns an invalid options_id into nil' do
+        body = { suggestion: nil, options: [{ text: 'A', source: 'canned' }], options_id: '../x', reason: 'options' }
+        stub_request(:post, suggestion_endpoint)
+          .to_return(status: 200, body: body.to_json, headers: { 'Content-Type' => 'application/json' })
+
+        get show_url, headers: agent.create_new_auth_token, as: :json
+
+        expect(response.parsed_body['options_id']).to be_nil
       end
 
       it 'answers reason error with status 200 when LIA returns 500' do
@@ -78,7 +116,7 @@ RSpec.describe 'Conversation LIA Suggestion API', type: :request do
         get show_url, headers: agent.create_new_auth_token, as: :json
 
         expect(response).to have_http_status(:success)
-        expect(response.parsed_body).to eq('suggestion' => nil, 'reason' => 'error')
+        expect(response.parsed_body).to eq('suggestion' => nil, 'options' => [], 'options_id' => nil, 'reason' => 'error')
       end
 
       it 'answers reason error with status 200 on timeout' do
@@ -87,7 +125,7 @@ RSpec.describe 'Conversation LIA Suggestion API', type: :request do
         get show_url, headers: agent.create_new_auth_token, as: :json
 
         expect(response).to have_http_status(:success)
-        expect(response.parsed_body).to eq('suggestion' => nil, 'reason' => 'error')
+        expect(response.parsed_body).to eq('suggestion' => nil, 'options' => [], 'options_id' => nil, 'reason' => 'error')
       end
 
       it 'answers reason error with status 200 on invalid JSON' do
@@ -97,7 +135,7 @@ RSpec.describe 'Conversation LIA Suggestion API', type: :request do
         get show_url, headers: agent.create_new_auth_token, as: :json
 
         expect(response).to have_http_status(:success)
-        expect(response.parsed_body).to eq('suggestion' => nil, 'reason' => 'error')
+        expect(response.parsed_body).to eq('suggestion' => nil, 'options' => [], 'options_id' => nil, 'reason' => 'error')
       end
     end
   end

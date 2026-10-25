@@ -6,6 +6,12 @@
     "SOURCE_QUICK_REPLY": "from a quick reply",
     "SOURCE_HISTORY": "from a previous team reply",
     "SOURCE_CANNED": "from a canned response",
-    "KEY_TAB": "Tab"
+    "KEY_TAB": "Tab",
+    "OPTIONS_TITLE": "LIA options",
+    "OPTIONS_DISMISS": "Dismiss options",
+    "OPTION_SOURCE_CANNED": "canned response",
+    "OPTION_SOURCE_QUICK_REPLY": "quick reply",
+    "OPTION_SOURCE_HISTORY": "previous team reply",
+    "NO_SAFE_SUGGESTION": "No safe suggestion for this message."
   }
 }
