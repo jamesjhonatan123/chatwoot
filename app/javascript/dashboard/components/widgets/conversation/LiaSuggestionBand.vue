@@ -24,6 +24,9 @@ const emit = defineEmits(['use']);
 const { t } = useI18n();
 
 const suggestion = ref(null);
+const options = ref([]);
+const optionsId = ref(null);
+const reason = ref('');
 const handledVersion = ref(0);
 let requestToken = 0;
 
@@ -40,24 +43,64 @@ const sourceLabel = computed(() => {
   }
 });
 
+const optionSourceLabel = source => {
+  switch (source) {
+    case 'canned':
+      return t('LIA_SUGGESTION.OPTION_SOURCE_CANNED');
+    case 'quick_reply':
+      return t('LIA_SUGGESTION.OPTION_SOURCE_QUICK_REPLY');
+    case 'history':
+      return t('LIA_SUGGESTION.OPTION_SOURCE_HISTORY');
+    default:
+      return '';
+  }
+};
+
+const canDisplay = computed(
+  () => !props.isPrivateNote && !props.hasContent && !props.isResolved
+);
+
 const isShown = computed(() => {
   // handledVersion forca a reavaliacao quando o Set muda.
   const handled =
     handledVersion.value >= 0 && suggestion.value
       ? handledIds.has(suggestion.value.id)
       : false;
+  return !!suggestion.value && !handled && canDisplay.value;
+});
+
+const isOptionsShown = computed(() => {
+  const handled =
+    handledVersion.value >= 0 && optionsId.value
+      ? handledIds.has(optionsId.value)
+      : false;
   return (
-    !!suggestion.value &&
+    !suggestion.value &&
+    options.value.length > 0 &&
+    !!optionsId.value &&
     !handled &&
-    !props.isPrivateNote &&
-    !props.hasContent &&
-    !props.isResolved
+    canDisplay.value
   );
 });
+
+const isNoticeShown = computed(
+  () =>
+    !suggestion.value &&
+    options.value.length === 0 &&
+    ['low_confidence', 'no_candidates'].includes(reason.value) &&
+    canDisplay.value
+);
 
 const markHandled = id => {
   handledIds.add(id);
   handledVersion.value += 1;
+};
+
+const resetState = () => {
+  suggestion.value = null;
+  options.value = [];
+  optionsId.value = null;
+  reason.value = '';
 };
 
 const fetchSuggestion = async () => {
@@ -69,8 +112,11 @@ const fetchSuggestion = async () => {
     // Descarta resposta atrasada: a conversa ou a mensagem mudou enquanto esperava.
     if (token !== requestToken) return;
     suggestion.value = data?.suggestion || null;
+    options.value = data?.options || [];
+    optionsId.value = data?.options_id || null;
+    reason.value = data?.reason || '';
   } catch (error) {
-    if (token === requestToken) suggestion.value = null;
+    if (token === requestToken) resetState();
   }
 };
 
@@ -80,7 +126,7 @@ watch(
   () => props.conversationId,
   () => {
     requestToken += 1;
-    suggestion.value = null;
+    resetState();
   }
 );
 
@@ -103,9 +149,7 @@ const useSuggestion = () => {
   return true;
 };
 
-const dismiss = async () => {
-  if (!suggestion.value) return;
-  const { id } = suggestion.value;
+const discard = async id => {
   const conversationId = props.conversationId;
   markHandled(id);
   try {
@@ -115,12 +159,73 @@ const dismiss = async () => {
   }
 };
 
+const dismiss = () => (suggestion.value ? discard(suggestion.value.id) : null);
+
+const dismissOptions = () =>
+  optionsId.value ? discard(optionsId.value) : null;
+
+// Clique numa opcao: insere o texto e esconde a faixa (sem Tab para opcoes).
+const useOption = option => {
+  if (!isOptionsShown.value) return;
+  markHandled(optionsId.value);
+  emit('use', option.text);
+};
+
 defineExpose({ isShown, useSuggestion });
 </script>
 
 <template>
   <div
-    v-if="isShown"
+    v-if="isOptionsShown"
+    class="mt-2 flex items-start gap-2 rounded-md border border-n-weak bg-n-alpha-1 py-2 ps-2.5 pe-1.5"
+    role="region"
+    :aria-label="t('LIA_SUGGESTION.OPTIONS_TITLE')"
+  >
+    <span
+      class="i-lucide-sparkles mt-0.5 size-4 flex-shrink-0 text-n-violet-9"
+    />
+    <div class="min-w-0 flex-1">
+      <div class="text-xs font-medium text-n-slate-11">
+        {{ t('LIA_SUGGESTION.OPTIONS_TITLE') }}
+      </div>
+      <ul class="m-0 mt-1 flex list-none flex-col gap-1 p-0">
+        <li v-for="(option, index) in options" :key="index">
+          <button
+            type="button"
+            class="w-full rounded border border-n-weak bg-n-solid-1 px-2 py-1 text-start hover:border-n-violet-6 hover:bg-n-violet-2"
+            :title="option.text"
+            @click="useOption(option)"
+          >
+            <span
+              class="line-clamp-2 block whitespace-pre-line break-words text-sm text-n-slate-12"
+            >
+              {{ option.text }}
+            </span>
+            <span
+              v-if="optionSourceLabel(option.source)"
+              class="block text-[11px] text-n-slate-10"
+            >
+              {{ optionSourceLabel(option.source) }}
+            </span>
+          </button>
+        </li>
+      </ul>
+    </div>
+    <Button
+      ghost
+      xs
+      slate
+      icon="i-lucide-x"
+      :aria-label="t('LIA_SUGGESTION.OPTIONS_DISMISS')"
+      :title="t('LIA_SUGGESTION.OPTIONS_DISMISS')"
+      @click="dismissOptions"
+    />
+  </div>
+  <p v-else-if="isNoticeShown" class="mt-2 mb-0 text-xs text-n-slate-10">
+    {{ t('LIA_SUGGESTION.NO_SAFE_SUGGESTION') }}
+  </p>
+  <div
+    v-else-if="isShown"
     class="mt-2 flex items-start gap-2 rounded-md border border-n-violet-5 bg-n-violet-2 py-2 ps-2.5 pe-1.5"
     role="region"
     :aria-label="t('LIA_SUGGESTION.TITLE')"

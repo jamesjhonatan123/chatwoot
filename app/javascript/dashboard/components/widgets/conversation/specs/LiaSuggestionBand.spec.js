@@ -22,6 +22,30 @@ const answer = (source = 'canned', text = 'Olá!\nTudo bem?') => {
   });
 };
 
+// Id novo a cada resposta: ids tratados sobrevivem entre testes.
+let optionsId = '';
+const answerOptions = () => {
+  counter += 1;
+  optionsId = `00000000-0000-4000-8000-${String(counter).padStart(12, '0')}`;
+  ConversationApi.getLiaSuggestion.mockResolvedValue({
+    data: {
+      suggestion: null,
+      options: [
+        { text: 'Opção A', source: 'canned' },
+        { text: 'Opção B', source: 'history' },
+        { text: 'Opção C', source: 'quick_reply' },
+      ],
+      options_id: optionsId,
+      reason: 'options',
+    },
+  });
+};
+const answerReason = reason =>
+  ConversationApi.getLiaSuggestion.mockResolvedValue({
+    data: { suggestion: null, options: [], options_id: null, reason },
+  });
+const NOTICE = 'Sem sugestão segura para esta mensagem.';
+
 const mountBand = async (props = {}) => {
   const wrapper = mount(LiaSuggestionBand, {
     props: { conversationId: 10, lastIncomingId: 1, ...props },
@@ -129,5 +153,86 @@ describe('LiaSuggestionBand', () => {
 
     expect(wrapper.text()).toContain('da outra conversa');
     expect(wrapper.text()).not.toContain('velha');
+  });
+
+  describe('options', () => {
+    it('renders the options with their sources and no Tab hint', async () => {
+      answerOptions();
+      const wrapper = await mountBand();
+      expect(wrapper.text()).toContain('Opções da LIA');
+      expect(wrapper.text()).toContain('Opção A');
+      expect(wrapper.text()).toContain('resposta pronta');
+      expect(wrapper.text()).toContain('resposta anterior do time');
+      expect(wrapper.text()).toContain('resposta rápida');
+      expect(wrapper.text()).not.toContain('Tab');
+      expect(wrapper.find('button[title="Opção B"]').exists()).toBe(true);
+    });
+
+    it('inserts the clicked option and hides the band', async () => {
+      answerOptions();
+      const wrapper = await mountBand();
+      await wrapper.find('button[title="Opção B"]').trigger('click');
+      expect(wrapper.emitted('use')).toEqual([['Opção B']]);
+      expect(wrapper.text()).not.toContain('Opções da LIA');
+    });
+
+    it('dismisses all options with the options_id', async () => {
+      answerOptions();
+      const wrapper = await mountBand();
+      await wrapper
+        .find('button[aria-label="Descartar opções"]')
+        .trigger('click');
+      await flushPromises();
+      expect(ConversationApi.dismissLiaSuggestion).toHaveBeenCalledWith(
+        10,
+        optionsId
+      );
+      expect(wrapper.text()).not.toContain('Opções da LIA');
+    });
+
+    it('does not consume Tab when there are only options', async () => {
+      answerOptions();
+      const wrapper = await mountBand();
+      expect(wrapper.vm.useSuggestion()).toBe(false);
+      expect(wrapper.emitted('use')).toBeUndefined();
+    });
+
+    it('is hidden with content in the editor', async () => {
+      answerOptions();
+      const wrapper = await mountBand({ hasContent: true });
+      expect(wrapper.text()).not.toContain('Opções da LIA');
+    });
+  });
+
+  describe('no safe suggestion notice', () => {
+    it.each(['low_confidence', 'no_candidates'])(
+      'shows the notice for %s',
+      async reason => {
+        answerReason(reason);
+        const wrapper = await mountBand();
+        expect(wrapper.text()).toContain(NOTICE);
+      }
+    );
+
+    it.each([
+      'ai_answering',
+      'no_pending',
+      'mode_off',
+      'shadow',
+      'not_found',
+      'error',
+      'disabled',
+    ])('shows nothing for %s', async reason => {
+      answerReason(reason);
+      const wrapper = await mountBand();
+      expect(wrapper.text()).toBe('');
+    });
+
+    it('hides the notice on private note, with content and when resolved', async () => {
+      answerReason('low_confidence');
+      expect((await mountBand({ isPrivateNote: true })).text()).toBe('');
+      expect((await mountBand({ hasContent: true })).text()).toBe('');
+      expect((await mountBand({ isResolved: true })).text()).toBe('');
+    });
   });
 });

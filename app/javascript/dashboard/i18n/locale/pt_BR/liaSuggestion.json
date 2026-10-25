@@ -6,6 +6,12 @@
     "SOURCE_QUICK_REPLY": "da resposta rápida",
     "SOURCE_HISTORY": "de uma resposta anterior do time",
     "SOURCE_CANNED": "da resposta pronta",
-    "KEY_TAB": "Tab"
+    "KEY_TAB": "Tab",
+    "OPTIONS_TITLE": "Opções da LIA",
+    "OPTIONS_DISMISS": "Descartar opções",
+    "OPTION_SOURCE_CANNED": "resposta pronta",
+    "OPTION_SOURCE_QUICK_REPLY": "resposta rápida",
+    "OPTION_SOURCE_HISTORY": "resposta anterior do time",
+    "NO_SAFE_SUGGESTION": "Sem sugestão segura para esta mensagem."
   }
 }

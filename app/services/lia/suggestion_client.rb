@@ -4,14 +4,17 @@ class Lia::SuggestionClient
   OPEN_TIMEOUT = 3
   READ_TIMEOUT = 8
   SUGGESTION_KEYS = %w[id text source].freeze
-  EMPTY_ERROR = { suggestion: nil, reason: 'error' }.freeze
-  EMPTY_DISABLED = { suggestion: nil, reason: 'disabled' }.freeze
+  OPTION_KEYS = %w[text source].freeze
+  MAX_OPTIONS = 3
+  UUID_FORMAT = /\A\h{8}-\h{4}-\h{4}-\h{4}-\h{12}\z/
+  EMPTY_ERROR = { suggestion: nil, options: [], options_id: nil, reason: 'error' }.freeze
+  EMPTY_DISABLED = { suggestion: nil, options: [], options_id: nil, reason: 'disabled' }.freeze
 
   def self.enabled?
     ENV['LIA_API_URL'].present? && ENV['LIA_ADMIN_API_TOKEN'].present?
   end
 
-  # Retorna sempre { suggestion:, reason: }; nunca levanta.
+  # Retorna sempre { suggestion:, options:, options_id:, reason: }; nunca levanta.
   def fetch(account_id:, inbox_id:, conversation_id:)
     return EMPTY_DISABLED unless self.class.enabled?
 
@@ -53,7 +56,24 @@ class Lia::SuggestionClient
     suggestion = payload['suggestion']
     suggestion = suggestion.slice(*SUGGESTION_KEYS) if suggestion.is_a?(Hash)
     suggestion = nil unless suggestion.is_a?(Hash) && suggestion['text'].present?
-    { suggestion: suggestion, reason: payload['reason'].to_s.presence || 'error' }
+    options_id = payload['options_id'].to_s
+    {
+      suggestion: suggestion,
+      options: parse_options(payload['options']),
+      options_id: UUID_FORMAT.match?(options_id) ? options_id : nil,
+      reason: payload['reason'].to_s.presence || 'error'
+    }
+  end
+
+  # Ate MAX_OPTIONS opcoes, so com as chaves text e source, ambas texto.
+  def parse_options(options)
+    return [] unless options.is_a?(Array)
+
+    options.filter_map do |option|
+      next unless option.is_a?(Hash) && option['text'].is_a?(String) && option['text'].present?
+
+      { 'text' => option['text'], 'source' => option['source'].to_s }
+    end.first(MAX_OPTIONS)
   end
 
   # Loga so status ou classe da excecao: nada de texto de mensagem nem token.
