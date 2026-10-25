@@ -1,0 +1,64 @@
+# Cliente server-to-server do backend LIA (sugestao de resposta pronta).
+# O token nunca chega ao navegador: o painel fala com o Chatwoot e o Chatwoot com a LIA.
+class Lia::SuggestionClient
+  OPEN_TIMEOUT = 3
+  READ_TIMEOUT = 8
+  SUGGESTION_KEYS = %w[id text source].freeze
+  EMPTY_ERROR = { suggestion: nil, reason: 'error' }.freeze
+  EMPTY_DISABLED = { suggestion: nil, reason: 'disabled' }.freeze
+
+  def self.enabled?
+    ENV['LIA_API_URL'].present? && ENV['LIA_ADMIN_API_TOKEN'].present?
+  end
+
+  # Retorna sempre { suggestion:, reason: }; nunca levanta.
+  def fetch(account_id:, inbox_id:, conversation_id:)
+    return EMPTY_DISABLED unless self.class.enabled?
+
+    response = post('/api/chatwoot/suggestion', account_id: account_id, inbox_id: inbox_id, conversation_id: conversation_id)
+    return log_error(response.code) unless response.code == 200
+
+    parse(response.parsed_response)
+  rescue StandardError => e
+    log_error(e.class.name)
+  end
+
+  # Retorna true quando a LIA confirmou o descarte.
+  def discard(suggestion_id)
+    return false unless self.class.enabled?
+
+    response = post("/api/chatwoot/suggestion/#{suggestion_id}/discard", {})
+    response.code == 200 && response.parsed_response.is_a?(Hash) && response.parsed_response['ok'] == true
+  rescue StandardError => e
+    log_error(e.class.name)
+    false
+  end
+
+  private
+
+  def post(path, body)
+    token = ENV.fetch('LIA_ADMIN_API_TOKEN')
+    HTTParty.post(
+      "#{ENV.fetch('LIA_API_URL').chomp('/')}#{path}",
+      headers: { 'Authorization' => "Bearer #{token}", 'X-Admin-Token' => token, 'Content-Type' => 'application/json' },
+      body: body.to_json,
+      open_timeout: OPEN_TIMEOUT,
+      read_timeout: READ_TIMEOUT
+    )
+  end
+
+  def parse(payload)
+    return log_error('invalid_payload') unless payload.is_a?(Hash)
+
+    suggestion = payload['suggestion']
+    suggestion = suggestion.slice(*SUGGESTION_KEYS) if suggestion.is_a?(Hash)
+    suggestion = nil unless suggestion.is_a?(Hash) && suggestion['text'].present?
+    { suggestion: suggestion, reason: payload['reason'].to_s.presence || 'error' }
+  end
+
+  # Loga so status ou classe da excecao: nada de texto de mensagem nem token.
+  def log_error(detail)
+    Rails.logger.error("[LiaSuggestion] falha: #{detail}")
+    EMPTY_ERROR
+  end
+end
