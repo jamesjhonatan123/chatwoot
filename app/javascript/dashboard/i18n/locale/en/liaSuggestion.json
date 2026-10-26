@@ -19,6 +19,41 @@
     "SEND_ANYWAY": "Send anyway",
     "SOURCE_LIA_DRAFT": "from a LIA draft",
     "OPTION_SOURCE_LIA_DRAFT": "LIA draft",
-    "DRAFTING": "LIA is writing a draft…"
+    "DRAFTING": "LIA is writing a draft…",
+    "REPORT": {
+      "SIDEBAR": "LIA suggestions",
+      "TITLE": "LIA suggestions",
+      "SUBTITLE": "How much the suggestions help agents and which were rejected, to improve them.",
+      "PERIOD": "Period",
+      "LAST_DAY": "Last day",
+      "LAST_7": "Last 7 days",
+      "LAST_30": "Last 30 days",
+      "FAILED": "Could not load the LIA report.",
+      "LOADING": "Loading…",
+      "SHOWN": "Shown",
+      "USED": "Used",
+      "EDITED": "Edited",
+      "IGNORED": "Ignored",
+      "DISMISSED": "Dismissed (×)",
+      "RATE": "Usage rate",
+      "RATE_HINT": "Usage rate = (used + edited) ÷ shown.",
+      "BY_SOURCE": "By source",
+      "BY_AGENT": "By agent (who replied)",
+      "REJECTED_TITLE": "Rejected ({count})",
+      "NO_REJECTED": "No rejected suggestions in the period.",
+      "QUESTION": "Customer",
+      "SUGGESTED": "Suggested",
+      "SENT_INSTEAD": "Sent instead",
+      "OPTIONS": "{count} options",
+      "BLOCKED": "Blocked · {count} rejections",
+      "RELEASE": "Release",
+      "SOURCES": {
+        "CANNED": "Canned response",
+        "QUICK_REPLY": "Quick reply",
+        "HISTORY": "Previous team reply",
+        "LIA_DRAFT": "LIA draft",
+        "SYSTEM": "System data"
+      }
+    }
   }
 }

@@ -706,6 +706,11 @@ const menuItems = computed(() => {
           label: t('SIDEBAR.REPORTS_BOT'),
           to: accountScopedRoute('bot_reports'),
         },
+        {
+          name: 'Reports LIA Suggestions',
+          label: t('LIA_SUGGESTION.REPORT.SIDEBAR'),
+          to: accountScopedRoute('lia_suggestion_reports'),
+        },
       ],
     },
     {

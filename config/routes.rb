@@ -170,6 +170,10 @@ Rails.application.routes.draw do
             resource :twilio_channel, only: [:create]
           end
           resources :kanban, only: [:index]
+          # Métricas da sugestão pronta da LIA e liberação de textos bloqueados (administrador).
+          resource :lia_suggestion_metrics, only: [:show] do
+            post :release
+          end
           resources :conversations, only: [:index, :create, :show, :update, :destroy] do
             collection do
               get :meta

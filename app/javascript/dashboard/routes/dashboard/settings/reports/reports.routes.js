@@ -23,6 +23,7 @@ import CsatResponses from './CsatResponses.vue';
 import BotReports from './BotReports.vue';
 import LiveReports from './LiveReports.vue';
 import SLAReports from './SLAReports.vue';
+import LiaSuggestionReports from './LiaSuggestionReports.vue';
 
 const meta = {
   featureFlag: FEATURE_FLAGS.REPORTS,
@@ -151,6 +152,12 @@ export default {
           name: 'bot_reports',
           meta,
           component: BotReports,
+        },
+        {
+          path: 'lia-sugestoes',
+          name: 'lia_suggestion_reports',
+          meta: { ...meta, permissions: ['administrator'] },
+          component: LiaSuggestionReports,
         },
       ],
     },

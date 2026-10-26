@@ -42,7 +42,42 @@ class Lia::SuggestionClient
     false
   end
 
+  # Metricas do relatorio (repassadas como vieram); em falha, um corpo vazio com erro.
+  def metrics(account_id:, days:)
+    return { error: 'disabled' } unless self.class.enabled?
+
+    response = get('/api/chatwoot/suggestion-metrics', account_id: account_id, days: days)
+    return { error: 'unavailable' } unless response.code == 200 && response.parsed_response.is_a?(Hash)
+
+    response.parsed_response
+  rescue StandardError => e
+    log_error(e.class.name)
+    { error: 'unavailable' }
+  end
+
+  # Libera um texto bloqueado pela LIA; true quando a LIA confirmou.
+  def release(text_key, by: nil)
+    return false unless self.class.enabled?
+
+    response = post("/api/chatwoot/suggestion-blocklist/#{text_key}/release", { by: by.to_s.first(120).presence }.compact)
+    response.code == 200 && response.parsed_response.is_a?(Hash) && response.parsed_response['ok'] == true
+  rescue StandardError => e
+    log_error(e.class.name)
+    false
+  end
+
   private
+
+  def get(path, query)
+    token = ENV.fetch('LIA_ADMIN_API_TOKEN')
+    HTTParty.get(
+      "#{ENV.fetch('LIA_API_URL').chomp('/')}#{path}",
+      headers: { 'Authorization' => "Bearer #{token}", 'X-Admin-Token' => token },
+      query: query,
+      open_timeout: OPEN_TIMEOUT,
+      read_timeout: READ_TIMEOUT * 2
+    )
+  end
 
   def agent_fields(agent)
     return {} if agent.blank? || agent[:id].blank?
