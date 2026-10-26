@@ -78,6 +78,7 @@ describe('LiaSuggestionBand', () => {
     ['canned', 'da resposta pronta'],
     ['quick_reply', 'da resposta rápida'],
     ['history', 'de uma resposta anterior do time'],
+    ['system', 'com dados do sistema'],
   ])('shows the header for source %s', async (source, label) => {
     answer(source);
     const wrapper = await mountBand();
