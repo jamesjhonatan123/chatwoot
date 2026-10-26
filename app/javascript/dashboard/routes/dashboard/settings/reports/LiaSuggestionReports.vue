@@ -137,7 +137,7 @@ onMounted(fetchData);
         {{ t('LIA_SUGGESTION.REPORT.RATE_HINT') }}
       </p>
 
-      <div class="grid gap-6 lg:grid-cols-2">
+      <div class="grid gap-6">
         <section
           v-for="table in [
             {
@@ -159,46 +159,48 @@ onMounted(fetchData);
           >
             {{ table.title }}
           </h2>
-          <table class="w-full text-sm">
-            <thead class="text-xs text-n-slate-11">
-              <tr>
-                <th class="px-4 py-2 font-normal text-left" />
-                <th class="px-2 py-2 font-normal text-right">
-                  {{ t('LIA_SUGGESTION.REPORT.SHOWN') }}
-                </th>
-                <th class="px-2 py-2 font-normal text-right">
-                  {{ t('LIA_SUGGESTION.REPORT.USED') }}
-                </th>
-                <th class="px-2 py-2 font-normal text-right">
-                  {{ t('LIA_SUGGESTION.REPORT.EDITED') }}
-                </th>
-                <th class="px-2 py-2 font-normal text-right">
-                  {{ t('LIA_SUGGESTION.REPORT.IGNORED') }}
-                </th>
-                <th class="px-2 py-2 font-normal text-right">
-                  {{ t('LIA_SUGGESTION.REPORT.DISMISSED') }}
-                </th>
-                <th class="px-4 py-2 font-normal text-right">
-                  {{ t('LIA_SUGGESTION.REPORT.RATE') }}
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr
-                v-for="row in data[table.key]"
-                :key="table.label(row)"
-                class="border-t border-n-weak text-n-slate-12"
-              >
-                <td class="px-4 py-2">{{ table.label(row) }}</td>
-                <td class="px-2 py-2 text-right">{{ row.shown }}</td>
-                <td class="px-2 py-2 text-right">{{ row.used }}</td>
-                <td class="px-2 py-2 text-right">{{ row.edited }}</td>
-                <td class="px-2 py-2 text-right">{{ row.ignored }}</td>
-                <td class="px-2 py-2 text-right">{{ row.dismissed }}</td>
-                <td class="px-4 py-2 text-right">{{ percent(row.rate) }}</td>
-              </tr>
-            </tbody>
-          </table>
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm whitespace-nowrap">
+              <thead class="text-xs text-n-slate-11">
+                <tr>
+                  <th class="px-4 py-2 font-normal text-left" />
+                  <th class="px-2 py-2 font-normal text-right">
+                    {{ t('LIA_SUGGESTION.REPORT.SHOWN') }}
+                  </th>
+                  <th class="px-2 py-2 font-normal text-right">
+                    {{ t('LIA_SUGGESTION.REPORT.USED') }}
+                  </th>
+                  <th class="px-2 py-2 font-normal text-right">
+                    {{ t('LIA_SUGGESTION.REPORT.EDITED') }}
+                  </th>
+                  <th class="px-2 py-2 font-normal text-right">
+                    {{ t('LIA_SUGGESTION.REPORT.IGNORED') }}
+                  </th>
+                  <th class="px-2 py-2 font-normal text-right">
+                    {{ t('LIA_SUGGESTION.REPORT.DISMISSED') }}
+                  </th>
+                  <th class="px-4 py-2 font-normal text-right">
+                    {{ t('LIA_SUGGESTION.REPORT.RATE') }}
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr
+                  v-for="row in data[table.key]"
+                  :key="table.label(row)"
+                  class="border-t border-n-weak text-n-slate-12"
+                >
+                  <td class="px-4 py-2">{{ table.label(row) }}</td>
+                  <td class="px-2 py-2 text-right">{{ row.shown }}</td>
+                  <td class="px-2 py-2 text-right">{{ row.used }}</td>
+                  <td class="px-2 py-2 text-right">{{ row.edited }}</td>
+                  <td class="px-2 py-2 text-right">{{ row.ignored }}</td>
+                  <td class="px-2 py-2 text-right">{{ row.dismissed }}</td>
+                  <td class="px-4 py-2 text-right">{{ percent(row.rate) }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </section>
       </div>
 
