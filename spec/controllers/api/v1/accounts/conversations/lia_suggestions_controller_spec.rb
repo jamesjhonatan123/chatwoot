@@ -45,11 +45,12 @@ RSpec.describe 'Conversation LIA Suggestion API', type: :request do
         expect(stub).not_to have_been_requested
       end
 
-      it 'passes the LIA payload through, sending ids and auth headers' do
+      it 'passes the LIA payload through, sending ids, the logged agent and auth headers' do
         body = { suggestion: { id: suggestion_id, text: 'Oi!', source: 'canned', extra: 'x' }, reason: 'ok' }
         stub = stub_request(:post, suggestion_endpoint)
                .with(
-                 body: { account_id: account.id, inbox_id: conversation.inbox_id, conversation_id: conversation.display_id }.to_json,
+                 body: { account_id: account.id, inbox_id: conversation.inbox_id, conversation_id: conversation.display_id,
+                         agent_id: agent.id, agent_name: agent.available_name }.to_json,
                  headers: { 'Authorization' => 'Bearer segredo-de-teste', 'X-Admin-Token' => 'segredo-de-teste' }
                )
                .to_return(status: 200, body: body.to_json, headers: { 'Content-Type' => 'application/json' })
@@ -169,9 +170,10 @@ RSpec.describe 'Conversation LIA Suggestion API', type: :request do
       expect(stub).not_to have_been_requested
     end
 
-    it 'discards the suggestion on LIA' do
+    it 'discards the suggestion on LIA only for the logged agent' do
       stub = stub_request(:post, "#{suggestion_endpoint}/#{suggestion_id}/discard")
-             .with(headers: { 'Authorization' => 'Bearer segredo-de-teste' })
+             .with(headers: { 'Authorization' => 'Bearer segredo-de-teste' },
+                   body: { agent_id: agent.id, agent_name: agent.available_name }.to_json)
              .to_return(status: 200, body: { ok: true }.to_json, headers: { 'Content-Type' => 'application/json' })
 
       post dismiss_url, params: { suggestion_id: suggestion_id }, headers: agent.create_new_auth_token, as: :json
