@@ -16,6 +16,9 @@
     "NO_SAFE_SUGGESTION": "No safe suggestion for this message.",
     "FILL_SLOTS": "Fill in the blanks",
     "MISSING_SLOTS": "Still to fill in:",
-    "SEND_ANYWAY": "Send anyway"
+    "SEND_ANYWAY": "Send anyway",
+    "SOURCE_LIA_DRAFT": "from a LIA draft",
+    "OPTION_SOURCE_LIA_DRAFT": "LIA draft",
+    "DRAFTING": "LIA is writing a draft…"
   }
 }
