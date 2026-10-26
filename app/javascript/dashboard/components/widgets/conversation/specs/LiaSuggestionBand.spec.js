@@ -44,6 +44,14 @@ const answerReason = reason =>
   ConversationApi.getLiaSuggestion.mockResolvedValue({
     data: { suggestion: null, options: [], options_id: null, reason },
   });
+const answerSlots = (text, slots) => {
+  counter += 1;
+  ConversationApi.getLiaSuggestion.mockResolvedValue({
+    data: {
+      suggestion: { id: `id-${counter}`, text, source: 'canned', slots },
+    },
+  });
+};
 const NOTICE = 'Sem sugestão segura para esta mensagem.';
 
 const mountBand = async (props = {}) => {
@@ -233,6 +241,58 @@ describe('LiaSuggestionBand', () => {
       expect((await mountBand({ isPrivateNote: true })).text()).toBe('');
       expect((await mountBand({ hasContent: true })).text()).toBe('');
       expect((await mountBand({ isResolved: true })).text()).toBe('');
+    });
+  });
+
+  describe('lacunas', () => {
+    const chips = wrapper =>
+      wrapper.findAll('span.bg-n-amber-3').map(c => c.text());
+    const hint = wrapper => wrapper.find('[data-test-id="lia-slots-hint"]');
+
+    it('destaca só as lacunas permitidas e mostra o aviso', async () => {
+      answerSlots('Previsão [data] do pedido [123] por [valor].', [
+        'data',
+        'valor',
+      ]);
+      const wrapper = await mountBand();
+      expect(chips(wrapper)).toEqual(['[data]', '[valor]']);
+      expect(wrapper.find('p').text()).toContain('pedido [123] por');
+      expect(hint(wrapper).text()).toContain('complete os espaços');
+    });
+
+    it('não mostra chip nem aviso quando não há lacuna permitida', async () => {
+      answerSlots('Pedido [123] a caminho', []);
+      const wrapper = await mountBand();
+      expect(chips(wrapper)).toEqual([]);
+      expect(hint(wrapper).exists()).toBe(false);
+    });
+
+    it('destaca lacunas também nas opções', async () => {
+      counter += 1;
+      ConversationApi.getLiaSuggestion.mockResolvedValue({
+        data: {
+          suggestion: null,
+          options: [
+            { text: 'Chega em [data]', source: 'canned', slots: ['data'] },
+            { text: 'Sem lacuna', source: 'history', slots: [] },
+          ],
+          options_id: `00000000-0000-4000-8000-${String(counter).padStart(12, '0')}`,
+          reason: 'options',
+        },
+      });
+      const wrapper = await mountBand();
+      expect(chips(wrapper)).toEqual(['[data]']);
+      expect(hint(wrapper).exists()).toBe(true);
+    });
+
+    it('emite o texto com as lacunas ao usar', async () => {
+      answerSlots('Chega em [data]', ['data']);
+      const wrapper = await mountBand();
+      await wrapper
+        .findAll('button')
+        .find(b => b.text() === 'Usar')
+        .trigger('click');
+      expect(wrapper.emitted('use')[0]).toEqual(['Chega em [data]']);
     });
   });
 });

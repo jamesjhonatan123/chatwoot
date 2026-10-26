@@ -8,6 +8,7 @@ import keyboardEventListenerMixins from 'shared/mixins/keyboardEventListenerMixi
 
 import ReplyToMessage from './ReplyToMessage.vue';
 import LiaSuggestionBand from './LiaSuggestionBand.vue';
+import NextButton from 'dashboard/components-next/button/Button.vue';
 import AttachmentPreview from 'dashboard/components/widgets/AttachmentsPreview.vue';
 import ReplyTopPanel from 'dashboard/components/widgets/WootWriter/ReplyTopPanel.vue';
 import ReplyEmailHead from './ReplyEmailHead.vue';
@@ -24,6 +25,7 @@ import AudioRecorder from 'dashboard/components/widgets/WootWriter/AudioRecorder
 import { AUDIO_FORMATS } from 'shared/constants/messages';
 import { BUS_EVENTS } from 'shared/constants/busEvents';
 import { CMD_AI_ASSIST } from 'dashboard/helper/commandbar/events';
+import { findSlots } from 'dashboard/helper/liaSlots';
 import {
   getMessageVariables,
   getUndefinedVariablesInMessage,
@@ -82,6 +84,7 @@ export default {
     ReplyEmailHead,
     ReplyToMessage,
     LiaSuggestionBand,
+    NextButton,
     ReplyTopPanel,
     ContentTemplates,
     WhatsappTemplates,
@@ -155,6 +158,7 @@ export default {
       },
       updateEditorSelectionWith: '',
       undefinedVariableMessage: '',
+      showSlotWarning: false,
       showMentions: false,
       showUserMentions: false,
       showCannedMenu: false,
@@ -243,6 +247,10 @@ export default {
       return this.isOnPrivateNote
         ? REPLY_EDITOR_MODES.NOTE
         : REPLY_EDITOR_MODES.REPLY;
+    },
+    // Lacunas "[slot]" da LIA ainda no texto; lista só enquanto o aviso está aberto.
+    missingSlots() {
+      return this.showSlotWarning ? findSlots(this.message) : [];
     },
     hasMeaningfulEditorContent() {
       const body = this.message || '';
@@ -565,7 +573,11 @@ export default {
         this.resetRecorderAndClearAttachments();
       }
     },
-    message() {
+    message(value) {
+      // Sem lacuna restante, o aviso de envio perde o motivo de existir.
+      if (this.showSlotWarning && !findSlots(value).length) {
+        this.showSlotWarning = false;
+      }
       // Autosave the current message draft.
       this.doAutoSaveDraft();
     },
@@ -824,24 +836,41 @@ export default {
         this.isEditorHotKeyEnabled(selectedKey)
       );
     },
-    // Tab so aceita a sugestao da LIA quando nenhum menu do editor esta aberto
-    // (mencoes, respostas prontas, variaveis, macros) e o editor esta vazio e focado.
+    // Tab so age (aceita a sugestao da LIA ou pula para a proxima lacuna) quando
+    // nenhum menu do editor esta aberto (mencoes, respostas prontas, variaveis,
+    // macros) e o editor esta focado.
     onLiaSuggestionTab(e) {
-      const canUse =
+      const canAct =
         !this.showUserMentions &&
         !this.showMentions &&
         !this.showCannedMenu &&
         !this.showVariablesMenu &&
         !this.showMacrosMenu &&
         !e.shiftKey &&
-        this.isFocused &&
-        !this.hasMeaningfulEditorContent;
-      if (!canUse || !this.liaSuggestionBand?.useSuggestion()) return;
+        this.isFocused;
+      if (!canAct) return;
+
+      if (this.hasMeaningfulEditorContent) {
+        // Editor com texto: Tab so e consumido se ainda houver lacuna adiante.
+        if (this.messageEditor?.selectPlaceholder({ afterCursor: true })) {
+          e.preventDefault();
+        }
+        return;
+      }
+      if (!this.liaSuggestionBand?.useSuggestion()) return;
       e.preventDefault();
     },
+    // Poe o texto no editor e, se tiver lacuna, deixa a primeira selecionada.
     onUseLiaSuggestion(text) {
       this.message = text;
-      this.$nextTick(() => this.messageEditor?.focusEditorInputField('end'));
+      this.$nextTick(() => {
+        this.messageEditor?.focusEditorInputField('end');
+        if (findSlots(text).length) this.messageEditor?.selectPlaceholder();
+      });
+    },
+    // Segunda tentativa de envio (ou o botao) com lacuna aberta envia mesmo assim.
+    onSendAnyway() {
+      this.onSendReply();
     },
     onPaste(e) {
       // Don't handle paste if compose new conversation modal is open
@@ -1051,6 +1080,14 @@ export default {
           });
     },
     async onSendReply() {
+      // Lacuna da LIA ainda no texto: barra o primeiro envio e avisa.
+      if (!this.isPrivate && findSlots(this.message).length) {
+        if (!this.showSlotWarning) {
+          this.showSlotWarning = true;
+          return;
+        }
+        this.showSlotWarning = false;
+      }
       const undefinedVariables = getUndefinedVariablesInMessage({
         message: this.message,
         variables: this.messageVariables,
@@ -1523,6 +1560,26 @@ export default {
       :has-content="hasMeaningfulEditorContent"
       @use="onUseLiaSuggestion"
     />
+    <div
+      v-if="missingSlots.length"
+      class="mt-2 flex items-center gap-2 rounded-md border border-n-amber-5 bg-n-amber-3 px-2.5 py-1.5 text-sm text-n-amber-12"
+      role="alert"
+      data-test-id="lia-missing-slots"
+    >
+      <span class="i-lucide-triangle-alert size-4 flex-shrink-0" />
+      <span class="min-w-0 flex-1 break-words">
+        {{ $t('LIA_SUGGESTION.MISSING_SLOTS') }}
+        <strong>{{ missingSlots.join(', ') }}</strong>
+      </span>
+      <NextButton
+        xs
+        faded
+        amber
+        class="flex-shrink-0"
+        :label="$t('LIA_SUGGESTION.SEND_ANYWAY')"
+        @click="onSendAnyway"
+      />
+    </div>
     <ArticleSearchPopover
       v-if="showArticleSearchPopover && connectedPortalSlug"
       :selected-portal-slug="connectedPortalSlug"

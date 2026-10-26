@@ -59,7 +59,7 @@ RSpec.describe 'Conversation LIA Suggestion API', type: :request do
         expect(stub).to have_been_requested
         expect(response).to have_http_status(:success)
         expect(response.parsed_body).to eq(
-          'suggestion' => { 'id' => suggestion_id, 'text' => 'Oi!', 'source' => 'canned' },
+          'suggestion' => { 'id' => suggestion_id, 'text' => 'Oi!', 'source' => 'canned', 'slots' => [] },
           'options' => [], 'options_id' => nil, 'reason' => 'ok'
         )
       end
@@ -91,13 +91,30 @@ RSpec.describe 'Conversation LIA Suggestion API', type: :request do
         expect(response.parsed_body).to eq(
           'suggestion' => nil,
           'options' => [
-            { 'text' => 'Opcao 1', 'source' => 'canned' },
-            { 'text' => 'Opcao 2', 'source' => 'history' },
-            { 'text' => 'Opcao 3', 'source' => 'quick_reply' }
+            { 'text' => 'Opcao 1', 'source' => 'canned', 'slots' => [] },
+            { 'text' => 'Opcao 2', 'source' => 'history', 'slots' => [] },
+            { 'text' => 'Opcao 3', 'source' => 'quick_reply', 'slots' => [] }
           ],
           'options_id' => suggestion_id,
           'reason' => 'options'
         )
+      end
+
+      it 'passes allowed slots through, dropping unknown names and cutting at 6' do
+        body = {
+          suggestion: { id: suggestion_id, text: 'Previsão [data]', source: 'canned', slots: ['data', 'cpf', 7, 'e-mail'] },
+          options: [{ text: 'A [valor]', source: 'canned', slots: ['valor'] },
+                    { text: 'B', source: 'history', slots: %w[data hora valor número link e-mail data hora] },
+                    { text: 'C', source: 'history', slots: 'data' }],
+          options_id: suggestion_id, reason: 'ok'
+        }
+        stub_request(:post, suggestion_endpoint)
+          .to_return(status: 200, body: body.to_json, headers: { 'Content-Type' => 'application/json' })
+
+        get show_url, headers: agent.create_new_auth_token, as: :json
+
+        expect(response.parsed_body['suggestion']['slots']).to eq(%w[data e-mail])
+        expect(response.parsed_body['options'].pluck('slots')).to eq([['valor'], %w[data hora valor número link e-mail], []])
       end
 
       it 'turns an invalid options_id into nil' do
