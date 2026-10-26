@@ -6,6 +6,9 @@ class Lia::SuggestionClient
   SUGGESTION_KEYS = %w[id text source].freeze
   OPTION_KEYS = %w[text source].freeze
   MAX_OPTIONS = 3
+  # Lacunas "[slot]" que a LIA deixa no texto; qualquer outro nome e descartado.
+  ALLOWED_SLOTS = %w[valor data hora número link e-mail].freeze
+  MAX_SLOTS = 6
   UUID_FORMAT = /\A\h{8}-\h{4}-\h{4}-\h{4}-\h{12}\z/
   EMPTY_ERROR = { suggestion: nil, options: [], options_id: nil, reason: 'error' }.freeze
   EMPTY_DISABLED = { suggestion: nil, options: [], options_id: nil, reason: 'disabled' }.freeze
@@ -54,7 +57,7 @@ class Lia::SuggestionClient
     return log_error('invalid_payload') unless payload.is_a?(Hash)
 
     suggestion = payload['suggestion']
-    suggestion = suggestion.slice(*SUGGESTION_KEYS) if suggestion.is_a?(Hash)
+    suggestion = suggestion.slice(*SUGGESTION_KEYS).merge('slots' => parse_slots(suggestion['slots'])) if suggestion.is_a?(Hash)
     suggestion = nil unless suggestion.is_a?(Hash) && suggestion['text'].present?
     options_id = payload['options_id'].to_s
     {
@@ -72,8 +75,15 @@ class Lia::SuggestionClient
     options.filter_map do |option|
       next unless option.is_a?(Hash) && option['text'].is_a?(String) && option['text'].present?
 
-      { 'text' => option['text'], 'source' => option['source'].to_s }
+      { 'text' => option['text'], 'source' => option['source'].to_s, 'slots' => parse_slots(option['slots']) }
     end.first(MAX_OPTIONS)
+  end
+
+  # So nomes da lista permitida, ate MAX_SLOTS.
+  def parse_slots(slots)
+    return [] unless slots.is_a?(Array)
+
+    slots.select { |slot| ALLOWED_SLOTS.include?(slot) }.first(MAX_SLOTS)
   end
 
   # Loga so status ou classe da excecao: nada de texto de mensagem nem token.

@@ -9,6 +9,7 @@ import { useI18n } from 'vue-i18n';
 import { useDebounceFn } from '@vueuse/core';
 import Button from 'dashboard/components-next/button/Button.vue';
 import ConversationApi from 'dashboard/api/inbox/conversation';
+import { splitBySlots, hasSlots } from 'dashboard/helper/liaSlots';
 
 const props = defineProps({
   conversationId: { type: Number, required: true },
@@ -20,6 +21,8 @@ const props = defineProps({
 });
 
 const emit = defineEmits(['use']);
+
+const SLOT_CHIP = 'rounded bg-n-amber-3 px-1 text-n-amber-12';
 
 const { t } = useI18n();
 
@@ -55,6 +58,15 @@ const optionSourceLabel = source => {
       return '';
   }
 };
+
+// A faixa só avisa quando a sugestão (ou alguma opção) traz lacuna permitida.
+const suggestionParts = computed(() =>
+  splitBySlots(suggestion.value?.text || '')
+);
+const suggestionHasSlots = computed(() => hasSlots(suggestion.value?.text));
+const optionsHaveSlots = computed(() =>
+  options.value.some(option => hasSlots(option.text))
+);
 
 const canDisplay = computed(
   () => !props.isPrivateNote && !props.hasContent && !props.isResolved
@@ -187,6 +199,13 @@ defineExpose({ isShown, useSuggestion });
     <div class="min-w-0 flex-1">
       <div class="text-xs font-medium text-n-slate-11">
         {{ t('LIA_SUGGESTION.OPTIONS_TITLE') }}
+        <span
+          v-if="optionsHaveSlots"
+          class="ms-1 text-n-amber-11 before:me-1 before:content-['·']"
+          data-test-id="lia-slots-hint"
+        >
+          {{ t('LIA_SUGGESTION.FILL_SLOTS') }}
+        </span>
       </div>
       <ul class="m-0 mt-1 flex list-none flex-col gap-1 p-0">
         <li v-for="(option, index) in options" :key="index">
@@ -199,7 +218,15 @@ defineExpose({ isShown, useSuggestion });
             <span
               class="line-clamp-2 block whitespace-pre-line break-words text-sm text-n-slate-12"
             >
-              {{ option.text }}
+              <template
+                v-for="(part, partIndex) in splitBySlots(option.text)"
+                :key="partIndex"
+              >
+                <span v-if="part.isSlot" :class="SLOT_CHIP">{{
+                  part.text
+                }}</span>
+                <template v-else>{{ part.text }}</template>
+              </template>
             </span>
             <span
               v-if="optionSourceLabel(option.source)"
@@ -239,12 +266,22 @@ defineExpose({ isShown, useSuggestion });
           {{ t('LIA_SUGGESTION.TITLE') }}
         </span>
         <span v-if="sourceLabel"> · {{ sourceLabel }}</span>
+        <span
+          v-if="suggestionHasSlots"
+          class="ms-1 text-n-amber-11 before:me-1 before:content-['·']"
+          data-test-id="lia-slots-hint"
+        >
+          {{ t('LIA_SUGGESTION.FILL_SLOTS') }}
+        </span>
       </div>
       <p
         class="mt-0.5 mb-0 line-clamp-4 whitespace-pre-line break-words text-sm text-n-slate-12 hover:line-clamp-none"
         :title="suggestion.text"
       >
-        {{ suggestion.text }}
+        <template v-for="(part, partIndex) in suggestionParts" :key="partIndex">
+          <span v-if="part.isSlot" :class="SLOT_CHIP">{{ part.text }}</span>
+          <template v-else>{{ part.text }}</template>
+        </template>
       </p>
     </div>
     <div class="flex flex-shrink-0 items-center gap-1">

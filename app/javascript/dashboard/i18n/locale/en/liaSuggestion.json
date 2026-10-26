@@ -12,6 +12,9 @@
     "OPTION_SOURCE_CANNED": "canned response",
     "OPTION_SOURCE_QUICK_REPLY": "quick reply",
     "OPTION_SOURCE_HISTORY": "previous team reply",
-    "NO_SAFE_SUGGESTION": "No safe suggestion for this message."
+    "NO_SAFE_SUGGESTION": "No safe suggestion for this message.",
+    "FILL_SLOTS": "Fill in the blanks",
+    "MISSING_SLOTS": "Still to fill in:",
+    "SEND_ANYWAY": "Send anyway"
   }
 }

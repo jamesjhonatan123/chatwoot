@@ -440,10 +440,11 @@ describe('ReplyBox', () => {
       methods: { useSuggestion },
     };
     const focusEditorInputField = vi.fn();
+    const selectPlaceholder = vi.fn(() => false);
     const EditorStub = {
       name: 'WootMessageEditor',
       template: '<div />',
-      methods: { focusEditorInputField },
+      methods: { focusEditorInputField, selectPlaceholder },
     };
     const mountForTab = async () => {
       const { wrapper } = mountWith({
@@ -459,7 +460,11 @@ describe('ReplyBox', () => {
     };
     const tab = () => ({ shiftKey: false, preventDefault: vi.fn() });
 
-    beforeEach(() => useSuggestion.mockClear());
+    beforeEach(() => {
+      useSuggestion.mockClear();
+      selectPlaceholder.mockClear();
+      focusEditorInputField.mockClear();
+    });
 
     it('consumes Tab with preventDefault when the editor is empty and focused', async () => {
       const wrapper = await mountForTab();
@@ -511,5 +516,115 @@ describe('ReplyBox', () => {
       expect(wrapper.vm.message).toBe('Texto da LIA');
       expect(focusEditorInputField).toHaveBeenCalled();
     });
+
+    it('selects the first placeholder after using a text with slots', async () => {
+      const wrapper = await mountForTab();
+      wrapper.vm.onUseLiaSuggestion('Previsão [data].');
+      await nextTick();
+      expect(selectPlaceholder).toHaveBeenCalledWith();
+    });
+
+    it('does not select anything when the used text has no allowed slot', async () => {
+      const wrapper = await mountForTab();
+      wrapper.vm.onUseLiaSuggestion('Pedido [123] enviado');
+      await nextTick();
+      expect(selectPlaceholder).not.toHaveBeenCalled();
+    });
+
+    it('jumps to the next placeholder with Tab and consumes it', async () => {
+      selectPlaceholder.mockReturnValueOnce(true);
+      const wrapper = await mountForTab();
+      wrapper.vm.message = 'Dia [data] às [hora]';
+      const event = tab();
+      wrapper.vm.onLiaSuggestionTab(event);
+      expect(selectPlaceholder).toHaveBeenCalledWith({ afterCursor: true });
+      expect(useSuggestion).not.toHaveBeenCalled();
+      expect(event.preventDefault).toHaveBeenCalled();
+    });
+
+    it('does not consume Tab when there is no placeholder left', async () => {
+      const wrapper = await mountForTab();
+      wrapper.vm.message = 'Texto já completo';
+      const event = tab();
+      wrapper.vm.onLiaSuggestionTab(event);
+      expect(event.preventDefault).not.toHaveBeenCalled();
+    });
+
+    it.each(['showCannedMenu', 'showMentions', 'showMacrosMenu'])(
+      'does not jump to a placeholder while %s is open',
+      async menu => {
+        selectPlaceholder.mockReturnValue(true);
+        const wrapper = await mountForTab();
+        wrapper.vm.message = 'Dia [data]';
+        wrapper.vm[menu] = true;
+        const event = tab();
+        wrapper.vm.onLiaSuggestionTab(event);
+        expect(selectPlaceholder).not.toHaveBeenCalled();
+        expect(event.preventDefault).not.toHaveBeenCalled();
+        selectPlaceholder.mockReturnValue(false);
+      }
+    );
+  });
+
+  describe('LIA placeholder warning on send', () => {
+    const mountForSend = async message => {
+      const { wrapper } = mountWith({
+        inbox: { channel_type: 'Channel::Api' },
+      });
+      await nextTick();
+      wrapper.vm.message = message;
+      const send = vi
+        .spyOn(wrapper.vm, 'confirmOnSendReply')
+        .mockImplementation(() => {});
+      return { wrapper, send };
+    };
+    const warning = wrapper =>
+      wrapper.find('[data-test-id="lia-missing-slots"]');
+
+    it('blocks the first send with a slot left and lists it', async () => {
+      const { wrapper, send } = await mountForSend('Previsão [data] e [valor]');
+      await wrapper.vm.onSendReply();
+      await nextTick();
+      expect(send).not.toHaveBeenCalled();
+      expect(warning(wrapper).text()).toContain('[data], [valor]');
+    });
+
+    it('sends on the second attempt', async () => {
+      const { wrapper, send } = await mountForSend('Previsão [data]');
+      await wrapper.vm.onSendReply();
+      await wrapper.vm.onSendReply();
+      await nextTick();
+      expect(send).toHaveBeenCalledTimes(1);
+      expect(warning(wrapper).exists()).toBe(false);
+    });
+
+    it('sends through the "send anyway" button', async () => {
+      const { wrapper, send } = await mountForSend('Previsão [data]');
+      await wrapper.vm.onSendReply();
+      await nextTick();
+      wrapper.vm.onSendAnyway();
+      await nextTick();
+      expect(send).toHaveBeenCalledTimes(1);
+    });
+
+    it('hides the warning once no slot is left', async () => {
+      const { wrapper } = await mountForSend('Previsão [data]');
+      await wrapper.vm.onSendReply();
+      await nextTick();
+      expect(warning(wrapper).exists()).toBe(true);
+      wrapper.vm.message = 'Previsão amanhã';
+      await nextTick();
+      expect(warning(wrapper).exists()).toBe(false);
+    });
+
+    it.each(['Pedido sem lacuna', 'Código [123] e [abc]'])(
+      'sends straight away without allowed slots: %s',
+      async message => {
+        const { wrapper, send } = await mountForSend(message);
+        await wrapper.vm.onSendReply();
+        expect(send).toHaveBeenCalledTimes(1);
+        expect(warning(wrapper).exists()).toBe(false);
+      }
+    );
   });
 });

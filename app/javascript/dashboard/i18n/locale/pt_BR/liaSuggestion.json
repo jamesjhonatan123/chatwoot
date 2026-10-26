@@ -12,6 +12,9 @@
     "OPTION_SOURCE_CANNED": "resposta pronta",
     "OPTION_SOURCE_QUICK_REPLY": "resposta rápida",
     "OPTION_SOURCE_HISTORY": "resposta anterior do time",
-    "NO_SAFE_SUGGESTION": "Sem sugestão segura para esta mensagem."
+    "NO_SAFE_SUGGESTION": "Sem sugestão segura para esta mensagem.",
+    "FILL_SLOTS": "complete os espaços",
+    "MISSING_SLOTS": "Ainda falta preencher:",
+    "SEND_ANYWAY": "Enviar assim mesmo"
   }
 }

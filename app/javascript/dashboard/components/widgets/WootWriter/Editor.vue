@@ -73,6 +73,7 @@ import {
 import { createTypingIndicator } from '@chatwoot/utils';
 import { checkFileSizeLimit } from 'shared/helpers/FileHelper';
 import { uploadFile } from 'dashboard/helper/uploadHelper';
+import { findSlotRange } from 'dashboard/helper/liaSlots';
 import { INBOX_TYPES } from 'dashboard/helper/inbox';
 
 const props = defineProps({
@@ -421,6 +422,26 @@ function focusEditorInputField(pos = 'end') {
 
   editorView.dispatch(tr.setSelection(selection));
   editorView.focus();
+}
+
+// Seleciona a próxima lacuna "[slot]" permitida para o atendente digitar por cima.
+// Sem `afterCursor`, procura desde o início do documento; com ele, só a partir do
+// fim da seleção atual. Devolve true quando selecionou alguma.
+function selectPlaceholder({ afterCursor = false } = {}) {
+  if (!editorView) return false;
+  const { doc, selection, tr } = editorView.state;
+  const slotRange = findSlotRange(doc, afterCursor ? selection.to : 0);
+  if (!slotRange) return false;
+
+  // prosemirror-state não é dependência direta: fromJSON cria o TextSelection.
+  const textSelection = Selection.fromJSON(doc, {
+    type: 'text',
+    anchor: slotRange.from,
+    head: slotRange.to,
+  });
+  editorView.dispatch(tr.setSelection(textSelection).scrollIntoView());
+  editorView.focus();
+  return true;
 }
 
 function isBodyEmpty(content) {
@@ -940,7 +961,7 @@ onMounted(() => {
   }
 });
 
-defineExpose({ focusEditorInputField });
+defineExpose({ focusEditorInputField, selectPlaceholder });
 
 // BUS Event to insert text or markdown into the editor at the
 // current cursor position.
