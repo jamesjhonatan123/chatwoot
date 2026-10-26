@@ -19,6 +19,41 @@
     "SEND_ANYWAY": "Enviar assim mesmo",
     "SOURCE_LIA_DRAFT": "do rascunho da LIA",
     "OPTION_SOURCE_LIA_DRAFT": "rascunho da LIA",
-    "DRAFTING": "A LIA está escrevendo um rascunho…"
+    "DRAFTING": "A LIA está escrevendo um rascunho…",
+    "REPORT": {
+      "SIDEBAR": "Sugestões da LIA",
+      "TITLE": "Sugestões da LIA",
+      "SUBTITLE": "Quanto as sugestões ajudam os atendentes e quais foram negadas, para aprimorar.",
+      "PERIOD": "Período",
+      "LAST_DAY": "Último dia",
+      "LAST_7": "Últimos 7 dias",
+      "LAST_30": "Últimos 30 dias",
+      "FAILED": "Não foi possível carregar o relatório da LIA.",
+      "LOADING": "Carregando…",
+      "SHOWN": "Mostradas",
+      "USED": "Usadas",
+      "EDITED": "Editadas",
+      "IGNORED": "Ignoradas",
+      "DISMISSED": "Fechadas no ×",
+      "RATE": "Aproveitamento",
+      "RATE_HINT": "Aproveitamento = (usadas + editadas) ÷ mostradas. Usada: o atendente mandou o texto sugerido; editada: mandou parecido; ignorada: mandou outra coisa.",
+      "BY_SOURCE": "Por origem",
+      "BY_AGENT": "Por atendente (quem respondeu)",
+      "REJECTED_TITLE": "Negadas ({count})",
+      "NO_REJECTED": "Nenhuma sugestão negada no período.",
+      "QUESTION": "Cliente",
+      "SUGGESTED": "Sugerido",
+      "SENT_INSTEAD": "Enviado no lugar",
+      "OPTIONS": "{count} opções",
+      "BLOCKED": "Bloqueada · {count} negações",
+      "RELEASE": "Liberar",
+      "SOURCES": {
+        "CANNED": "Resposta pronta",
+        "QUICK_REPLY": "Resposta rápida",
+        "HISTORY": "Resposta anterior do time",
+        "LIA_DRAFT": "Rascunho da LIA",
+        "SYSTEM": "Dados do sistema"
+      }
+    }
   }
 }
