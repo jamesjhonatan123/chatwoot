@@ -18,10 +18,12 @@ class Lia::SuggestionClient
   end
 
   # Retorna sempre { suggestion:, options:, options_id:, reason: }; nunca levanta.
-  def fetch(account_id:, inbox_id:, conversation_id:)
+  # `agent` e o atendente logado ({ id:, name: }): o x dele so esconde a sugestao para ele.
+  def fetch(account_id:, inbox_id:, conversation_id:, agent: nil)
     return EMPTY_DISABLED unless self.class.enabled?
 
-    response = post('/api/chatwoot/suggestion', account_id: account_id, inbox_id: inbox_id, conversation_id: conversation_id)
+    response = post('/api/chatwoot/suggestion',
+                    { account_id: account_id, inbox_id: inbox_id, conversation_id: conversation_id }.merge(agent_fields(agent)))
     return log_error(response.code) unless response.code == 200
 
     parse(response.parsed_response)
@@ -30,10 +32,10 @@ class Lia::SuggestionClient
   end
 
   # Retorna true quando a LIA confirmou o descarte.
-  def discard(suggestion_id)
+  def discard(suggestion_id, agent: nil)
     return false unless self.class.enabled?
 
-    response = post("/api/chatwoot/suggestion/#{suggestion_id}/discard", {})
+    response = post("/api/chatwoot/suggestion/#{suggestion_id}/discard", agent_fields(agent))
     response.code == 200 && response.parsed_response.is_a?(Hash) && response.parsed_response['ok'] == true
   rescue StandardError => e
     log_error(e.class.name)
@@ -41,6 +43,12 @@ class Lia::SuggestionClient
   end
 
   private
+
+  def agent_fields(agent)
+    return {} if agent.blank? || agent[:id].blank?
+
+    { agent_id: agent[:id], agent_name: agent[:name].to_s.first(120).presence }.compact
+  end
 
   def post(path, body)
     token = ENV.fetch('LIA_ADMIN_API_TOKEN')
