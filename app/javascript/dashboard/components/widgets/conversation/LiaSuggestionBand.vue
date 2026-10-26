@@ -41,6 +41,9 @@ const sourceLabel = computed(() => {
       return t('LIA_SUGGESTION.SOURCE_QUICK_REPLY');
     case 'history':
       return t('LIA_SUGGESTION.SOURCE_HISTORY');
+    // Texto montado pela LIA com dado conferido no sistema (cobertura, pedido).
+    case 'system':
+      return t('LIA_SUGGESTION.SOURCE_SYSTEM');
     default:
       return '';
   }

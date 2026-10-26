@@ -5,6 +5,7 @@
     "DISMISS": "Dismiss suggestion",
     "SOURCE_QUICK_REPLY": "from a quick reply",
     "SOURCE_HISTORY": "from a previous team reply",
+    "SOURCE_SYSTEM": "with system data",
     "SOURCE_CANNED": "from a canned response",
     "KEY_TAB": "Tab",
     "OPTIONS_TITLE": "LIA options",
