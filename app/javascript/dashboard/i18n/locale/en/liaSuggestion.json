@@ -20,6 +20,8 @@
     "SOURCE_LIA_DRAFT": "from a LIA draft",
     "OPTION_SOURCE_LIA_DRAFT": "LIA draft",
     "DRAFTING": "LIA is writing a draft…",
+    "COMPOSE_TITLE": "LIA autocomplete",
+    "ALTERNATIVES_TITLE": "Other replies",
     "REPORT": {
       "SIDEBAR": "LIA suggestions",
       "TITLE": "LIA suggestions",
@@ -53,7 +55,17 @@
         "HISTORY": "Previous team reply",
         "LIA_DRAFT": "LIA draft",
         "SYSTEM": "System data"
-      }
+      },
+      "AUGMENTATION": "Messages with LIA",
+      "AUGMENTATION_HINT": "Messages with LIA = (suggestions used or edited + autocomplete used or edited) ÷ messages sent by the team in the period.",
+      "TEAM_MESSAGES": "Team messages",
+      "COMPOSE_USED": "Autocomplete used",
+      "USAGE_BY_AGENT": "LIA usage by agent",
+      "AGENT": "Agent",
+      "SENT_MESSAGES": "Messages",
+      "FROM_SUGGESTION": "From suggestion",
+      "FROM_COMPOSE": "From autocomplete",
+      "NO_USAGE": "No agent used LIA in the period."
     }
   }
 }

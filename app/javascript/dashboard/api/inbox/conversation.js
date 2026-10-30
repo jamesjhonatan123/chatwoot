@@ -160,6 +160,19 @@ class ConversationApi extends ApiClient {
     });
   }
 
+  getLiaComposeLibrary(conversationId) {
+    return axios.get(
+      `${this.url}/${conversationId}/lia_suggestion/compose_library`
+    );
+  }
+
+  liaComposeUsed(conversationId, usage) {
+    return axios.post(
+      `${this.url}/${conversationId}/lia_suggestion/compose_used`,
+      usage
+    );
+  }
+
   getInboxAssistant(conversationId) {
     return axios.get(`${this.url}/${conversationId}/inbox_assistant`);
   }

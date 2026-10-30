@@ -60,6 +60,48 @@ const cards = computed(() => [
   },
 ]);
 
+// Quanto das mensagens da equipe saiu da LIA (sugestao ou autocompletar).
+const augmentation = computed(() => data.value?.augmentation || null);
+
+const augmentationCards = computed(() => {
+  const aug = augmentation.value || {};
+  return [
+    {
+      key: 'rate',
+      label: t('LIA_SUGGESTION.REPORT.AUGMENTATION'),
+      value: percent(aug.rate),
+    },
+    {
+      key: 'team',
+      label: t('LIA_SUGGESTION.REPORT.TEAM_MESSAGES'),
+      value: aug.team_messages,
+    },
+    {
+      key: 'compose',
+      label: t('LIA_SUGGESTION.REPORT.COMPOSE_USED'),
+      value: aug.compose_used,
+    },
+  ];
+});
+
+// Ranking por atendente: mensagens de cada um vem do Chatwoot, o uso vem da LIA.
+const usageByAgent = computed(() => {
+  const aug = augmentation.value;
+  if (!aug) return [];
+  const sent = aug.team_messages_by_agent || {};
+  return (aug.by_agent || [])
+    .map(row => {
+      const messages = sent[String(row.agent_id)] || 0;
+      const helped = row.suggestion_used + row.compose_used;
+      return {
+        ...row,
+        messages,
+        rate: messages ? Math.min(helped / messages, 1) : null,
+      };
+    })
+    .sort((a, b) => (b.rate ?? -1) - (a.rate ?? -1));
+});
+
 const conversationPath = id =>
   `/app/accounts/${route.params.accountId}/conversations/${id}`;
 
@@ -121,6 +163,78 @@ onMounted(fetchData);
     </p>
 
     <template v-if="data">
+      <template v-if="augmentation">
+        <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <div
+            v-for="card in augmentationCards"
+            :key="card.key"
+            class="p-4 rounded-lg border border-n-weak bg-n-solid-2"
+          >
+            <p class="text-xs text-n-slate-11">{{ card.label }}</p>
+            <p class="mt-1 text-2xl font-medium text-n-slate-12">
+              {{ card.value ?? 0 }}
+            </p>
+          </div>
+        </div>
+        <p class="text-xs text-n-slate-10">
+          {{ t('LIA_SUGGESTION.REPORT.AUGMENTATION_HINT') }}
+        </p>
+        <section class="rounded-lg border border-n-weak">
+          <h2
+            class="px-4 py-3 text-sm font-medium border-b border-n-weak text-n-slate-12"
+          >
+            {{ t('LIA_SUGGESTION.REPORT.USAGE_BY_AGENT') }}
+          </h2>
+          <p
+            v-if="!usageByAgent.length"
+            class="px-4 py-3 text-sm text-n-slate-11"
+          >
+            {{ t('LIA_SUGGESTION.REPORT.NO_USAGE') }}
+          </p>
+          <div v-else class="overflow-x-auto">
+            <table
+              class="w-full text-sm whitespace-nowrap"
+              data-test-id="lia-usage-by-agent"
+            >
+              <thead class="text-xs text-n-slate-11">
+                <tr>
+                  <th class="px-4 py-2 font-normal text-left">
+                    {{ t('LIA_SUGGESTION.REPORT.AGENT') }}
+                  </th>
+                  <th class="px-2 py-2 font-normal text-right">
+                    {{ t('LIA_SUGGESTION.REPORT.SENT_MESSAGES') }}
+                  </th>
+                  <th class="px-2 py-2 font-normal text-right">
+                    {{ t('LIA_SUGGESTION.REPORT.FROM_SUGGESTION') }}
+                  </th>
+                  <th class="px-2 py-2 font-normal text-right">
+                    {{ t('LIA_SUGGESTION.REPORT.FROM_COMPOSE') }}
+                  </th>
+                  <th class="px-4 py-2 font-normal text-right">
+                    {{ t('LIA_SUGGESTION.REPORT.AUGMENTATION') }}
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr
+                  v-for="row in usageByAgent"
+                  :key="row.agent_id ?? row.agent"
+                  class="border-t border-n-weak text-n-slate-12"
+                >
+                  <td class="px-4 py-2">{{ row.agent }}</td>
+                  <td class="px-2 py-2 text-right">{{ row.messages }}</td>
+                  <td class="px-2 py-2 text-right">
+                    {{ row.suggestion_used }}
+                  </td>
+                  <td class="px-2 py-2 text-right">{{ row.compose_used }}</td>
+                  <td class="px-4 py-2 text-right">{{ percent(row.rate) }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </template>
+
       <div class="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
         <div
           v-for="card in cards"

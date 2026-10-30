@@ -20,6 +20,8 @@
     "SOURCE_LIA_DRAFT": "do rascunho da LIA",
     "OPTION_SOURCE_LIA_DRAFT": "rascunho da LIA",
     "DRAFTING": "A LIA está escrevendo um rascunho…",
+    "COMPOSE_TITLE": "Autocompletar da LIA",
+    "ALTERNATIVES_TITLE": "Outras respostas",
     "REPORT": {
       "SIDEBAR": "Sugestões da LIA",
       "TITLE": "Sugestões da LIA",
@@ -53,7 +55,17 @@
         "HISTORY": "Resposta anterior do time",
         "LIA_DRAFT": "Rascunho da LIA",
         "SYSTEM": "Dados do sistema"
-      }
+      },
+      "AUGMENTATION": "Mensagens com a LIA",
+      "AUGMENTATION_HINT": "Mensagens com a LIA = (sugestões usadas ou editadas + autocompletar usado ou editado) ÷ mensagens mandadas pela equipe no período.",
+      "TEAM_MESSAGES": "Mensagens da equipe",
+      "COMPOSE_USED": "Autocompletar usado",
+      "USAGE_BY_AGENT": "Uso da LIA por atendente",
+      "AGENT": "Atendente",
+      "SENT_MESSAGES": "Mensagens",
+      "FROM_SUGGESTION": "Da sugestão",
+      "FROM_COMPOSE": "Do autocompletar",
+      "NO_USAGE": "Nenhum atendente usou a LIA no período."
     }
   }
 }

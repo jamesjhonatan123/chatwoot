@@ -6,6 +6,11 @@ class Lia::SuggestionClient
   SUGGESTION_KEYS = %w[id text source].freeze
   OPTION_KEYS = %w[text source].freeze
   MAX_OPTIONS = 3
+  MAX_ALTERNATIVES = 2
+  # Repertorio do autocompletar: teto de textos e de tamanho de cada um.
+  MAX_COMPOSE_TEXTS = 300
+  MAX_COMPOSE_CHARS = 4096
+  COMPOSE_OUTCOMES = %w[accepted edited ignored].freeze
   # Lacunas "[slot]" que a LIA deixa no texto; qualquer outro nome e descartado.
   ALLOWED_SLOTS = %w[valor data hora número link e-mail].freeze
   MAX_SLOTS = 6
@@ -40,6 +45,34 @@ class Lia::SuggestionClient
   rescue StandardError => e
     log_error(e.class.name)
     false
+  end
+
+  # Repertorio do autocompletar da conversa: { texts: [{ text:, source: }], reason: }; nunca levanta.
+  def compose_library(account_id:, inbox_id:, conversation_id:, agent: nil)
+    return { texts: [], reason: 'disabled' } unless self.class.enabled?
+
+    response = post('/api/chatwoot/compose-library',
+                    { account_id: account_id, inbox_id: inbox_id, conversation_id: conversation_id }.merge(agent_fields(agent)))
+    return compose_error(response.code) unless response.code == 200 && response.parsed_response.is_a?(Hash)
+
+    { texts: parse_compose_texts(response.parsed_response['texts']), reason: response.parsed_response['reason'].to_s.presence || 'error' }
+  rescue StandardError => e
+    compose_error(e.class.name)
+  end
+
+  # Autocompletar aceito e enviado; devolve o desfecho (accepted/edited/ignored) ou nil.
+  def compose_used(account_id:, inbox_id:, conversation_id:, usage:, agent: nil)
+    return nil unless self.class.enabled?
+
+    body = { account_id: account_id, inbox_id: inbox_id, conversation_id: conversation_id }.merge(compose_usage(usage))
+    response = post('/api/chatwoot/compose-used', body.compact.merge(agent_fields(agent)))
+    return nil unless response.code == 200 && response.parsed_response.is_a?(Hash)
+
+    outcome = response.parsed_response['outcome'].to_s
+    COMPOSE_OUTCOMES.include?(outcome) ? outcome : nil
+  rescue StandardError => e
+    log_error(e.class.name)
+    nil
   end
 
   # Metricas do relatorio (repassadas como vieram); em falha, um corpo vazio com erro.
@@ -79,6 +112,16 @@ class Lia::SuggestionClient
     )
   end
 
+  # Textos cortados no limite que a LIA aceita; a origem e so um rotulo curto.
+  def compose_usage(usage)
+    {
+      completion: usage[:completion].to_s.first(MAX_COMPOSE_CHARS),
+      sent_text: usage[:sent_text].to_s.first(MAX_COMPOSE_CHARS),
+      source: usage[:source].to_s.first(20).presence,
+      typed_chars: usage[:typed_chars].to_i.clamp(0, MAX_COMPOSE_CHARS)
+    }
+  end
+
   def agent_fields(agent)
     return {} if agent.blank? || agent[:id].blank?
 
@@ -100,7 +143,12 @@ class Lia::SuggestionClient
     return log_error('invalid_payload') unless payload.is_a?(Hash)
 
     suggestion = payload['suggestion']
-    suggestion = suggestion.slice(*SUGGESTION_KEYS).merge('slots' => parse_slots(suggestion['slots'])) if suggestion.is_a?(Hash)
+    if suggestion.is_a?(Hash)
+      suggestion = suggestion.slice(*SUGGESTION_KEYS).merge(
+        'slots' => parse_slots(suggestion['slots']),
+        'alternatives' => parse_options(suggestion['alternatives']).first(MAX_ALTERNATIVES)
+      )
+    end
     suggestion = nil unless suggestion.is_a?(Hash) && suggestion['text'].present?
     options_id = payload['options_id'].to_s
     {
@@ -120,6 +168,22 @@ class Lia::SuggestionClient
 
       { 'text' => option['text'], 'source' => option['source'].to_s, 'slots' => parse_slots(option['slots']) }
     end.first(MAX_OPTIONS)
+  end
+
+  # Ate MAX_COMPOSE_TEXTS textos nao vazios, so com text e source.
+  def parse_compose_texts(texts)
+    return [] unless texts.is_a?(Array)
+
+    texts.filter_map do |item|
+      next unless item.is_a?(Hash) && item['text'].is_a?(String) && item['text'].present?
+
+      { 'text' => item['text'].first(MAX_COMPOSE_CHARS), 'source' => item['source'].to_s }
+    end.first(MAX_COMPOSE_TEXTS)
+  end
+
+  def compose_error(detail)
+    log_error(detail)
+    { texts: [], reason: 'error' }
   end
 
   # So nomes da lista permitida, ate MAX_SLOTS.
