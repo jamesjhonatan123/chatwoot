@@ -211,6 +211,15 @@ const dismiss = () => (suggestion.value ? discard(suggestion.value.id) : null);
 const dismissOptions = () =>
   optionsId.value ? discard(optionsId.value) : null;
 
+// Ate duas outras respostas da LIA ao lado da sugestao; clique usa a escolhida.
+const alternatives = computed(() => suggestion.value?.alternatives || []);
+
+const useAlternative = alternative => {
+  if (!isShown.value) return;
+  markHandled(suggestion.value.id);
+  emit('use', alternative.text);
+};
+
 // Clique numa opcao: insere o texto e esconde a faixa (sem Tab para opcoes).
 const useOption = option => {
   if (!isOptionsShown.value) return;
@@ -321,6 +330,33 @@ defineExpose({ isShown, useSuggestion });
           <template v-else>{{ part.text }}</template>
         </template>
       </p>
+      <div
+        v-if="alternatives.length"
+        class="mt-1.5 flex flex-col gap-1"
+        data-test-id="lia-alternatives"
+      >
+        <span class="text-[11px] text-n-slate-10">
+          {{ t('LIA_SUGGESTION.ALTERNATIVES_TITLE') }}
+        </span>
+        <button
+          v-for="(alternative, index) in alternatives"
+          :key="index"
+          type="button"
+          class="w-full rounded border border-n-violet-4 bg-n-solid-1 px-2 py-0.5 text-start text-sm text-n-slate-12 hover:border-n-violet-6"
+          :title="alternative.text"
+          @click="useAlternative(alternative)"
+        >
+          <span class="line-clamp-1 break-words">
+            <template
+              v-for="(part, partIndex) in splitBySlots(alternative.text)"
+              :key="partIndex"
+            >
+              <span v-if="part.isSlot" :class="SLOT_CHIP">{{ part.text }}</span>
+              <template v-else>{{ part.text }}</template>
+            </template>
+          </span>
+        </button>
+      </div>
     </div>
     <div class="flex flex-shrink-0 items-center gap-1">
       <Button

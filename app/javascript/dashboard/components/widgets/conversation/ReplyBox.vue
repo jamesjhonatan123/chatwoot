@@ -8,6 +8,7 @@ import keyboardEventListenerMixins from 'shared/mixins/keyboardEventListenerMixi
 
 import ReplyToMessage from './ReplyToMessage.vue';
 import LiaSuggestionBand from './LiaSuggestionBand.vue';
+import LiaComposeHint from './LiaComposeHint.vue';
 import NextButton from 'dashboard/components-next/button/Button.vue';
 import AttachmentPreview from 'dashboard/components/widgets/AttachmentsPreview.vue';
 import ReplyTopPanel from 'dashboard/components/widgets/WootWriter/ReplyTopPanel.vue';
@@ -26,6 +27,7 @@ import { AUDIO_FORMATS } from 'shared/constants/messages';
 import { BUS_EVENTS } from 'shared/constants/busEvents';
 import { CMD_AI_ASSIST } from 'dashboard/helper/commandbar/events';
 import { findSlots } from 'dashboard/helper/liaSlots';
+import ConversationApi from 'dashboard/api/inbox/conversation';
 import {
   getMessageVariables,
   getUndefinedVariablesInMessage,
@@ -84,6 +86,7 @@ export default {
     ReplyEmailHead,
     ReplyToMessage,
     LiaSuggestionBand,
+    LiaComposeHint,
     NextButton,
     ReplyTopPanel,
     ContentTemplates,
@@ -111,6 +114,7 @@ export default {
     const replyEditor = useTemplateRef('replyEditor');
     const messageEditor = useTemplateRef('messageEditor');
     const liaSuggestionBand = useTemplateRef('liaSuggestionBand');
+    const liaComposeHint = useTemplateRef('liaComposeHint');
     const copilot = useCopilotReply();
     const macroExecution = useMacroExecution();
     const shortcutKey = useKbd(['$mod', '+', 'enter']);
@@ -124,6 +128,7 @@ export default {
       replyEditor,
       messageEditor,
       liaSuggestionBand,
+      liaComposeHint,
       copilot,
       shortcutKey,
       macroExecution,
@@ -163,6 +168,8 @@ export default {
       showUserMentions: false,
       showCannedMenu: false,
       showVariablesMenu: false,
+      // Autocompletar aceito com Tab, mandado para a LIA junto com o texto enviado.
+      liaComposeUsage: null,
       showMacrosMenu: false,
       newConversationModalActive: false,
       showArticleSearchPopover: false,
@@ -251,6 +258,18 @@ export default {
     // Lacunas "[slot]" da LIA ainda no texto; lista só enquanto o aviso está aberto.
     missingSlots() {
       return this.showSlotWarning ? findSlots(this.message) : [];
+    },
+    // Texto do editor sem a assinatura (o autocompletar compara só o que foi digitado).
+    typedMessage() {
+      const body = this.message || '';
+      if (this.isPrivate || !this.sendWithSignature || !this.messageSignature) {
+        return body;
+      }
+      return removeSignature(
+        body,
+        this.messageSignature,
+        getEffectiveChannelType(this.channelType, this.inbox?.medium || '')
+      );
     },
     hasMeaningfulEditorContent() {
       const body = this.message || '';
@@ -568,6 +587,7 @@ export default {
       deep: true,
     },
     conversationIdByRoute(conversationId, oldConversationId) {
+      this.liaComposeUsage = null;
       if (conversationId !== oldConversationId) {
         this.switchDraftContext(conversationId, this.effectiveReplyMode);
         this.resetRecorderAndClearAttachments();
@@ -788,6 +808,7 @@ export default {
       return {
         Escape: {
           action: () => {
+            this.liaComposeHint?.dismiss();
             this.hideEmojiPicker();
           },
           allowOnFocusedInput: true,
@@ -851,14 +872,51 @@ export default {
       if (!canAct) return;
 
       if (this.hasMeaningfulEditorContent) {
-        // Editor com texto: Tab so e consumido se ainda houver lacuna adiante.
-        if (this.messageEditor?.selectPlaceholder({ afterCursor: true })) {
+        // Editor com texto: Tab preenche a lacuna adiante ou completa o texto.
+        if (
+          findSlots(this.message).length &&
+          this.messageEditor?.selectPlaceholder({ afterCursor: true })
+        ) {
           e.preventDefault();
+          return;
         }
+        if (this.acceptLiaCompletion()) e.preventDefault();
         return;
       }
       if (!this.liaSuggestionBand?.useSuggestion()) return;
       e.preventDefault();
+    },
+    // Completa com o texto do repertorio e guarda o uso para mandar no envio.
+    acceptLiaCompletion() {
+      const accepted = this.liaComposeHint?.accept();
+      if (!accepted) return false;
+      const signed =
+        this.sendWithSignature && this.messageSignature && !this.isPrivate;
+      this.message = signed
+        ? appendSignature(
+            accepted.message,
+            this.messageSignature,
+            getEffectiveChannelType(this.channelType, this.inbox?.medium || '')
+          )
+        : accepted.message;
+      this.liaComposeUsage = accepted.usage;
+      this.$nextTick(() => {
+        this.messageEditor?.focusEditorInputField('end');
+        if (findSlots(accepted.message).length) {
+          this.messageEditor?.selectPlaceholder();
+        }
+      });
+      return true;
+    },
+    // Envio de um texto completado: a LIA compara com o que foi mandado de fato.
+    reportLiaComposeUsage(sentText) {
+      const usage = this.liaComposeUsage;
+      this.liaComposeUsage = null;
+      if (!usage || this.isPrivate || !sentText.trim()) return;
+      ConversationApi.liaComposeUsed(this.conversationId, {
+        ...usage,
+        sent_text: sentText,
+      }).catch(() => {});
     },
     // Poe o texto no editor e, se tiver lacuna, deixa a primeira selecionada.
     onUseLiaSuggestion(text) {
@@ -1019,6 +1077,7 @@ export default {
           this.clearEmailField();
         }
 
+        this.reportLiaComposeUsage(this.typedMessage);
         this.clearMessage();
         this.hideEmojiPicker();
       }
@@ -1559,6 +1618,20 @@ export default {
       :is-private-note="isOnPrivateNote"
       :has-content="hasMeaningfulEditorContent"
       @use="onUseLiaSuggestion"
+    />
+    <LiaComposeHint
+      ref="liaComposeHint"
+      :conversation-id="conversationId"
+      :typed="typedMessage"
+      :disabled="
+        isOnPrivateNote ||
+        currentChat.status === 'resolved' ||
+        showUserMentions ||
+        showMentions ||
+        showCannedMenu ||
+        showVariablesMenu ||
+        showMacrosMenu
+      "
     />
     <div
       v-if="missingSlots.length"

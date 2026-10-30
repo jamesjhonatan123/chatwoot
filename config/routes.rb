@@ -196,6 +196,8 @@ Rails.application.routes.draw do
               resources :scheduled_messages, only: [:index, :create, :destroy]
               resource :lia_suggestion, only: [:show] do
                 post :dismiss
+                get :compose_library
+                post :compose_used
               end
               resources :follow_up_runs, only: [:index, :create, :destroy] do
                 member do

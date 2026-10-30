@@ -60,7 +60,7 @@ RSpec.describe 'Conversation LIA Suggestion API', type: :request do
         expect(stub).to have_been_requested
         expect(response).to have_http_status(:success)
         expect(response.parsed_body).to eq(
-          'suggestion' => { 'id' => suggestion_id, 'text' => 'Oi!', 'source' => 'canned', 'slots' => [] },
+          'suggestion' => { 'id' => suggestion_id, 'text' => 'Oi!', 'source' => 'canned', 'slots' => [], 'alternatives' => [] },
           'options' => [], 'options_id' => nil, 'reason' => 'ok'
         )
       end
@@ -118,6 +118,21 @@ RSpec.describe 'Conversation LIA Suggestion API', type: :request do
         expect(response.parsed_body['options'].pluck('slots')).to eq([['valor'], %w[data hora valor número link e-mail], []])
       end
 
+      it 'passes up to 2 alternatives of the suggestion, dropping invalid items and extra keys' do
+        alternatives = [{ text: 'Alt 1', source: 'history', probability: 0.1 }, { text: '' }, 'x',
+                        { text: 'Alt 2 [valor]', source: 'quick_reply', slots: ['valor'] }, { text: 'Alt 3', source: 'canned' }]
+        body = { suggestion: { id: suggestion_id, text: 'Oi!', source: 'canned', alternatives: alternatives }, reason: 'ok' }
+        stub_request(:post, suggestion_endpoint)
+          .to_return(status: 200, body: body.to_json, headers: { 'Content-Type' => 'application/json' })
+
+        get show_url, headers: agent.create_new_auth_token, as: :json
+
+        expect(response.parsed_body['suggestion']['alternatives']).to eq(
+          [{ 'text' => 'Alt 1', 'source' => 'history', 'slots' => [] },
+           { 'text' => 'Alt 2 [valor]', 'source' => 'quick_reply', 'slots' => ['valor'] }]
+        )
+      end
+
       it 'turns an invalid options_id into nil' do
         body = { suggestion: nil, options: [{ text: 'A', source: 'canned' }], options_id: '../x', reason: 'options' }
         stub_request(:post, suggestion_endpoint)
@@ -155,6 +170,91 @@ RSpec.describe 'Conversation LIA Suggestion API', type: :request do
         expect(response).to have_http_status(:success)
         expect(response.parsed_body).to eq('suggestion' => nil, 'options' => [], 'options_id' => nil, 'reason' => 'error')
       end
+    end
+  end
+
+  describe 'GET /api/v1/accounts/{account.id}/conversations/<id>/lia_suggestion/compose_library' do
+    let(:library_url) do
+      compose_library_api_v1_account_conversation_lia_suggestion_url(account_id: account.id, conversation_id: conversation.display_id)
+    end
+    let(:library_endpoint) { "#{lia_url}/api/chatwoot/compose-library" }
+
+    it 'denies an agent without access to the inbox' do
+      stub = stub_request(:post, library_endpoint)
+
+      get library_url, headers: agent.create_new_auth_token, as: :json
+
+      expect(response).to have_http_status(:unauthorized)
+      expect(stub).not_to have_been_requested
+    end
+
+    context 'with an agent that has access to the inbox' do
+      before { create(:inbox_member, inbox: conversation.inbox, user: agent) }
+
+      it 'passes the texts through, sending ids and the agent, dropping invalid items' do
+        texts = [{ text: 'Temos planos mensais', source: 'quick_reply', extra: 1 }, { text: '' }, 7, { source: 'x' }]
+        stub = stub_request(:post, library_endpoint)
+               .with(body: { account_id: account.id, inbox_id: conversation.inbox_id, conversation_id: conversation.display_id,
+                             agent_id: agent.id, agent_name: agent.available_name }.to_json,
+                     headers: { 'Authorization' => 'Bearer segredo-de-teste' })
+               .to_return(status: 200, body: { texts: texts, reason: 'ok' }.to_json, headers: { 'Content-Type' => 'application/json' })
+
+        get library_url, headers: agent.create_new_auth_token, as: :json
+
+        expect(stub).to have_been_requested
+        expect(response.parsed_body).to eq('texts' => [{ 'text' => 'Temos planos mensais', 'source' => 'quick_reply' }], 'reason' => 'ok')
+      end
+
+      it 'answers an empty library with status 200 when LIA fails' do
+        stub_request(:post, library_endpoint).to_return(status: 500)
+
+        get library_url, headers: agent.create_new_auth_token, as: :json
+
+        expect(response).to have_http_status(:success)
+        expect(response.parsed_body).to eq('texts' => [], 'reason' => 'error')
+      end
+    end
+  end
+
+  describe 'POST /api/v1/accounts/{account.id}/conversations/<id>/lia_suggestion/compose_used' do
+    let(:used_url) do
+      compose_used_api_v1_account_conversation_lia_suggestion_url(account_id: account.id, conversation_id: conversation.display_id)
+    end
+    let(:used_endpoint) { "#{lia_url}/api/chatwoot/compose-used" }
+
+    before { create(:inbox_member, inbox: conversation.inbox, user: agent) }
+
+    it 'rejects an empty text without calling LIA' do
+      stub = stub_request(:post, used_endpoint)
+
+      post used_url, params: { completion: 'Temos planos', sent_text: '' }, headers: agent.create_new_auth_token, as: :json
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(stub).not_to have_been_requested
+    end
+
+    it 'sends the usage with the agent and returns the outcome' do
+      stub = stub_request(:post, used_endpoint)
+             .with(body: hash_including('completion' => 'Temos planos mensais.', 'sent_text' => 'Temos planos mensais!',
+                                        'source' => 'quick_reply', 'typed_chars' => 12, 'agent_id' => agent.id,
+                                        'conversation_id' => conversation.display_id))
+             .to_return(status: 200, body: { outcome: 'edited', reason: 'ok' }.to_json, headers: { 'Content-Type' => 'application/json' })
+
+      post used_url, params: { completion: 'Temos planos mensais.', sent_text: 'Temos planos mensais!', source: 'quick_reply',
+                               typed_chars: 12, extra: 'x' },
+                     headers: agent.create_new_auth_token, as: :json
+
+      expect(stub).to have_been_requested
+      expect(response.parsed_body).to eq('outcome' => 'edited')
+    end
+
+    it 'answers a null outcome when LIA fails or returns something unknown' do
+      stub_request(:post, used_endpoint)
+        .to_return(status: 200, body: { outcome: 'hacked' }.to_json, headers: { 'Content-Type' => 'application/json' })
+
+      post used_url, params: { completion: 'A', sent_text: 'B' }, headers: agent.create_new_auth_token, as: :json
+
+      expect(response.parsed_body).to eq('outcome' => nil)
     end
   end
 

@@ -35,6 +35,23 @@ RSpec.describe 'LIA Suggestion Metrics API', type: :request do
     expect(response.parsed_body['totals']).to eq('shown' => 3, 'used' => 1)
   end
 
+  it 'adds how many public messages each agent sent in the period, only from this account' do
+    conversation = create(:conversation, account: account)
+    create_list(:message, 2, account: account, conversation: conversation, message_type: :outgoing, sender: agent)
+    create(:message, account: account, conversation: conversation, message_type: :outgoing, sender: agent, private: true)
+    create(:message, account: account, conversation: conversation, message_type: :incoming)
+    old = create(:message, account: account, conversation: conversation, message_type: :outgoing, sender: admin)
+    old.update_columns(created_at: 40.days.ago) # rubocop:disable Rails/SkipsModelValidations
+    create(:message, message_type: :outgoing, sender: create(:user))
+    body = { totals: {}, rejected: [], augmentation: { team_messages: 9, by_agent: [] } }
+    stub_request(:get, metrics_endpoint).with(query: hash_including(account_id: account.id.to_s))
+                                        .to_return(status: 200, body: body.to_json, headers: { 'Content-Type' => 'application/json' })
+
+    get show_url, params: { days: 30 }, headers: admin.create_new_auth_token
+
+    expect(response.parsed_body['augmentation']['team_messages_by_agent']).to eq(agent.id.to_s => 2)
+  end
+
   it 'answers an error body when LIA fails' do
     stub_request(:get, /#{metrics_endpoint}/).to_return(status: 500)
 
