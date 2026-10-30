@@ -43,13 +43,28 @@ RSpec.describe 'LIA Suggestion Metrics API', type: :request do
     old = create(:message, account: account, conversation: conversation, message_type: :outgoing, sender: admin)
     old.update_columns(created_at: 40.days.ago) # rubocop:disable Rails/SkipsModelValidations
     create(:message, message_type: :outgoing, sender: create(:user))
-    body = { totals: {}, rejected: [], augmentation: { team_messages: 9, by_agent: [] } }
+    body = { totals: {}, rejected: [],
+             augmentation: { team_messages: 9, suggestion_used: 1, compose_used: 0, rate: 0.1111, by_agent: [] } }
     stub_request(:get, metrics_endpoint).with(query: hash_including(account_id: account.id.to_s))
                                         .to_return(status: 200, body: body.to_json, headers: { 'Content-Type' => 'application/json' })
 
     get show_url, params: { days: 30 }, headers: admin.create_new_auth_token
 
-    expect(response.parsed_body['augmentation']['team_messages_by_agent']).to eq(agent.id.to_s => 2)
+    augmentation = response.parsed_body['augmentation']
+    expect(augmentation['team_messages_by_agent']).to eq(agent.id.to_s => 2)
+    # O card do topo usa a mesma contagem do Chatwoot que o ranking: 1 de 2 mensagens.
+    expect(augmentation['team_messages']).to eq(2)
+    expect(augmentation['rate']).to eq(0.5)
+  end
+
+  it 'keeps the rate at zero when nobody sent a message in the period' do
+    body = { totals: {}, rejected: [], augmentation: { team_messages: 4, suggestion_used: 2, compose_used: 1, by_agent: [] } }
+    stub_request(:get, metrics_endpoint).with(query: hash_including(account_id: account.id.to_s))
+                                        .to_return(status: 200, body: body.to_json, headers: { 'Content-Type' => 'application/json' })
+
+    get show_url, params: { days: 7 }, headers: admin.create_new_auth_token
+
+    expect(response.parsed_body['augmentation']).to include('team_messages' => 0, 'rate' => 0.0)
   end
 
   it 'answers an error body when LIA fails' do

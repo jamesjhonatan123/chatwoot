@@ -64,9 +64,7 @@ class Lia::SuggestionClient
   def compose_used(account_id:, inbox_id:, conversation_id:, usage:, agent: nil)
     return nil unless self.class.enabled?
 
-    body = { account_id: account_id, inbox_id: inbox_id, conversation_id: conversation_id,
-             completion: usage[:completion].to_s.first(MAX_COMPOSE_CHARS), sent_text: usage[:sent_text].to_s.first(MAX_COMPOSE_CHARS),
-             source: usage[:source].to_s.first(20).presence, typed_chars: usage[:typed_chars].to_i.clamp(0, MAX_COMPOSE_CHARS) }
+    body = { account_id: account_id, inbox_id: inbox_id, conversation_id: conversation_id }.merge(compose_usage(usage))
     response = post('/api/chatwoot/compose-used', body.compact.merge(agent_fields(agent)))
     return nil unless response.code == 200 && response.parsed_response.is_a?(Hash)
 
@@ -112,6 +110,16 @@ class Lia::SuggestionClient
       open_timeout: OPEN_TIMEOUT,
       read_timeout: READ_TIMEOUT * 2
     )
+  end
+
+  # Textos cortados no limite que a LIA aceita; a origem e so um rotulo curto.
+  def compose_usage(usage)
+    {
+      completion: usage[:completion].to_s.first(MAX_COMPOSE_CHARS),
+      sent_text: usage[:sent_text].to_s.first(MAX_COMPOSE_CHARS),
+      source: usage[:source].to_s.first(20).presence,
+      typed_chars: usage[:typed_chars].to_i.clamp(0, MAX_COMPOSE_CHARS)
+    }
   end
 
   def agent_fields(agent)
