@@ -21,10 +21,10 @@
  *   tudo ao sair (trap EXIT), mesmo com falha. Nada toca produção nem homologação.
  * Como rodar (da raiz do chatwoot-locfit, com as dependências em e2e/lia: npm ci):
  *   Verde, com a imagem desta mudança:
- *   CHATWOOT_IMAGE=chatwoot-locfit:<commit> LIA_DIR=../LIA-2.0 \
+ *   CHATWOOT_IMAGE=chatwoot-locfit:<commit> LIA_DIR=../LIA-camada2 \
  *     cofre run GOOGLE_API_KEY=gemini-homolog -- e2e/lia/run.sh atalho-por-palavra
  *   Vermelho esperado na imagem de produção sem a mudança (a linha do atalho não aparece):
- *   CHATWOOT_IMAGE=developerlocfit/chatwoot-locfit:9d10b7d LIA_DIR=../LIA-2.0 \
+ *   CHATWOOT_IMAGE=developerlocfit/chatwoot-locfit:9d10b7d LIA_DIR=../LIA-camada2 \
  *     cofre run GOOGLE_API_KEY=gemini-homolog -- e2e/lia/run.sh atalho-por-palavra
  * Evidência: e2e/lia/artifacts/<imagem>-<data>/ (trace.zip, screenshots, logs da LIA e
  *   do Chatwoot, playwright.log).
@@ -80,11 +80,11 @@ test('palavra-chave traz a resposta pronta inteira', async ({ page }, info) => {
   await editor.click();
   await page.keyboard.type(typed, { delay: 30 });
 
-  const hint = page.getByTestId('lia-compose-hint');
+  const hint = page.locator('[data-test-id="lia-compose-hint"]');
   await expect(hint).toBeVisible({ timeout: 15_000 });
-  await expect(page.getByTestId('lia-compose-shortcut')).toHaveText(
-    'Documentação solicitar rede social'
-  );
+  await expect(
+    page.locator('[data-test-id="lia-compose-shortcut"]')
+  ).toHaveText('Documentação solicitar rede social');
   await shot('02-atalho');
 
   await page.keyboard.press('Tab');
