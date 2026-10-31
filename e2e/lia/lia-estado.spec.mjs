@@ -5,7 +5,7 @@
  *   escondido e a rede passou o sábado sem resposta. O atalho fica onde ela trabalha.
  * Ponto de partida: a tela de login do Chatwoot e, depois dela, a lista de conversas
  *   (não a conversa).
- * Dados: o run.sh vincula, na LIA, a caixa da "Loja E2E 4" à loja 777
+ * Dados: o run.sh vincula, na LIA, a caixa da "Loja E2E 5" à loja 777
  *   (system_settings.chatwoot_inboxes). Banco da LIA novo: sem grade, sem exceção.
  * Ação: a Rita Atendente abre a conversa da Paula, clica no selo, desliga a LIA,
  *   confere o motivo, e liga de novo.

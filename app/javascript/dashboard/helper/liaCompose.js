@@ -174,3 +174,80 @@ export const findCompletion = (library, typed) => {
     full: start + found.rest,
   };
 };
+
+// Atalho por palavra: o atendente digita um pedaço de palavra da resposta pronta
+// ("rede social", "flexível", "vamos seguir") e ela inteira vem com Tab. Cada pedaço
+// casa o começo de uma palavra em qualquer parte do atalho (vale mais) ou do começo do
+// texto; todos precisam casar. Só para o começo de uma mensagem curta: depois disso o
+// atendente está escrevendo, não procurando.
+export const MAX_SHORTCUT_FRAGMENTS = 3;
+export const MAX_SHORTCUT_CHARS = 30;
+export const MIN_FRAGMENT_KEYS = 3;
+// Palavras do texto que contam na busca: as do fim de um texto longo casariam com tudo.
+export const SHORTCUT_TEXT_WORDS = 40;
+const CODE_WEIGHT = 3;
+const TEXT_WEIGHT = 1;
+
+const wordsOf = text => {
+  const { keys, starts, ends } = keysOf(String(text || ''));
+  const words = [];
+  keys.forEach((key, k) => {
+    if (k > 0 && starts[k] === ends[k - 1]) words[words.length - 1] += key;
+    else words.push(key);
+  });
+  return words;
+};
+
+// Compara posição a posição; a primeira diferença decide.
+const outranks = (a, b) => {
+  const k = a.findIndex((value, i) => value !== b[i]);
+  return k >= 0 && a[k] > b[k];
+};
+
+const fragmentOk = fragment =>
+  fragment.length >= MIN_FRAGMENT_KEYS ||
+  (fragment.length === 2 && /\d/.test(fragment));
+
+// A resposta pronta que os pedaços digitados apontam, ou null. `canned` é a lista do
+// Chatwoot ({ id, short_code, content }); o empate fica com quem tem o pedaço no começo
+// do atalho, depois o atalho mais curto, depois o cadastrado primeiro.
+export const findShortcut = (canned, typed) => {
+  const raw = String(typed || '').trim();
+  if (!raw || raw.length > MAX_SHORTCUT_CHARS || /\n/.test(raw)) return null;
+  const fragments = wordsOf(raw);
+  if (!fragments.length || fragments.length > MAX_SHORTCUT_FRAGMENTS)
+    return null;
+  if (!fragments.every(fragmentOk)) return null;
+
+  let best = null;
+  (canned || []).forEach(item => {
+    const content = String(item?.content || '');
+    if (!content.trim()) return;
+    const code = wordsOf(item.short_code);
+    const text = wordsOf(content).slice(0, SHORTCUT_TEXT_WORDS);
+    let score = 0;
+    const all = fragments.every(fragment => {
+      const starts = word => word.startsWith(fragment);
+      if (code.some(starts)) score += CODE_WEIGHT;
+      else if (text.some(starts)) score += TEXT_WEIGHT;
+      else return false;
+      return true;
+    });
+    if (!all) return;
+    if (wordsOf(content).join(' ') === fragments.join(' ')) return;
+    const head = code.length
+      ? fragments.filter(f => code[0].startsWith(f)).length
+      : 0;
+    const rank = [score, head, -code.length, -Number(item.id || 0)];
+    const better = !best || outranks(rank, best.rank);
+    if (better) best = { item, rank };
+  });
+  if (!best) return null;
+  return {
+    text: best.item.content,
+    source: 'canned_keyword',
+    shortCode: best.item.short_code,
+    rest: '',
+    full: best.item.content,
+  };
+};

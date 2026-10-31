@@ -22,6 +22,7 @@
     "DRAFTING": "LIA is writing a draft…",
     "COMPOSE_TITLE": "LIA autocomplete",
     "COMPOSE_ACCEPT": "to complete",
+    "COMPOSE_SHORTCUT_ACCEPT": "to use the canned response",
     "ALTERNATIVES_TITLE": "Other replies",
     "REPORT": {
       "SIDEBAR": "LIA suggestions",

@@ -25,7 +25,14 @@ seed = loja('Loja E2E', 'Carla Atendente', 'carla@e2e.test', '+5511999990000')
 seed[:apresentacao] = loja('Loja E2E 2', 'Marina Atendente', 'marina@e2e.test', '+5511999990001')
 # autocompletar-meio.spec.mjs
 seed[:meio] = loja('Loja E2E 3', 'Júlia Atendente', 'julia@e2e.test', '+5511999990002')
+# atalho-por-palavra.spec.mjs: as respostas prontas da conta, como a LocFit cadastra.
+seed[:atalho] = loja('Loja E2E 4', 'Bruna Atendente', 'bruna@e2e.test', '+5511999990003')
+atalho = Account.find(seed[:atalho][:account_id])
+CannedResponse.create!(account: atalho, short_code: 'Documentação solicitar rede social',
+                       content: 'Você tem rede social, {{contact.name}}? Se puder, manda o link ou @ do seu perfil.')
+CannedResponse.create!(account: atalho, short_code: 'Você prefere um plano mais flexível',
+                       content: 'Você prefere um plano mais flexível, sem fidelidade?')
 # lia-estado.spec.mjs: a caixa desta conta é vinculada à loja 777 na LIA (run.sh)
-seed[:estado] = loja('Loja E2E 4', 'Rita Atendente', 'rita@e2e.test', '+5511999990003')
+seed[:estado] = loja('Loja E2E 5', 'Rita Atendente', 'rita@e2e.test', '+5511999990004')
 Redis::Alfred.delete(Redis::Alfred::CHATWOOT_INSTALLATION_ONBOARDING)
 puts seed.to_json
