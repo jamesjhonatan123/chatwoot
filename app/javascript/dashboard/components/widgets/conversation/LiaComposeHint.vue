@@ -87,7 +87,7 @@ defineExpose({ completion, accept, dismiss });
 <template>
   <div
     v-if="completion"
-    class="mt-1.5 flex items-center gap-1.5 text-xs text-n-slate-10"
+    class="mt-1.5 flex items-center gap-1.5 px-3 text-xs text-n-slate-10"
     role="status"
     data-test-id="lia-compose-hint"
     :aria-label="t('LIA_SUGGESTION.COMPOSE_TITLE')"
