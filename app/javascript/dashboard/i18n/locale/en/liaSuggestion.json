@@ -21,6 +21,7 @@
     "OPTION_SOURCE_LIA_DRAFT": "LIA draft",
     "DRAFTING": "LIA is writing a draft…",
     "COMPOSE_TITLE": "LIA autocomplete",
+    "COMPOSE_ACCEPT": "to complete",
     "ALTERNATIVES_TITLE": "Other replies",
     "REPORT": {
       "SIDEBAR": "LIA suggestions",

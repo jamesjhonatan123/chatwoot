@@ -74,6 +74,10 @@ import { createTypingIndicator } from '@chatwoot/utils';
 import { checkFileSizeLimit } from 'shared/helpers/FileHelper';
 import { uploadFile } from 'dashboard/helper/uploadHelper';
 import { findSlotRange } from 'dashboard/helper/liaSlots';
+import {
+  createGhostTextPlugin,
+  refreshGhostText,
+} from 'dashboard/helper/liaGhostText';
 import { INBOX_TYPES } from 'dashboard/helper/inbox';
 
 const props = defineProps({
@@ -98,6 +102,8 @@ const props = defineProps({
   conversationId: { type: Number, default: null },
   medium: { type: String, default: '' },
   focusOnMount: { type: Boolean, default: true },
+  // Restante sugerido pelo autocompletar da LIA, desenhado apagado no cursor.
+  ghostText: { type: String, default: '' },
 });
 
 const emit = defineEmits([
@@ -333,12 +339,15 @@ function createSuggestionPlugin({
   });
 }
 
+const ghostTextPlugin = createGhostTextPlugin(() => props.ghostText);
+
 const plugins = computed(() => {
   if (!props.enableSuggestions) {
-    return [];
+    return [ghostTextPlugin];
   }
 
   return [
+    ghostTextPlugin,
     createSuggestionPlugin({
       trigger: '@',
       showMenu: showToolsMenu,
@@ -934,6 +943,13 @@ watch(
         emit('clearSelection');
       }
     }
+  }
+);
+
+watch(
+  () => props.ghostText,
+  () => {
+    if (editorView) editorView.dispatch(refreshGhostText(editorView.state.tr));
   }
 );
 

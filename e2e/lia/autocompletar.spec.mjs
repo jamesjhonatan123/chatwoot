@@ -3,12 +3,15 @@
  *
  * Ponto de partida: a tela de login do Chatwoot e, depois dela, a lista de conversas
  *   (não a conversa nem o relatório).
- * Ação: a atendente abre a conversa da Paula, digita "Temos planos de alu" no editor,
+ * Ação: a atendente abre a conversa da Paula, digita "Temos planos de aluguel a partir
+ *   de R$189" (valor colado, sem o espaço que a resposta rápida tem depois do "R$"),
  *   aceita a sugestão com Tab e envia pelo botão "Enviar".
  * Resultado esperado exato:
- *   1. aparece [data-test-id=lia-compose-hint] com o restante da resposta rápida
- *      ("guel a partir de R$ 189,90 por mês…");
- *   2. depois do Tab o editor contém o texto inteiro da resposta rápida;
+ *   1. dentro do editor aparece, apagado no cursor, [data-test-id=lia-compose-ghost]
+ *      com o restante da resposta rápida (",90 por mês, com entrega…"), e abaixo dele
+ *      a linha [data-test-id=lia-compose-hint] "Tab para completar";
+ *   2. depois do Tab o texto apagado some e o editor contém o que ela digitou seguido
+ *      do restante ("…R$189,90 por mês, com entrega…");
  *   3. a mensagem enviada aparece na conversa;
  *   4. a LIA grava 1 linha em reply_compose_events com outcome "accepted",
  *      source "quick_reply" e agent_id = id da atendente no Chatwoot;
@@ -33,13 +36,25 @@ const SEED = JSON.parse(process.env.E2E_SEED || '{}');
 const PG = process.env.LIA_PG_CONTAINER || 'lia-e2e-lia-pg';
 const QUICK_REPLY =
   'Temos planos de aluguel a partir de R$ 189,90 por mês, com entrega e manutenção inclusas. Quer que eu te mande as opções?';
-const TYPED = 'Temos planos de alu';
+const TYPED = 'Temos planos de aluguel a partir de R$189';
+// O que ela digitou fica como está; o autocompletar só acrescenta o restante.
+const COMPLETED = QUICK_REPLY.replace('R$ 189', 'R$189');
 
 const composeEvents = () =>
   execFileSync(
     'docker',
     [
-      'exec', PG, 'psql', '-At', '-F', '|', '-U', 'lia', '-d', 'lia_e2e', '-c',
+      'exec',
+      PG,
+      'psql',
+      '-At',
+      '-F',
+      '|',
+      '-U',
+      'lia',
+      '-d',
+      'lia_e2e',
+      '-c',
       'SELECT outcome, source, agent_id, typed_chars FROM reply_compose_events',
     ],
     { encoding: 'utf8' }
@@ -65,14 +80,18 @@ test('Tab completa a resposta rápida, o uso é gravado e aparece no relatório'
   // Na imagem sem o autocompletar a rota não existe: o teste segue e falha no que a
   // atendente vê (a sugestão não aparece), não aqui.
   const library = page
-    .waitForResponse(r => r.url().includes('/lia_suggestion/compose_library'), { timeout: 15_000 })
+    .waitForResponse(r => r.url().includes('/lia_suggestion/compose_library'), {
+      timeout: 15_000,
+    })
     .then(r => r.json())
     .catch(() => null);
   await page.getByText('Paula Souza').first().click();
   const libraryBody = await library;
   console.log(
     'compose_library:',
-    libraryBody ? `${libraryBody.reason} ${libraryBody.texts?.length ?? 0} textos` : 'sem resposta'
+    libraryBody
+      ? `${libraryBody.reason} ${libraryBody.texts?.length ?? 0} textos`
+      : 'sem resposta'
   );
   const bubbles = page.locator('[id^="message"]');
   await expect(bubbles.getByText('Quanto custa?')).toBeVisible();
@@ -81,19 +100,25 @@ test('Tab completa a resposta rápida, o uso é gravado e aparece no relatório'
   await editor.click();
   await page.keyboard.type(TYPED, { delay: 30 });
 
+  const ghost = editor.locator('[data-test-id="lia-compose-ghost"]');
   const hint = page.locator('[data-test-id="lia-compose-hint"]');
-  await expect(hint).toBeVisible({ timeout: 15_000 });
-  await expect(hint).toContainText('guel a partir de R$ 189,90');
+  await expect(ghost).toBeVisible({ timeout: 15_000 });
+  await expect(ghost).toHaveText(
+    ',90 por mês, com entrega e manutenção inclusas. Quer que eu te mande as opções?'
+  );
+  await expect(hint).toContainText('Tab');
+  await expect(hint).toContainText('para completar');
   await shot('02-sugestao');
 
   await page.keyboard.press('Tab');
-  await expect(editor).toHaveText(QUICK_REPLY);
+  await expect(ghost).toBeHidden();
+  await expect(editor).toHaveText(COMPLETED);
   await expect(hint).toBeHidden();
   await shot('03-completado');
 
   await page.getByRole('button', { name: /^Enviar/ }).click();
   await expect(editor).toHaveText('');
-  await expect(bubbles.getByText(QUICK_REPLY)).toBeVisible();
+  await expect(bubbles.getByText(COMPLETED)).toBeVisible();
   await shot('04-enviado');
 
   await expect.poll(composeEvents, { timeout: 15_000 }).toHaveLength(1);

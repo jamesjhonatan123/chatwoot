@@ -271,6 +271,10 @@ export default {
         getEffectiveChannelType(this.channelType, this.inbox?.medium || '')
       );
     },
+    // Restante do autocompletar, que o editor desenha apagado no cursor.
+    liaGhostText() {
+      return this.liaComposeHint?.completion?.rest || '';
+    },
     hasMeaningfulEditorContent() {
       const body = this.message || '';
       // Only strip the signature when it's actually being auto-appended.
@@ -1717,6 +1721,7 @@ export default {
           v-else-if="!showAudioRecorderEditor"
           ref="messageEditor"
           v-model="message"
+          :ghost-text="liaGhostText"
           :conversation-id="conversationId"
           :editor-id="editorStateId"
           class="input popover-prosemirror-menu"
