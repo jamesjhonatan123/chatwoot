@@ -1627,6 +1627,7 @@ export default {
       ref="liaComposeHint"
       :conversation-id="conversationId"
       :typed="typedMessage"
+      :variables="messageVariables"
       :disabled="
         isOnPrivateNote ||
         currentChat.status === 'resolved' ||

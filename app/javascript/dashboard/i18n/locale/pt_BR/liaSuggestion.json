@@ -22,6 +22,7 @@
     "DRAFTING": "A LIA está escrevendo um rascunho…",
     "COMPOSE_TITLE": "Autocompletar da LIA",
     "COMPOSE_ACCEPT": "para completar",
+    "COMPOSE_SHORTCUT_ACCEPT": "para usar a resposta pronta",
     "ALTERNATIVES_TITLE": "Outras respostas",
     "REPORT": {
       "SIDEBAR": "Sugestões da LIA",

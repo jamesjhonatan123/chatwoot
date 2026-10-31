@@ -82,15 +82,20 @@ for _ in $(seq 1 180); do
 done
 curl -sf "http://127.0.0.1:$CW_PORT/api" > /dev/null || { docker logs --tail 50 "$CW"; exit 1; }
 
+# A primeira página cria as chaves de notificação (VAPID_KEYS); com os testes em
+# paralelo, duas visitas ao mesmo tempo batem na chave única e uma recebe 500.
+curl -sf -o /dev/null "http://127.0.0.1:$CW_PORT/app/login" || { docker logs --tail 50 "$CW"; exit 1; }
+
 docker cp "$HERE/seed.rb" "$CW:/tmp/seed.rb"
 SEED="$(docker exec "$CW" bundle exec rails runner /tmp/seed.rb 2> "$OUT/seed.err" | tail -1)"
 echo "$SEED" > "$OUT/seed.json"
-read -r ACCOUNT INBOX CONV ACCOUNT2 INBOX2 CONV2 ACCOUNT3 INBOX3 CONV3 < <(node -e '
+read -r ACCOUNT INBOX CONV ACCOUNT2 INBOX2 CONV2 ACCOUNT3 INBOX3 CONV3 ACCOUNT4 INBOX4 CONV4 < <(node -e '
   const s = JSON.parse(process.argv[1]);
   const a = s.apresentacao;
   const m = s.meio;
+  const k = s.atalho;
   console.log(s.account_id, s.inbox_id, s.conversation_id, a.account_id, a.inbox_id, a.conversation_id,
-              m.account_id, m.inbox_id, m.conversation_id)' "$SEED")
+              m.account_id, m.inbox_id, m.conversation_id, k.account_id, k.inbox_id, k.conversation_id)' "$SEED")
 
 # A conversa como a LIA a conhece (o Chatwoot a encontra pelo display_id) e a resposta
 # rápida que o autocompletar deve oferecer.
@@ -109,6 +114,10 @@ VALUES (gen_random_uuid(), 'e2e-5511999990000', '5511999990000', 'ONBOARDING_AGE
        (gen_random_uuid(), 'e2e-5511999990002', '5511999990002', 'ONBOARDING_AGENT', 'vendas',
         false, '{"chatwoot_account_id": $ACCOUNT3, "chatwoot_inbox_id": $INBOX3,
                  "chatwoot_conversation_id": $CONV3, "push_name": "Paula Souza"}',
+        now(), now(), 0, 0, 0),
+       (gen_random_uuid(), 'e2e-5511999990003', '5511999990003', 'ONBOARDING_AGENT', 'vendas',
+        false, '{"chatwoot_account_id": $ACCOUNT4, "chatwoot_inbox_id": $INBOX4,
+                 "chatwoot_conversation_id": $CONV4, "push_name": "Paula Souza"}',
         now(), now(), 0, 0, 0);
 INSERT INTO quick_replies (id, store_id, title, shortcut, body, description, active, created_at, updated_at)
 VALUES (gen_random_uuid(), NULL, 'Planos', 'planos',

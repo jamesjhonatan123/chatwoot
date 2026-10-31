@@ -12,7 +12,16 @@
 // completa; pular palavras casa o meio de qualquer texto (pula demais, corta palavra,
 // com poucas letras, com erro de digitação) ou passa na frente de quem casa pelo
 // começo; o texto pulado volta para o que foi digitado.
+// Atalho por palavra: dispara no meio de uma frase sendo escrita (longa, muitas
+// palavras, várias linhas); dispara com pedaço curto demais ("ok", "a"); acento ou caixa
+// impede o casamento; só casa o começo do atalho ou do texto, e não uma palavra do meio;
+// casa o meio de uma palavra ("ede" em "rede"); basta um dos pedaços casar; o atalho
+// vale o mesmo que o texto; o empate muda de ordem; resposta vazia ou igual ao digitado
+// é oferecida; o fim de um texto longo casa com qualquer coisa.
 import {
+  findShortcut,
+  MAX_SHORTCUT_CHARS,
+  SHORTCUT_TEXT_WORDS,
   findCompletion,
   prefixEnd,
   MIN_TYPED_CHARS,
@@ -187,5 +196,110 @@ describe('liaCompose', () => {
   it('repertório vazio ou ausente não quebra', () => {
     expect(findCompletion([], 'Temos planos mensais')).toBeNull();
     expect(findCompletion(undefined, 'Temos planos mensais')).toBeNull();
+  });
+});
+
+const REDE =
+  'Você tem rede social? Se puder, manda o link ou @ do seu perfil 😊 A gente usa na análise.';
+const FLEX =
+  'Você prefere um plano mais flexível, sem fidelidade, ou o de 6 meses com desconto?';
+const SEGUIR =
+  '**Vamos seguir com a sua locação pra você treinar em casa?** O que falta: documentos.';
+const canned = [
+  { id: 10, short_code: 'Documentação solicitar rede social', content: REDE },
+  { id: 11, short_code: 'Você prefere um plano mais flexível', content: FLEX },
+  {
+    id: 12,
+    short_code: 'Fechamento - o que falta pra avançar',
+    content: SEGUIR,
+  },
+  { id: 13, short_code: 'vazio', content: '   ' },
+];
+
+describe('findShortcut', () => {
+  it('acha pela palavra em qualquer parte do atalho', () => {
+    expect(findShortcut(canned, 'rede social').text).toBe(REDE);
+    expect(findShortcut(canned, 'social').text).toBe(REDE);
+    expect(findShortcut(canned, 'flexível').text).toBe(FLEX);
+    expect(findShortcut(canned, 'plano flex').text).toBe(FLEX);
+    expect(findShortcut(canned, 'rede social').source).toBe('canned_keyword');
+    expect(findShortcut(canned, 'rede social').shortCode).toBe(
+      canned[0].short_code
+    );
+  });
+
+  it('acha pela palavra do começo do texto quando o atalho não tem', () => {
+    expect(findShortcut(canned, 'vamos seguir').text).toBe(SEGUIR);
+  });
+
+  it('ignora acento e caixa', () => {
+    expect(findShortcut(canned, 'FLEXIVEL').text).toBe(FLEX);
+    expect(findShortcut(canned, 'documentacao').text).toBe(REDE);
+  });
+
+  it('casa só o começo de cada palavra', () => {
+    expect(findShortcut(canned, 'ede')).toBeNull();
+    expect(findShortcut(canned, 'ivel')).toBeNull();
+  });
+
+  it('exige que todos os pedaços casem', () => {
+    expect(findShortcut(canned, 'rede bicicleta')).toBeNull();
+  });
+
+  it('não dispara com pedaço curto nem no meio de uma frase', () => {
+    expect(findShortcut(canned, 'ok')).toBeNull();
+    expect(findShortcut(canned, 'a rede')).toBeNull();
+    expect(findShortcut(canned, 'rede social do seu perfil')).toBeNull();
+    expect(findShortcut(canned, 'rede\nsocial')).toBeNull();
+    expect(
+      findShortcut(canned, `rede ${'s'.repeat(MAX_SHORTCUT_CHARS)}`)
+    ).toBeNull();
+  });
+
+  it('aceita pedaço de 2 com número (modelo de equipamento)', () => {
+    const list = [
+      { id: 1, short_code: 'Esteira R1', content: 'A esteira R1.' },
+    ];
+    expect(findShortcut(list, 'r1').text).toBe('A esteira R1.');
+    expect(findShortcut(list, 'es')).toBeNull();
+  });
+
+  it('o atalho vale mais que o texto', () => {
+    const list = [
+      {
+        id: 1,
+        short_code: 'boas vindas',
+        content: 'Qual equipamento de rede você quer?',
+      },
+      { id: 2, short_code: 'rede', content: 'Manda sua rede social.' },
+    ];
+    expect(findShortcut(list, 'rede').text).toBe('Manda sua rede social.');
+  });
+
+  it('empate: pedaço no começo do atalho, depois atalho curto, depois o mais antigo', () => {
+    const list = [
+      { id: 5, short_code: 'Cobrança pix chave', content: 'Chave A' },
+      { id: 4, short_code: 'pix', content: 'Chave B' },
+      { id: 3, short_code: 'pix ponta grossa', content: 'Chave C' },
+    ];
+    expect(findShortcut(list, 'pix').text).toBe('Chave B');
+    const twins = [
+      { id: 9, short_code: 'pix', content: 'Nova' },
+      { id: 2, short_code: 'pix', content: 'Antiga' },
+    ];
+    expect(findShortcut(twins, 'pix').text).toBe('Antiga');
+  });
+
+  it('não oferece resposta vazia nem igual ao digitado', () => {
+    expect(findShortcut(canned, 'vazio')).toBeNull();
+    const list = [{ id: 1, short_code: 'ok', content: 'Tudo certo' }];
+    expect(findShortcut(list, 'tudo certo')).toBeNull();
+  });
+
+  it('o fim de um texto longo não casa', () => {
+    const long = `${'palavra '.repeat(SHORTCUT_TEXT_WORDS)}escondida`;
+    const list = [{ id: 1, short_code: 'longo', content: long }];
+    expect(findShortcut(list, 'escondida')).toBeNull();
+    expect(findShortcut(list, 'palavra').text).toBe(long);
   });
 });
