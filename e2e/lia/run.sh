@@ -82,6 +82,10 @@ for _ in $(seq 1 180); do
 done
 curl -sf "http://127.0.0.1:$CW_PORT/api" > /dev/null || { docker logs --tail 50 "$CW"; exit 1; }
 
+# A primeira página cria as chaves de notificação (VAPID_KEYS); com os testes em
+# paralelo, duas visitas ao mesmo tempo batem na chave única e uma recebe 500.
+curl -sf -o /dev/null "http://127.0.0.1:$CW_PORT/app/login" || { docker logs --tail 50 "$CW"; exit 1; }
+
 docker cp "$HERE/seed.rb" "$CW:/tmp/seed.rb"
 SEED="$(docker exec "$CW" bundle exec rails runner /tmp/seed.rb 2> "$OUT/seed.err" | tail -1)"
 echo "$SEED" > "$OUT/seed.json"
