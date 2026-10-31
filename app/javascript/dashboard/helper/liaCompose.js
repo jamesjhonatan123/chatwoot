@@ -5,13 +5,18 @@
 // A comparação olha só letras e números: espaço, pontuação e emoji não contam, então
 // "tudo certo." casa com "Tudo certo ." e "R$189" com "R$ 189". Sem texto exato, aceita
 // um erro de digitação a cada FUZZY_KEYS_PER_ERROR letras (no máximo MAX_ERRORS), com
-// o começo (EXACT_HEAD letras) sempre igual.
+// o começo (EXACT_HEAD letras) sempre igual. Sem nada pelo começo, casa a partir da 2ª
+// palavra do texto em diante (até MAX_SKIPPED_WORDS pulam), sem erro: "Locação é
+// feita" completa "A locação é feita pelo nosso site".
 
 // Abaixo disso o começo ainda não diz qual texto o atendente quer ("Oi", "Bom dia").
 export const MIN_TYPED_CHARS = 10;
 export const FUZZY_KEYS_PER_ERROR = 10;
 export const MAX_ERRORS = 2;
 const EXACT_HEAD = 4;
+// Pular palavras casa mais coisa; com menos letras que isso, a sugestão erra mais.
+export const MIN_SKIP_KEYS = 15;
+export const MAX_SKIPPED_WORDS = 3;
 
 const MARKS = /[̀-ͯ]/g;
 const KEY = /[\p{L}\p{N}]/u;
@@ -100,6 +105,24 @@ const completionFor = (item, typed, typedKeys, cover) => {
   return rest && rest.trim() ? { item, rest } : null;
 };
 
+// O digitado casado sem erro a partir da 2ª até a (MAX_SKIPPED_WORDS + 1)ª palavra do
+// texto; o resto é o que vem depois, e as palavras puladas ficam de fora.
+const skippedCompletionFor = (item, typed, typedKeys) => {
+  const map = keysOf(item.text);
+  let skipped = 0;
+  for (let k = 1; k < map.keys.length && skipped < MAX_SKIPPED_WORDS; k += 1) {
+    if (map.starts[k] !== map.ends[k - 1]) {
+      skipped += 1;
+      const covered = exactCover(typedKeys, map.keys.slice(k));
+      if (covered >= 0) {
+        const rest = restAfter(typed, item.text, map, k + covered);
+        if (rest && rest.trim()) return { item, rest };
+      }
+    }
+  }
+  return null;
+};
+
 // Onde o texto do repertório passa do que foi digitado, ou -1 se não começa igual.
 export const prefixEnd = (text, typed) => {
   const map = keysOf(text);
@@ -110,7 +133,8 @@ export const prefixEnd = (text, typed) => {
 
 // O primeiro texto do repertório (já vem do mais oficial/usado para o menos) que
 // começa com o que foi digitado e ainda tem o que acrescentar. O exato vence o
-// parecido; entre parecidos, vale a ordem do repertório.
+// parecido, e os dois vencem o casado pulando palavras; em cada um, vale a ordem do
+// repertório.
 export const findCompletion = (library, typed) => {
   const start = String(typed || '').trimStart();
   if (start.trim().length < MIN_TYPED_CHARS) return null;
@@ -132,6 +156,12 @@ export const findCompletion = (library, typed) => {
       sameHead(keys, text, EXACT_HEAD) ? fuzzyCover(keys, text, allowed) : -1;
     items.some(item => {
       found = completionFor(item, start, typedKeys, fuzzy);
+      return found;
+    });
+  }
+  if (!found && typedKeys.length >= MIN_SKIP_KEYS) {
+    items.some(item => {
+      found = skippedCompletionFor(item, start, typedKeys);
       return found;
     });
   }

@@ -85,10 +85,12 @@ curl -sf "http://127.0.0.1:$CW_PORT/api" > /dev/null || { docker logs --tail 50 
 docker cp "$HERE/seed.rb" "$CW:/tmp/seed.rb"
 SEED="$(docker exec "$CW" bundle exec rails runner /tmp/seed.rb 2> "$OUT/seed.err" | tail -1)"
 echo "$SEED" > "$OUT/seed.json"
-read -r ACCOUNT INBOX CONV ACCOUNT2 INBOX2 CONV2 < <(node -e '
+read -r ACCOUNT INBOX CONV ACCOUNT2 INBOX2 CONV2 ACCOUNT3 INBOX3 CONV3 < <(node -e '
   const s = JSON.parse(process.argv[1]);
   const a = s.apresentacao;
-  console.log(s.account_id, s.inbox_id, s.conversation_id, a.account_id, a.inbox_id, a.conversation_id)' "$SEED")
+  const m = s.meio;
+  console.log(s.account_id, s.inbox_id, s.conversation_id, a.account_id, a.inbox_id, a.conversation_id,
+              m.account_id, m.inbox_id, m.conversation_id)' "$SEED")
 
 # A conversa como a LIA a conhece (o Chatwoot a encontra pelo display_id) e a resposta
 # rápida que o autocompletar deve oferecer.
@@ -103,11 +105,19 @@ VALUES (gen_random_uuid(), 'e2e-5511999990000', '5511999990000', 'ONBOARDING_AGE
        (gen_random_uuid(), 'e2e-5511999990001', '5511999990001', 'ONBOARDING_AGENT', 'vendas',
         false, '{"chatwoot_account_id": $ACCOUNT2, "chatwoot_inbox_id": $INBOX2,
                  "chatwoot_conversation_id": $CONV2, "push_name": "Paula Souza"}',
+        now(), now(), 0, 0, 0),
+       (gen_random_uuid(), 'e2e-5511999990002', '5511999990002', 'ONBOARDING_AGENT', 'vendas',
+        false, '{"chatwoot_account_id": $ACCOUNT3, "chatwoot_inbox_id": $INBOX3,
+                 "chatwoot_conversation_id": $CONV3, "push_name": "Paula Souza"}',
         now(), now(), 0, 0, 0);
 INSERT INTO quick_replies (id, store_id, title, shortcut, body, description, active, created_at, updated_at)
 VALUES (gen_random_uuid(), NULL, 'Planos', 'planos',
         'Temos planos de aluguel a partir de R\$ 189,90 por mês, com entrega e manutenção inclusas. Quer que eu te mande as opções?',
-        'Preço dos planos', true, now(), now());
+        'Preço dos planos', true, now(), now()),
+-- Começa com "A": a atendente costuma digitar sem ele (autocompletar-meio).
+       (gen_random_uuid(), NULL, 'Site', 'site',
+        'A locação é feita pelo nosso site: https://loc.fit/loja. Lá você escolhe o plano e a data da entrega.',
+        'Onde alugar', true, now(), now());
 -- Apresentações de outras atendentes no histórico importado (autocompletar-apresentacao).
 -- Numa conta do Chatwoot que não é de nenhum teste: não entram nas métricas do relatório.
 INSERT INTO reply_history_pairs

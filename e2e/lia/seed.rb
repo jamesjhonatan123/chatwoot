@@ -23,5 +23,7 @@ end
 seed = loja('Loja E2E', 'Carla Atendente', 'carla@e2e.test', '+5511999990000')
 # autocompletar-apresentacao.spec.mjs
 seed[:apresentacao] = loja('Loja E2E 2', 'Marina Atendente', 'marina@e2e.test', '+5511999990001')
+# autocompletar-meio.spec.mjs
+seed[:meio] = loja('Loja E2E 3', 'Júlia Atendente', 'julia@e2e.test', '+5511999990002')
 Redis::Alfred.delete(Redis::Alfred::CHATWOOT_INSTALLATION_ONBOARDING)
 puts seed.to_json
