@@ -25,5 +25,7 @@ seed = loja('Loja E2E', 'Carla Atendente', 'carla@e2e.test', '+5511999990000')
 seed[:apresentacao] = loja('Loja E2E 2', 'Marina Atendente', 'marina@e2e.test', '+5511999990001')
 # autocompletar-meio.spec.mjs
 seed[:meio] = loja('Loja E2E 3', 'Júlia Atendente', 'julia@e2e.test', '+5511999990002')
+# lia-estado.spec.mjs: a caixa desta conta é vinculada à loja 777 na LIA (run.sh)
+seed[:estado] = loja('Loja E2E 4', 'Rita Atendente', 'rita@e2e.test', '+5511999990003')
 Redis::Alfred.delete(Redis::Alfred::CHATWOOT_INSTALLATION_ONBOARDING)
 puts seed.to_json

@@ -194,6 +194,9 @@ Rails.application.routes.draw do
               resource :direct_uploads, only: [:create]
               resource :draft_messages, only: [:show, :update, :destroy]
               resources :scheduled_messages, only: [:index, :create, :destroy]
+              resource :lia_status, only: [:show] do
+                post :toggle
+              end
               resource :lia_suggestion, only: [:show] do
                 post :dismiss
                 get :compose_library
