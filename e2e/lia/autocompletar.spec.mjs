@@ -55,7 +55,7 @@ const composeEvents = () =>
       '-d',
       'lia_e2e',
       '-c',
-      'SELECT outcome, source, agent_id, typed_chars FROM reply_compose_events',
+      `SELECT outcome, source, agent_id, typed_chars FROM reply_compose_events WHERE agent_id = ${SEED.user_id}`,
     ],
     { encoding: 'utf8' }
   )
