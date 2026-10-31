@@ -68,5 +68,17 @@
       "FROM_COMPOSE": "Do autocompletar",
       "NO_USAGE": "Nenhum atendente usou a LIA no período."
     }
+  },
+  "LIA_STATUS": {
+    "CHIP_ON": "LIA respondendo",
+    "CHIP_SILENT": "LIA em silêncio",
+    "CHIP_SILENT_UNTIL": "LIA em silêncio até {until}",
+    "CHIP_OFF": "LIA desligada",
+    "CHIP_UNKNOWN": "LIA",
+    "WHOLE_STORE": "Vale para todas as conversas desta loja.",
+    "ACTION_ON": "Ligar a LIA agora nesta loja",
+    "ACTION_OFF": "Desligar a LIA nesta loja (volta sozinha)",
+    "SAVING": "Salvando…",
+    "ERROR": "Não foi possível mudar agora."
   }
 }

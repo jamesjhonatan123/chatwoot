@@ -85,12 +85,13 @@ curl -sf "http://127.0.0.1:$CW_PORT/api" > /dev/null || { docker logs --tail 50 
 docker cp "$HERE/seed.rb" "$CW:/tmp/seed.rb"
 SEED="$(docker exec "$CW" bundle exec rails runner /tmp/seed.rb 2> "$OUT/seed.err" | tail -1)"
 echo "$SEED" > "$OUT/seed.json"
-read -r ACCOUNT INBOX CONV ACCOUNT2 INBOX2 CONV2 ACCOUNT3 INBOX3 CONV3 < <(node -e '
+read -r ACCOUNT INBOX CONV ACCOUNT2 INBOX2 CONV2 ACCOUNT3 INBOX3 CONV3 ACCOUNT4 INBOX4 < <(node -e '
   const s = JSON.parse(process.argv[1]);
   const a = s.apresentacao;
   const m = s.meio;
+  const e = s.estado;
   console.log(s.account_id, s.inbox_id, s.conversation_id, a.account_id, a.inbox_id, a.conversation_id,
-              m.account_id, m.inbox_id, m.conversation_id)' "$SEED")
+              m.account_id, m.inbox_id, m.conversation_id, e.account_id, e.inbox_id)' "$SEED")
 
 # A conversa como a LIA a conhece (o Chatwoot a encontra pelo display_id) e a resposta
 # rápida que o autocompletar deve oferecer.
@@ -130,6 +131,9 @@ VALUES
    $((ACCOUNT + 1000)), 1, 900002, 900002, now() - interval '2 days', now()),
   (gen_random_uuid(), NULL, 'oi', 'Bom dia Rui, tudo bem? Aqui é o Fernando, vou continuar seu atendimento hoje.',
    $((ACCOUNT + 1000)), 1, 900003, 900003, now() - interval '1 day', now());
+-- A caixa da "Loja E2E 4" pertence à loja 777 (lia-estado). As outras ficam sem loja.
+INSERT INTO system_settings (key, value, updated_at)
+VALUES ('chatwoot_inboxes', '[{"account_id": $ACCOUNT4, "inbox_id": $INBOX4, "store_id": 777}]', now());
 SQL
 
 echo "== Playwright -> $OUT"

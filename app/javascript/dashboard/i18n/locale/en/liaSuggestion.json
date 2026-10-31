@@ -68,5 +68,17 @@
       "FROM_COMPOSE": "From autocomplete",
       "NO_USAGE": "No agent used LIA in the period."
     }
+  },
+  "LIA_STATUS": {
+    "CHIP_ON": "LIA answering",
+    "CHIP_SILENT": "LIA silent",
+    "CHIP_SILENT_UNTIL": "LIA silent until {until}",
+    "CHIP_OFF": "LIA off",
+    "CHIP_UNKNOWN": "LIA",
+    "WHOLE_STORE": "Applies to every conversation of this store.",
+    "ACTION_ON": "Turn LIA on now for this store",
+    "ACTION_OFF": "Turn LIA off for this store (comes back on its own)",
+    "SAVING": "Saving…",
+    "ERROR": "Could not change it now."
   }
 }
