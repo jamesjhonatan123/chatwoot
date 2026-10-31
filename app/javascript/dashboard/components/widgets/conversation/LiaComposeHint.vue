@@ -1,6 +1,8 @@
 <script setup>
-// Autocompletar da LIA: mostra, logo abaixo do editor, como o texto que o atendente
-// começou a digitar termina no repertório da loja. Tab aceita, Esc esconde.
+// Autocompletar da LIA: acha como o texto que o atendente começou a digitar termina
+// no repertório da loja. O restante aparece apagado no cursor (Editor.vue, pelo
+// ghostText); aqui fica só a linha discreta "Tab para completar". Tab aceita, Esc
+// esconde.
 import { computed, ref, watch, onBeforeUnmount } from 'vue';
 import { useI18n } from 'vue-i18n';
 import ConversationApi from 'dashboard/api/inbox/conversation';
@@ -85,27 +87,19 @@ defineExpose({ completion, accept, dismiss });
 <template>
   <div
     v-if="completion"
-    class="mt-2 flex items-start gap-2 rounded-md border border-dashed border-n-violet-5 px-2.5 py-1.5"
+    class="mt-1.5 flex items-center gap-1.5 px-3 text-xs text-n-slate-10"
     role="status"
     data-test-id="lia-compose-hint"
     :aria-label="t('LIA_SUGGESTION.COMPOSE_TITLE')"
   >
     <kbd
-      class="mt-0.5 flex-shrink-0 rounded border border-n-violet-6 bg-n-violet-3 px-1 text-[10px] font-medium text-n-violet-11"
+      class="rounded border border-n-violet-6 bg-n-violet-3 px-1 text-[10px] font-medium text-n-violet-11"
     >
       {{ t('LIA_SUGGESTION.KEY_TAB') }}
     </kbd>
-    <p
-      class="m-0 min-w-0 flex-1 line-clamp-2 whitespace-pre-line break-words text-sm text-n-slate-10 before:text-n-slate-9 before:content-['…']"
-      :title="completion.text"
-    >
-      {{ completion.rest }}
-    </p>
-    <span
-      v-if="sourceLabel"
-      class="mt-0.5 flex-shrink-0 text-[11px] text-n-slate-10"
-    >
-      {{ sourceLabel }}
-    </span>
+    <span>{{ t('LIA_SUGGESTION.COMPOSE_ACCEPT') }}</span>
+    <span v-if="sourceLabel" class="text-n-slate-9">{{ sourceLabel }}</span>
+    <!-- O restante aparece apagado dentro do editor; aqui só para leitor de tela. -->
+    <span class="sr-only">{{ completion.rest }}</span>
   </div>
 </template>
