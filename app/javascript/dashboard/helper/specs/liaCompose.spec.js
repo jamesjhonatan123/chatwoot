@@ -7,8 +7,18 @@
 // emoji no texto trava a comparação; um erro de digitação derruba a sugestão; a
 // tolerância a erro casa qualquer coisa (começo errado, erros demais); um texto
 // parecido vence o exato; a pontuação digitada sai duplicada com a do texto; a
-// pontuação digitada no meio de uma palavra do texto vira "d.e".
-import { findCompletion, prefixEnd, MIN_TYPED_CHARS } from '../liaCompose';
+// pontuação digitada no meio de uma palavra do texto vira "d.e"; a frase começada sem
+// as primeiras palavras do texto ("Locação é feita" contra "A locação é feita") não
+// completa; pular palavras casa o meio de qualquer texto (pula demais, corta palavra,
+// com poucas letras, com erro de digitação) ou passa na frente de quem casa pelo
+// começo; o texto pulado volta para o que foi digitado.
+import {
+  findCompletion,
+  prefixEnd,
+  MIN_TYPED_CHARS,
+  MIN_SKIP_KEYS,
+  MAX_SKIPPED_WORDS,
+} from '../liaCompose';
 
 const PLANOS =
   'Temos planos mensais a partir de R$ 189,90, com entrega e manutenção inclusas.';
@@ -70,9 +80,49 @@ describe('liaCompose', () => {
     expect(findCompletion(library, `${PLANOS} E mais`)).toBeNull();
   });
 
-  it('só casa pelo começo', () => {
-    expect(findCompletion(library, 'planos mensais a partir')).toBeNull();
+  it('o meio de uma palavra não casa como começo', () => {
+    expect(findCompletion(library, 'emos planos mensais a partir')).toBeNull();
     expect(prefixEnd('abc', 'b')).toBe(-1);
+  });
+
+  describe('frase começada sem as primeiras palavras do texto', () => {
+    const SITE = {
+      text: 'A locação é feita pelo nosso site: https://loc.fit/loja',
+      source: 'history',
+    };
+
+    it('completa e mantém o que foi digitado', () => {
+      const found = findCompletion([SITE], 'Locação é feita pelo');
+      expect(found.rest).toBe(' nosso site: https://loc.fit/loja');
+      expect(found.full).toBe(
+        'Locação é feita pelo nosso site: https://loc.fit/loja'
+      );
+    });
+
+    it(`pula até ${MAX_SKIPPED_WORDS} palavras do texto, não mais`, () => {
+      const lib = [
+        { text: 'Oi, então, olha, a locação é feita pelo site.', source: 'x' },
+      ];
+      expect(findCompletion(lib, 'a locação é feita pelo').rest).toBe(' site.');
+      expect(findCompletion(lib, 'locação é feita pelo')).toBeNull();
+    });
+
+    it(`só depois de ${MIN_SKIP_KEYS} letras e sem erro de digitação`, () => {
+      expect(MIN_SKIP_KEYS).toBe(15);
+      expect(findCompletion([SITE], 'Locação é feita p')).toBeNull();
+      expect(findCompletion([SITE], 'Locação é feita pe')).not.toBeNull();
+      expect(findCompletion([SITE], 'Locaçao é fieta pelo nosso')).toBeNull();
+    });
+
+    it('quem casa pelo começo vem antes', () => {
+      const lib = [
+        SITE,
+        { text: 'Locação é feita pelo app em até 2 dias.', source: 'history' },
+      ];
+      expect(findCompletion(lib, 'Locação é feita pelo').rest).toBe(
+        ' app em até 2 dias.'
+      );
+    });
   });
 
   it('espaço antes da pontuação no texto não impede o casamento', () => {
