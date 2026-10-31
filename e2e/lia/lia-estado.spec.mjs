@@ -96,10 +96,10 @@ test('atendente desliga e religa a LIA da loja pelo selo da conversa', async ({
   await expect(toggle).toHaveText('Desligar a LIA nesta loja (volta sozinha)');
 
   await toggle.click();
-  await expect(chip).toHaveText(/^LIA em silêncio até .+/);
+  await expect(chip).toHaveText(/LIA em silêncio até \S.*\d{2}:\d{2}/);
   const label = panel.locator('[data-test-id="lia-status-label"]');
   await expect(label).toHaveText(
-    /^Em silêncio até .+desligada por Rita Atendente$/
+    /Em silêncio até .+desligada por Rita Atendente\s*$/
   );
   await expect(toggle).toHaveText('Ligar a LIA agora nesta loja');
   await shot('03-desligada');

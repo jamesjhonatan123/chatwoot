@@ -18,7 +18,7 @@ export const liaStatusChip = status => {
   const key = CHIP[status?.state];
   if (!key) return { key: 'LIA_STATUS.CHIP_UNKNOWN', until: null };
   if (status.state !== 'silencio') return { key, until: null };
-  const ate = /até (.*?\d{2}:\d{2})/.exec(status.label || '');
+  const ate = /até (.*?\d{2}:\d{2}|meia-noite)/.exec(status.label || '');
   return ate
     ? { key: 'LIA_STATUS.CHIP_SILENT_UNTIL', until: ate[1] }
     : { key, until: null };

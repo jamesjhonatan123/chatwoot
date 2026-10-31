@@ -28,6 +28,12 @@ describe('liaStatus', () => {
         label: 'Em silêncio até seg 03/11 08:00: horário de atendimento humano',
       }).until
     ).toBe('seg 03/11 08:00');
+    expect(
+      liaStatusChip({
+        state: 'silencio',
+        label: 'Em silêncio até meia-noite: desligada por Rita',
+      }).until
+    ).toBe('meia-noite');
   });
 
   it('respondendo, desligada e desconhecido tem selos proprios', () => {
