@@ -67,7 +67,7 @@ RSpec.describe 'Conversation LIA Suggestion API', type: :request do
 
       it 'tells LIA which is the last message from the contact, so it can answer waiting' do
         create(:message, conversation: conversation, account: account, message_type: :incoming, content: 'antiga')
-        last = create(:message, conversation: conversation, account: account, message_type: :incoming, content: 'nova')
+        last = create(:message, conversation: conversation, account: account, message_type: :incoming, content: 'nova').reload
         create(:message, conversation: conversation, account: account, message_type: :outgoing, content: 'do time')
         stub = stub_request(:post, suggestion_endpoint)
                .with(body: hash_including('last_incoming_message_id' => last.id, 'last_incoming_at' => last.created_at.to_f,
@@ -284,7 +284,8 @@ RSpec.describe 'Conversation LIA Suggestion API', type: :request do
 
       it 'answers no completion, with the reason, when the store has it off' do
         stub_request(:post, complete_endpoint)
-          .to_return(status: 200, body: { completion: nil, source: 'lia', reason: 'mode_off' }.to_json, headers: { 'Content-Type' => 'application/json' })
+          .to_return(status: 200, headers: { 'Content-Type' => 'application/json' },
+                     body: { completion: nil, source: 'lia', reason: 'mode_off' }.to_json)
 
         post complete_url, params: { typed: 'Todo o processo de locacao e ' }, headers: agent.create_new_auth_token, as: :json
 

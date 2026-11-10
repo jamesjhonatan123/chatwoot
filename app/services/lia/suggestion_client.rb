@@ -6,8 +6,8 @@ class Lia::SuggestionClient
   # Autocompletar escrito pela LIA: roda enquanto o atendente digita; passado disso
   # o texto ja mudou e a resposta nao serve.
   COMPLETE_READ_TIMEOUT = 5
-  MAX_TYPED_CHARS = 1200
-  MAX_COMPLETION_CHARS = 1200
+  MAX_COMPLETE_CHARS = 1200
+  EMPTY_COMPLETION = { completion: nil, source: 'lia', slots: [] }.freeze
   SUGGESTION_KEYS = %w[id text source].freeze
   OPTION_KEYS = %w[text source].freeze
   MAX_OPTIONS = 3
@@ -77,21 +77,13 @@ class Lia::SuggestionClient
   # Continuacao do que o atendente comecou a digitar, escrita pela LIA com o texto do time.
   # Retorna sempre { completion:, source:, slots:, reason: }; nunca levanta.
   def compose_complete(account_id:, inbox_id:, conversation_id:, typed:, agent: nil)
-    return complete_empty('disabled') unless self.class.enabled?
+    return EMPTY_COMPLETION.merge(reason: 'disabled') unless self.class.enabled?
 
-    body = { account_id: account_id, inbox_id: inbox_id, conversation_id: conversation_id,
-             typed: typed.to_s.last(MAX_TYPED_CHARS) }
-    response = post('/api/chatwoot/compose-complete', body.merge(agent_fields(agent)), read_timeout: COMPLETE_READ_TIMEOUT)
-    payload = response.parsed_response
-    return complete_empty('error') unless response.code == 200 && payload.is_a?(Hash)
-
-    completion = payload['completion']
-    return complete_empty(payload['reason'].to_s.presence || 'empty') unless completion.is_a?(String) && completion.present?
-
-    { completion: completion.first(MAX_COMPLETION_CHARS), source: 'lia', slots: parse_slots(payload['slots']), reason: 'ok' }
+    body = { account_id: account_id, inbox_id: inbox_id, conversation_id: conversation_id, typed: typed.to_s.last(MAX_COMPLETE_CHARS) }
+    parse_completion(post('/api/chatwoot/compose-complete', body.merge(agent_fields(agent)), read_timeout: COMPLETE_READ_TIMEOUT))
   rescue StandardError => e
     log_error(e.class.name)
-    complete_empty('error')
+    EMPTY_COMPLETION.merge(reason: 'error')
   end
 
   # Autocompletar aceito e enviado; devolve o desfecho (accepted/edited/ignored) ou nil.
@@ -169,8 +161,15 @@ class Lia::SuggestionClient
     { last_incoming_message_id: last_incoming[:id], last_incoming_at: last_incoming[:at].to_f }
   end
 
-  def complete_empty(reason)
-    { completion: nil, source: 'lia', slots: [], reason: reason }
+  # So a continuacao (texto) e as lacunas permitidas; sem texto, devolve o motivo da LIA.
+  def parse_completion(response)
+    payload = response.parsed_response
+    return EMPTY_COMPLETION.merge(reason: 'error') unless response.code == 200 && payload.is_a?(Hash)
+
+    completion = payload['completion']
+    return EMPTY_COMPLETION.merge(reason: payload['reason'].to_s.presence || 'empty') unless completion.is_a?(String) && completion.present?
+
+    { completion: completion.first(MAX_COMPLETE_CHARS), source: 'lia', slots: parse_slots(payload['slots']), reason: 'ok' }
   end
 
   def post(path, body, read_timeout: READ_TIMEOUT)
