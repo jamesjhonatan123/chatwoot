@@ -134,6 +134,12 @@ const resetState = () => {
 
 const DRAFT_RETRY_MS = 6000;
 const DRAFT_MAX_RETRIES = 10;
+// A LIA junta as mensagens do cliente por 2 s antes de gravar; o painel pergunta 0,8 s
+// depois de a mensagem aparecer. Enquanto ela responde "waiting" (ainda não recebeu a
+// mensagem que está na tela), pergunta de novo: cedo no começo, depois mais espaçado,
+// por uns 25 s. Sem isso a faixa ficava vazia, ou com a sugestão da mensagem anterior,
+// até o atendente sair da conversa e voltar.
+const WAITING_RETRY_MS = [1500, 2000, 3000, 4000, 5000, 5000, 5000];
 let draftTimer = null;
 
 const clearDraftTimer = () => {
@@ -141,7 +147,7 @@ const clearDraftTimer = () => {
   draftTimer = null;
 };
 
-const fetchSuggestion = async (attempt = 0) => {
+const fetchSuggestion = async (attempt = 0, waited = 0) => {
   clearDraftTimer();
   requestToken += 1;
   const token = requestToken;
@@ -154,9 +160,14 @@ const fetchSuggestion = async (attempt = 0) => {
     options.value = data?.options || [];
     optionsId.value = data?.options_id || null;
     reason.value = data?.reason || '';
-    if (reason.value === 'drafting' && attempt < DRAFT_MAX_RETRIES) {
+    if (reason.value === 'waiting' && waited < WAITING_RETRY_MS.length) {
       draftTimer = setTimeout(
-        () => fetchSuggestion(attempt + 1),
+        () => fetchSuggestion(attempt, waited + 1),
+        WAITING_RETRY_MS[waited]
+      );
+    } else if (reason.value === 'drafting' && attempt < DRAFT_MAX_RETRIES) {
+      draftTimer = setTimeout(
+        () => fetchSuggestion(attempt + 1, waited),
         DRAFT_RETRY_MS
       );
     }
@@ -165,7 +176,7 @@ const fetchSuggestion = async (attempt = 0) => {
   }
 };
 
-const debouncedFetch = useDebounceFn(() => fetchSuggestion(0), 800);
+const debouncedFetch = useDebounceFn(() => fetchSuggestion(0, 0), 800);
 
 watch(
   () => props.conversationId,

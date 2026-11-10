@@ -34,5 +34,14 @@ CannedResponse.create!(account: atalho, short_code: 'Você prefere um plano mais
                        content: 'Você prefere um plano mais flexível, sem fidelidade?')
 # lia-estado.spec.mjs: a caixa desta conta é vinculada à loja 777 na LIA (run.sh)
 seed[:estado] = loja('Loja E2E 5', 'Rita Atendente', 'rita@e2e.test', '+5511999990004')
+# faixa-na-hora.spec.mjs: a mensagem nova do cliente entra pela API do Chatwoot, com o
+# token da atendente, enquanto ela está com a conversa aberta.
+seed[:faixa] = loja('Loja E2E 6', 'Sofia Atendente', 'sofia@e2e.test', '+5511999990005')
+seed[:faixa][:api_token] = User.find(seed[:faixa][:user_id]).access_token.token
+# A pergunta antiga é antiga também no Chatwoot: a LIA só espera mensagem recém-chegada.
+Message.where(account_id: seed[:faixa][:account_id]).update_all(created_at: 10.minutes.ago)
+# autocompletar-lia.spec.mjs: a conversa pertence à loja 778 na LIA (run.sh), a única com
+# o autocompletar escrito pela LIA ligado.
+seed[:copiloto] = loja('Loja E2E 7', 'Helena Atendente', 'helena@e2e.test', '+5511999990006')
 Redis::Alfred.delete(Redis::Alfred::CHATWOOT_INSTALLATION_ONBOARDING)
 puts seed.to_json

@@ -3,6 +3,11 @@
 class Lia::SuggestionClient
   OPEN_TIMEOUT = 3
   READ_TIMEOUT = 8
+  # Autocompletar escrito pela LIA: roda enquanto o atendente digita; passado disso
+  # o texto ja mudou e a resposta nao serve.
+  COMPLETE_READ_TIMEOUT = 5
+  MAX_COMPLETE_CHARS = 1200
+  EMPTY_COMPLETION = { completion: nil, source: 'lia', slots: [] }.freeze
   SUGGESTION_KEYS = %w[id text source].freeze
   OPTION_KEYS = %w[text source].freeze
   MAX_OPTIONS = 3
@@ -24,11 +29,15 @@ class Lia::SuggestionClient
 
   # Retorna sempre { suggestion:, options:, options_id:, reason: }; nunca levanta.
   # `agent` e o atendente logado ({ id:, name: }): o x dele so esconde a sugestao para ele.
-  def fetch(account_id:, inbox_id:, conversation_id:, agent: nil)
+  # `last_incoming` e a ultima mensagem do contato ({ id:, at: }): se a LIA ainda nao a
+  # recebeu, ela responde reason "waiting" e o painel pergunta de novo, em vez de
+  # mostrar a sugestao da mensagem anterior.
+  def fetch(account_id:, inbox_id:, conversation_id:, agent: nil, last_incoming: nil)
     return EMPTY_DISABLED unless self.class.enabled?
 
     response = post('/api/chatwoot/suggestion',
-                    { account_id: account_id, inbox_id: inbox_id, conversation_id: conversation_id }.merge(agent_fields(agent)))
+                    { account_id: account_id, inbox_id: inbox_id, conversation_id: conversation_id }
+                      .merge(agent_fields(agent)).merge(last_incoming_fields(last_incoming)))
     return log_error(response.code) unless response.code == 200
 
     parse(response.parsed_response)
@@ -49,15 +58,32 @@ class Lia::SuggestionClient
 
   # Repertorio do autocompletar da conversa: { texts: [{ text:, source: }], reason: }; nunca levanta.
   def compose_library(account_id:, inbox_id:, conversation_id:, agent: nil)
-    return { texts: [], reason: 'disabled' } unless self.class.enabled?
+    return { texts: [], reason: 'disabled', generative: false } unless self.class.enabled?
 
     response = post('/api/chatwoot/compose-library',
                     { account_id: account_id, inbox_id: inbox_id, conversation_id: conversation_id }.merge(agent_fields(agent)))
     return compose_error(response.code) unless response.code == 200 && response.parsed_response.is_a?(Hash)
 
-    { texts: parse_compose_texts(response.parsed_response['texts']), reason: response.parsed_response['reason'].to_s.presence || 'error' }
+    {
+      texts: parse_compose_texts(response.parsed_response['texts']),
+      reason: response.parsed_response['reason'].to_s.presence || 'error',
+      # A loja tem o autocompletar escrito pela LIA: o painel so chama compose_complete com isto.
+      generative: response.parsed_response['generative'] == true
+    }
   rescue StandardError => e
     compose_error(e.class.name)
+  end
+
+  # Continuacao do que o atendente comecou a digitar, escrita pela LIA com o texto do time.
+  # Retorna sempre { completion:, source:, slots:, reason: }; nunca levanta.
+  def compose_complete(account_id:, inbox_id:, conversation_id:, typed:, agent: nil)
+    return EMPTY_COMPLETION.merge(reason: 'disabled') unless self.class.enabled?
+
+    body = { account_id: account_id, inbox_id: inbox_id, conversation_id: conversation_id, typed: typed.to_s.last(MAX_COMPLETE_CHARS) }
+    parse_completion(post('/api/chatwoot/compose-complete', body.merge(agent_fields(agent)), read_timeout: COMPLETE_READ_TIMEOUT))
+  rescue StandardError => e
+    log_error(e.class.name)
+    EMPTY_COMPLETION.merge(reason: 'error')
   end
 
   # Autocompletar aceito e enviado; devolve o desfecho (accepted/edited/ignored) ou nil.
@@ -128,14 +154,32 @@ class Lia::SuggestionClient
     { agent_id: agent[:id], agent_name: agent[:name].to_s.first(120).presence }.compact
   end
 
-  def post(path, body)
+  # So manda quando ha mensagem do contato; `at` em segundos (com fracao) desde 1970.
+  def last_incoming_fields(last_incoming)
+    return {} if last_incoming.blank? || last_incoming[:id].blank? || last_incoming[:at].blank?
+
+    { last_incoming_message_id: last_incoming[:id], last_incoming_at: last_incoming[:at].to_f }
+  end
+
+  # So a continuacao (texto) e as lacunas permitidas; sem texto, devolve o motivo da LIA.
+  def parse_completion(response)
+    payload = response.parsed_response
+    return EMPTY_COMPLETION.merge(reason: 'error') unless response.code == 200 && payload.is_a?(Hash)
+
+    completion = payload['completion']
+    return EMPTY_COMPLETION.merge(reason: payload['reason'].to_s.presence || 'empty') unless completion.is_a?(String) && completion.present?
+
+    { completion: completion.first(MAX_COMPLETE_CHARS), source: 'lia', slots: parse_slots(payload['slots']), reason: 'ok' }
+  end
+
+  def post(path, body, read_timeout: READ_TIMEOUT)
     token = ENV.fetch('LIA_ADMIN_API_TOKEN')
     HTTParty.post(
       "#{ENV.fetch('LIA_API_URL').chomp('/')}#{path}",
       headers: { 'Authorization' => "Bearer #{token}", 'X-Admin-Token' => token, 'Content-Type' => 'application/json' },
       body: body.to_json,
       open_timeout: OPEN_TIMEOUT,
-      read_timeout: READ_TIMEOUT
+      read_timeout: read_timeout
     )
   end
 
@@ -183,7 +227,7 @@ class Lia::SuggestionClient
 
   def compose_error(detail)
     log_error(detail)
-    { texts: [], reason: 'error' }
+    { texts: [], reason: 'error', generative: false }
   end
 
   # So nomes da lista permitida, ate MAX_SLOTS.
