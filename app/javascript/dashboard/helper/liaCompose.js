@@ -175,6 +175,29 @@ export const findCompletion = (library, typed) => {
   };
 };
 
+// Abaixo disso a LIA não ganha do repertório (medido em 444 respostas reais, 10/11/2026).
+export const MIN_GENERATED_CHARS = 20;
+
+// Continuação escrita pela LIA (`generated` = { typed, rest }, pedida quando o texto era
+// `typed`) para o que está no editor agora. Segue valendo enquanto o atendente digita
+// POR CIMA do texto apagado: o que ele já escreveu sai do restante. Diferença de caixa,
+// acento ou espaço no fim não derruba; qualquer outra letra derruba.
+export const continueGenerated = (generated, typed) => {
+  if (!generated?.rest || !generated.typed) return null;
+  const now = String(typed || '');
+  const full = generated.typed + generated.rest;
+  if (now.length < generated.typed.length || now.length >= full.length) {
+    return null;
+  }
+  const same = (a, b) =>
+    a.length === b.length &&
+    [...a].every((char, i) => fold(char) === fold(b[i]));
+  if (!same(now, full.slice(0, now.length))) return null;
+  const rest = full.slice(now.length);
+  if (!rest.trim()) return null;
+  return { text: now + rest, source: 'lia', rest, full: now + rest };
+};
+
 // Atalho por palavra: o atendente digita um pedaço de palavra da resposta pronta
 // ("rede social", "flexível", "vamos seguir") e ela inteira vem com Tab. Cada pedaço
 // casa o começo de uma palavra em qualquer parte do atalho (vale mais) ou do começo do

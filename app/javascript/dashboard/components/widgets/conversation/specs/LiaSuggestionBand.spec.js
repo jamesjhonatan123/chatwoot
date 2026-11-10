@@ -164,6 +164,86 @@ describe('LiaSuggestionBand', () => {
     expect(wrapper.text()).not.toContain('velha');
   });
 
+  // A LIA só grava a mensagem do cliente 2 s depois de ela chegar; o painel pergunta
+  // antes disso. Formas de falhar: desistir no primeiro "waiting"; mostrar a sugestão
+  // da mensagem anterior enquanto espera; perguntar para sempre; continuar perguntando
+  // depois de trocar de conversa.
+  describe('waiting for the message LIA has not received yet', () => {
+    const waiting = () => ({
+      data: {
+        suggestion: null,
+        options: [],
+        options_id: null,
+        reason: 'waiting',
+      },
+    });
+
+    it('asks again until the suggestion of the new message arrives', async () => {
+      answer('canned', 'da mensagem anterior');
+      const wrapper = await mountBand();
+      expect(wrapper.text()).toContain('da mensagem anterior');
+
+      ConversationApi.getLiaSuggestion
+        .mockResolvedValueOnce(waiting())
+        .mockResolvedValueOnce(waiting())
+        .mockResolvedValueOnce({
+          data: {
+            suggestion: {
+              id: 'nova',
+              text: 'da mensagem nova',
+              source: 'history',
+            },
+            reason: 'ok',
+          },
+        });
+      await wrapper.setProps({ lastIncomingId: 2 });
+      vi.advanceTimersByTime(900);
+      await flushPromises();
+      expect(ConversationApi.getLiaSuggestion).toHaveBeenCalledTimes(2);
+      expect(wrapper.text()).not.toContain('da mensagem anterior');
+      expect(wrapper.text()).not.toContain(NOTICE);
+
+      vi.advanceTimersByTime(1500);
+      await flushPromises();
+      expect(ConversationApi.getLiaSuggestion).toHaveBeenCalledTimes(3);
+      vi.advanceTimersByTime(2000);
+      await flushPromises();
+
+      expect(ConversationApi.getLiaSuggestion).toHaveBeenCalledTimes(4);
+      expect(wrapper.text()).toContain('da mensagem nova');
+      vi.advanceTimersByTime(60000);
+      await flushPromises();
+      expect(ConversationApi.getLiaSuggestion).toHaveBeenCalledTimes(4);
+    });
+
+    it('gives up after about 25 seconds', async () => {
+      ConversationApi.getLiaSuggestion.mockResolvedValue(waiting());
+      const wrapper = await mountBand();
+      for (let i = 0; i < 20; i += 1) {
+        vi.advanceTimersByTime(5000);
+        // eslint-disable-next-line no-await-in-loop
+        await flushPromises();
+      }
+      // A primeira pergunta e as 7 seguintes (1,5 + 2 + 3 + 4 + 5 + 5 + 5 s).
+      expect(ConversationApi.getLiaSuggestion).toHaveBeenCalledTimes(8);
+      expect(wrapper.text()).toBe('');
+    });
+
+    it('stops asking when the conversation changes', async () => {
+      ConversationApi.getLiaSuggestion.mockResolvedValueOnce(waiting());
+      const wrapper = await mountBand();
+      answer('canned', 'da outra conversa');
+      await wrapper.setProps({ conversationId: 11 });
+      vi.advanceTimersByTime(900);
+      await flushPromises();
+      expect(ConversationApi.getLiaSuggestion).toHaveBeenCalledTimes(2);
+      vi.advanceTimersByTime(30000);
+      await flushPromises();
+      expect(ConversationApi.getLiaSuggestion).toHaveBeenCalledTimes(2);
+      expect(wrapper.text()).toContain('da outra conversa');
+    });
+  });
+
   describe('options', () => {
     it('renders the options with their sources and no Tab hint', async () => {
       answerOptions();

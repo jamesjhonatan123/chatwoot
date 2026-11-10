@@ -176,6 +176,14 @@ class ConversationApi extends ApiClient {
     );
   }
 
+  // Continuação escrita pela LIA para o que o atendente começou a digitar.
+  completeLiaCompose(conversationId, typed) {
+    return axios.post(
+      `${this.url}/${conversationId}/lia_suggestion/compose_complete`,
+      { typed }
+    );
+  }
+
   liaComposeUsed(conversationId, usage) {
     return axios.post(
       `${this.url}/${conversationId}/lia_suggestion/compose_used`,

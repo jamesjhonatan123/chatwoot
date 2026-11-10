@@ -201,6 +201,7 @@ Rails.application.routes.draw do
                 post :dismiss
                 get :compose_library
                 post :compose_used
+                post :compose_complete
               end
               resources :follow_up_runs, only: [:index, :create, :destroy] do
                 member do

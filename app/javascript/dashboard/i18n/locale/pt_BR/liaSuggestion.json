@@ -23,6 +23,7 @@
     "COMPOSE_TITLE": "Autocompletar da LIA",
     "COMPOSE_ACCEPT": "para completar",
     "COMPOSE_SHORTCUT_ACCEPT": "para usar a resposta pronta",
+    "COMPOSE_SOURCE_LIA": "escrito pela LIA",
     "ALTERNATIVES_TITLE": "Outras respostas",
     "REPORT": {
       "SIDEBAR": "Sugestões da LIA",

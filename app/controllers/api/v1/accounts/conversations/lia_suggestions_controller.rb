@@ -7,7 +7,8 @@ class Api::V1::Accounts::Conversations::LiaSuggestionsController < Api::V1::Acco
       account_id: Current.account.id,
       inbox_id: @conversation.inbox_id,
       conversation_id: @conversation.display_id,
-      agent: current_agent
+      agent: current_agent,
+      last_incoming: last_incoming
     )
   end
 
@@ -43,7 +44,27 @@ class Api::V1::Accounts::Conversations::LiaSuggestionsController < Api::V1::Acco
     render json: { outcome: outcome }
   end
 
+  # Continuacao do que o atendente comecou a digitar, escrita pela LIA (texto apagado no cursor).
+  def compose_complete
+    typed = params[:typed].to_s
+    return render json: { error: 'texto vazio' }, status: :unprocessable_entity if typed.blank?
+
+    render json: Lia::SuggestionClient.new.compose_complete(
+      account_id: Current.account.id,
+      inbox_id: @conversation.inbox_id,
+      conversation_id: @conversation.display_id,
+      typed: typed,
+      agent: current_agent
+    )
+  end
+
   private
+
+  # Ultima mensagem do contato na conversa: a LIA confere se ja a recebeu antes de responder.
+  def last_incoming
+    message = @conversation.messages.incoming.reorder(id: :desc).first
+    message ? { id: message.id, at: message.created_at.to_f } : nil
+  end
 
   # O x de um atendente esconde a sugestao so para ele; os outros continuam vendo.
   def current_agent

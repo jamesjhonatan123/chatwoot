@@ -5,12 +5,21 @@
 // esconde.
 // Sem nada que continue a frase, uma mensagem curta é lida como atalho: "rede social"
 // aponta a resposta pronta que tem essas palavras, e o Tab põe ela inteira no lugar.
+// Quando nem o repertório nem o atalho servem e a loja tem o autocompletar escrito
+// pela LIA, o painel pede a continuação à LIA depois de uma pausa na digitação: ela
+// lê a conversa e devolve o texto do time que encaixa no que foi começado.
 import { computed, ref, watch, onMounted, onBeforeUnmount } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { useDebounceFn } from '@vueuse/core';
 import { useStore, useMapGetter } from 'dashboard/composables/store';
 import ConversationApi from 'dashboard/api/inbox/conversation';
 import { resolveVariablesInMessage } from 'dashboard/helper/editorHelper';
-import { findCompletion, findShortcut } from 'dashboard/helper/liaCompose';
+import {
+  findCompletion,
+  findShortcut,
+  continueGenerated,
+  MIN_GENERATED_CHARS,
+} from 'dashboard/helper/liaCompose';
 
 const props = defineProps({
   conversationId: { type: Number, required: true },
@@ -29,20 +38,30 @@ onMounted(() => {
 });
 
 const library = ref([]);
+// A loja tem o autocompletar escrito pela LIA (vem junto com o repertório).
+const generative = ref(false);
+// Última continuação que a LIA devolveu: { typed, rest }.
+const generated = ref(null);
 // Texto que o atendente escondeu com Esc: não volta enquanto for o mesmo.
 const dismissedText = ref('');
 let requestToken = 0;
+let generateToken = 0;
 
 const loadLibrary = async () => {
   requestToken += 1;
+  generateToken += 1;
   const token = requestToken;
   library.value = [];
+  generative.value = false;
+  generated.value = null;
   dismissedText.value = '';
   try {
     const { data } = await ConversationApi.getLiaComposeLibrary(
       props.conversationId
     );
-    if (token === requestToken) library.value = data?.texts || [];
+    if (token !== requestToken) return;
+    library.value = data?.texts || [];
+    generative.value = data?.generative === true;
   } catch (error) {
     // Sem repertório o editor segue normal.
   }
@@ -51,15 +70,68 @@ const loadLibrary = async () => {
 watch(() => props.conversationId, loadLibrary, { immediate: true });
 onBeforeUnmount(() => {
   requestToken += 1;
+  generateToken += 1;
 });
+
+// O que o repertório e o atalho já resolvem no navegador, sem ida ao servidor.
+const local = computed(
+  () =>
+    findCompletion(library.value, props.typed) ||
+    findShortcut(cannedResponses.value, props.typed)
+);
 
 const completion = computed(() => {
   if (props.disabled) return null;
   const found =
-    findCompletion(library.value, props.typed) ||
-    findShortcut(cannedResponses.value, props.typed);
+    local.value || continueGenerated(generated.value, props.typed) || null;
   return found && found.text !== dismissedText.value ? found : null;
 });
+
+// Pausa de digitação antes de pedir à LIA: cada pedido é uma chamada de modelo.
+const GENERATE_PAUSE_MS = 450;
+
+const requestGenerated = useDebounceFn(async () => {
+  const typed = props.typed;
+  if (
+    !generative.value ||
+    props.disabled ||
+    local.value ||
+    typed.trim().length < MIN_GENERATED_CHARS ||
+    continueGenerated(generated.value, typed)
+  ) {
+    return;
+  }
+  generateToken += 1;
+  const token = generateToken;
+  const conversationId = props.conversationId;
+  try {
+    const { data } = await ConversationApi.completeLiaCompose(
+      conversationId,
+      typed
+    );
+    // O texto mudou (ou a conversa) enquanto a LIA respondia: a resposta não vale mais.
+    if (token !== generateToken || conversationId !== props.conversationId) {
+      return;
+    }
+    generated.value = data?.completion
+      ? { typed, rest: data.completion }
+      : null;
+  } catch (error) {
+    // Sem a LIA o editor segue normal.
+  }
+}, GENERATE_PAUSE_MS);
+
+watch(
+  () => props.typed,
+  typed => {
+    // Continuação que não bate mais com o que foi digitado some na hora.
+    if (generated.value && !continueGenerated(generated.value, typed)) {
+      generated.value = null;
+      generateToken += 1;
+    }
+    if (generative.value) requestGenerated();
+  }
+);
 
 const sourceLabel = computed(() => {
   switch (completion.value?.source) {
@@ -70,6 +142,8 @@ const sourceLabel = computed(() => {
       return t('LIA_SUGGESTION.OPTION_SOURCE_CANNED');
     case 'history':
       return t('LIA_SUGGESTION.OPTION_SOURCE_HISTORY');
+    case 'lia':
+      return t('LIA_SUGGESTION.COMPOSE_SOURCE_LIA');
     default:
       return '';
   }

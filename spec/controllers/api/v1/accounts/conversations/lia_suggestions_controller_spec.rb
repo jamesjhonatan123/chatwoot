@@ -65,6 +65,21 @@ RSpec.describe 'Conversation LIA Suggestion API', type: :request do
         )
       end
 
+      it 'tells LIA which is the last message from the contact, so it can answer waiting' do
+        create(:message, conversation: conversation, account: account, message_type: :incoming, content: 'antiga')
+        last = create(:message, conversation: conversation, account: account, message_type: :incoming, content: 'nova')
+        create(:message, conversation: conversation, account: account, message_type: :outgoing, content: 'do time')
+        stub = stub_request(:post, suggestion_endpoint)
+               .with(body: hash_including('last_incoming_message_id' => last.id, 'last_incoming_at' => last.created_at.to_f,
+                                          'conversation_id' => conversation.display_id))
+               .to_return(status: 200, body: { suggestion: nil, reason: 'waiting' }.to_json, headers: { 'Content-Type' => 'application/json' })
+
+        get show_url, headers: agent.create_new_auth_token, as: :json
+
+        expect(stub).to have_been_requested
+        expect(response.parsed_body).to eq('suggestion' => nil, 'options' => [], 'options_id' => nil, 'reason' => 'waiting')
+      end
+
       it 'passes a null suggestion and its reason through' do
         stub_request(:post, suggestion_endpoint)
           .to_return(status: 200, body: { suggestion: nil, reason: 'no_pending' }.to_json, headers: { 'Content-Type' => 'application/json' })
@@ -202,7 +217,17 @@ RSpec.describe 'Conversation LIA Suggestion API', type: :request do
         get library_url, headers: agent.create_new_auth_token, as: :json
 
         expect(stub).to have_been_requested
-        expect(response.parsed_body).to eq('texts' => [{ 'text' => 'Temos planos mensais', 'source' => 'quick_reply' }], 'reason' => 'ok')
+        expect(response.parsed_body).to eq('texts' => [{ 'text' => 'Temos planos mensais', 'source' => 'quick_reply' }], 'reason' => 'ok',
+                                           'generative' => false)
+      end
+
+      it 'tells the panel when the store has the completion written by LIA' do
+        stub_request(:post, library_endpoint)
+          .to_return(status: 200, body: { texts: [], reason: 'ok', generative: true }.to_json, headers: { 'Content-Type' => 'application/json' })
+
+        get library_url, headers: agent.create_new_auth_token, as: :json
+
+        expect(response.parsed_body).to eq('texts' => [], 'reason' => 'ok', 'generative' => true)
       end
 
       it 'answers an empty library with status 200 when LIA fails' do
@@ -211,7 +236,70 @@ RSpec.describe 'Conversation LIA Suggestion API', type: :request do
         get library_url, headers: agent.create_new_auth_token, as: :json
 
         expect(response).to have_http_status(:success)
-        expect(response.parsed_body).to eq('texts' => [], 'reason' => 'error')
+        expect(response.parsed_body).to eq('texts' => [], 'reason' => 'error', 'generative' => false)
+      end
+    end
+  end
+
+  describe 'POST /api/v1/accounts/{account.id}/conversations/<id>/lia_suggestion/compose_complete' do
+    let(:complete_url) do
+      compose_complete_api_v1_account_conversation_lia_suggestion_url(account_id: account.id, conversation_id: conversation.display_id)
+    end
+    let(:complete_endpoint) { "#{lia_url}/api/chatwoot/compose-complete" }
+
+    it 'denies an agent without access to the inbox' do
+      stub = stub_request(:post, complete_endpoint)
+
+      post complete_url, params: { typed: 'Todo o processo de locacao e ' }, headers: agent.create_new_auth_token, as: :json
+
+      expect(response).to have_http_status(:unauthorized)
+      expect(stub).not_to have_been_requested
+    end
+
+    context 'with an agent that has access to the inbox' do
+      before { create(:inbox_member, inbox: conversation.inbox, user: agent) }
+
+      it 'rejects an empty text without calling LIA' do
+        stub = stub_request(:post, complete_endpoint)
+
+        post complete_url, params: { typed: '  ' }, headers: agent.create_new_auth_token, as: :json
+
+        expect(response).to have_http_status(:unprocessable_entity)
+        expect(stub).not_to have_been_requested
+      end
+
+      it 'sends what was typed with the agent and returns only the continuation and allowed slots' do
+        stub = stub_request(:post, complete_endpoint)
+               .with(body: { account_id: account.id, inbox_id: conversation.inbox_id, conversation_id: conversation.display_id,
+                             typed: 'Combinado, a entrega fica ', agent_id: agent.id, agent_name: agent.available_name }.to_json,
+                     headers: { 'Authorization' => 'Bearer segredo-de-teste' })
+               .to_return(status: 200, headers: { 'Content-Type' => 'application/json' },
+                          body: { completion: 'para [data].', source: 'lia', slots: %w[data senha], reason: 'ok', extra: 1 }.to_json)
+
+        post complete_url, params: { typed: 'Combinado, a entrega fica ' }, headers: agent.create_new_auth_token, as: :json
+
+        expect(stub).to have_been_requested
+        expect(response.parsed_body).to eq('completion' => 'para [data].', 'source' => 'lia', 'slots' => ['data'], 'reason' => 'ok')
+      end
+
+      it 'answers no completion, with the reason, when the store has it off' do
+        stub_request(:post, complete_endpoint)
+          .to_return(status: 200, body: { completion: nil, source: 'lia', reason: 'mode_off' }.to_json, headers: { 'Content-Type' => 'application/json' })
+
+        post complete_url, params: { typed: 'Todo o processo de locacao e ' }, headers: agent.create_new_auth_token, as: :json
+
+        expect(response.parsed_body).to eq('completion' => nil, 'source' => 'lia', 'slots' => [], 'reason' => 'mode_off')
+      end
+
+      it 'answers no completion with status 200 when LIA fails or times out' do
+        stub_request(:post, complete_endpoint).to_return(status: 500).then.to_timeout
+
+        2.times do
+          post complete_url, params: { typed: 'Todo o processo de locacao e ' }, headers: agent.create_new_auth_token, as: :json
+
+          expect(response).to have_http_status(:success)
+          expect(response.parsed_body).to eq('completion' => nil, 'source' => 'lia', 'slots' => [], 'reason' => 'error')
+        end
       end
     end
   end

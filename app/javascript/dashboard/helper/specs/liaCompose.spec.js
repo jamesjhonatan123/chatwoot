@@ -19,6 +19,8 @@
 // vale o mesmo que o texto; o empate muda de ordem; resposta vazia ou igual ao digitado
 // é oferecida; o fim de um texto longo casa com qualquer coisa.
 import {
+  continueGenerated,
+  MIN_GENERATED_CHARS,
   findShortcut,
   MAX_SHORTCUT_CHARS,
   SHORTCUT_TEXT_WORDS,
@@ -301,5 +303,57 @@ describe('findShortcut', () => {
     const list = [{ id: 1, short_code: 'longo', content: long }];
     expect(findShortcut(list, 'escondida')).toBeNull();
     expect(findShortcut(list, 'palavra').text).toBe(long);
+  });
+});
+
+// Continuação escrita pela LIA. Formas de falhar: sumir quando o atendente digita por
+// cima do texto apagado; continuar aparecendo depois de ele escrever outra coisa;
+// entregar de novo o que já foi digitado; sobrar só espaço; quebrar com acento ou caixa.
+describe('continueGenerated', () => {
+  const generated = {
+    typed: 'Todo o processo de locação é',
+    rest: ' feito pelo nosso site.',
+  };
+
+  it('entrega o restante para o texto em que a LIA foi consultada', () => {
+    expect(continueGenerated(generated, generated.typed)).toEqual({
+      text: 'Todo o processo de locação é feito pelo nosso site.',
+      source: 'lia',
+      rest: ' feito pelo nosso site.',
+      full: 'Todo o processo de locação é feito pelo nosso site.',
+    });
+  });
+
+  it('segue valendo enquanto ele digita por cima, sem repetir o que já escreveu', () => {
+    const found = continueGenerated(
+      generated,
+      'Todo o processo de locação é fei'
+    );
+    expect(found.rest).toBe('to pelo nosso site.');
+    expect(found.full).toBe(
+      'Todo o processo de locação é feito pelo nosso site.'
+    );
+    expect(
+      continueGenerated(generated, 'todo o processo de locacao e FEITO').rest
+    ).toBe(' pelo nosso site.');
+  });
+
+  it('some quando ele escreve outra coisa, apaga o começo ou termina o texto', () => {
+    expect(
+      continueGenerated(generated, 'Todo o processo de locação é rápido')
+    ).toBeNull();
+    expect(continueGenerated(generated, 'Todo o processo')).toBeNull();
+    expect(
+      continueGenerated(
+        generated,
+        'Todo o processo de locação é feito pelo nosso site.'
+      )
+    ).toBeNull();
+    expect(continueGenerated({ typed: 'Ok', rest: '   ' }, 'Ok')).toBeNull();
+    expect(continueGenerated(null, 'Ok')).toBeNull();
+  });
+
+  it('só pede à LIA a partir de 20 letras', () => {
+    expect(MIN_GENERATED_CHARS).toBe(20);
   });
 });
