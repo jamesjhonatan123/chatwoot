@@ -7,12 +7,14 @@
 #
 # Regras:
 # - nota interna não aparece para o cliente;
-# - só inbox WhatsApp da API oficial, com mensagem do cliente de até 30 dias (limite da Meta);
+# - só inbox WhatsApp da API oficial, com mensagem do cliente nas últimas 24 h (fora dessa
+#   janela a atendente só pode mandar template, e o "digitando…" não tem resposta a anunciar);
 # - uma chamada por resposta: repetir o "digitando…" antes de a resposta sair não chama de
-#   novo por THROTTLE_SECONDS; depois que uma mensagem sai, a próxima digitação chama outra vez.
+#   novo por THROTTLE_SECONDS; chama outra vez depois que uma mensagem sai para o cliente ou
+#   quando chega mensagem nova do cliente (senão ela ficaria sem "lida").
 class WhatsappTypingListener < BaseListener
   THROTTLE_SECONDS = 20
-  MAX_INCOMING_AGE = 30.days
+  MAX_INCOMING_AGE = 24.hours
 
   def conversation_typing_on(event)
     return if ActiveModel::Type::Boolean.new.cast(event.data[:is_private])
@@ -23,7 +25,7 @@ class WhatsappTypingListener < BaseListener
 
     incoming = last_incoming_message(conversation)
     return if incoming.blank?
-    return unless first_call_for_this_reply?(conversation)
+    return unless first_call_for_this_reply?(conversation, incoming)
 
     Whatsapp::TypingIndicatorService.new(channel).perform(incoming.source_id)
   end
@@ -42,9 +44,10 @@ class WhatsappTypingListener < BaseListener
                 .reorder(created_at: :desc).first
   end
 
-  def first_call_for_this_reply?(conversation)
-    last_outgoing_id = conversation.messages.outgoing.maximum(:id)
-    key = "whatsapp_typing:#{conversation.id}:#{last_outgoing_id || 0}"
+  def first_call_for_this_reply?(conversation, incoming)
+    # Só o que o cliente vê conta como resposta: nota interna não, template sim.
+    last_reply_id = conversation.messages.chat.where(message_type: %i[outgoing template]).maximum(:id)
+    key = "whatsapp_typing:#{conversation.id}:#{incoming.id}:#{last_reply_id || 0}"
     Redis::Alfred.set(key, 1, nx: true, ex: THROTTLE_SECONDS)
   end
 end

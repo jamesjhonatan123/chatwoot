@@ -3,10 +3,12 @@ require 'rails_helper'
 # Formas de falhar levantadas antes do código:
 # 1. nota interna mostrando "digitando…" ao cliente;
 # 2. inbox que não é a API oficial chamando a Meta;
-# 3. conversa sem mensagem do cliente (ou só com mensagem velha demais para a Meta);
+# 3. conversa sem mensagem do cliente, ou só com mensagem fora da janela de 24 h;
 # 4. usar o id de uma mensagem nossa em vez do wamid da última do cliente;
 # 5. várias chamadas por resposta enquanto alguém digita;
-# 6. nenhuma chamada na resposta seguinte (a Meta apaga o indicador quando a resposta sai);
+# 6. nenhuma chamada na resposta seguinte (a Meta apaga o indicador quando a resposta sai)
+#    ou quando o cliente manda outra mensagem antes da resposta (ela ficaria sem "lida");
+#    nota interna contada como resposta;
 # 7. erro da Meta derrubando o job;
 # 8. corpo, versão ou token errados na chamada.
 describe WhatsappTypingListener do
@@ -71,8 +73,8 @@ describe WhatsappTypingListener do
     expect(a_request(:post, typing_url)).not_to have_been_made
   end
 
-  it 'não chama a Meta sem mensagem do cliente dentro de 30 dias' do
-    conversation.messages.incoming.each { |message| message.update!(created_at: 31.days.ago) }
+  it 'não chama a Meta sem mensagem do cliente' do
+    conversation.messages.incoming.destroy_all
 
     typing_on
 
@@ -88,6 +90,35 @@ describe WhatsappTypingListener do
     create(:message, conversation: conversation, account: account, inbox: inbox, message_type: :outgoing)
     typing_on
     expect(request).to have_been_requested.twice
+  end
+
+  it 'chama a Meta de novo se o cliente mandar outra mensagem antes da resposta sair' do
+    request = stub_request(:post, typing_url).to_return(status: 200, body: '{"success":true}')
+
+    typing_on
+    incoming('wamid.cliente3')
+    typing_on
+
+    expect(request).to have_been_requested.twice
+    expect(a_request(:post, typing_url).with(body: hash_including('message_id' => 'wamid.cliente3'))).to have_been_made.once
+  end
+
+  it 'nota interna não conta como resposta que saiu' do
+    request = stub_request(:post, typing_url).to_return(status: 200, body: '{"success":true}')
+
+    typing_on
+    create(:message, conversation: conversation, account: account, inbox: inbox, message_type: :outgoing, private: true)
+    typing_on
+
+    expect(request).to have_been_requested.once
+  end
+
+  it 'não chama a Meta fora da janela de 24 h (só cabe template)' do
+    conversation.messages.incoming.each { |message| message.update!(created_at: 25.hours.ago) }
+
+    typing_on
+
+    expect(a_request(:post, typing_url)).not_to have_been_made
   end
 
   it 'erro da Meta não levanta exceção' do
