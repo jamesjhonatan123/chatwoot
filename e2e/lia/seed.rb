@@ -43,5 +43,29 @@ Message.where(account_id: seed[:faixa][:account_id]).update_all(created_at: 10.m
 # autocompletar-lia.spec.mjs: a conversa pertence à loja 778 na LIA (run.sh), a única com
 # o autocompletar escrito pela LIA ligado.
 seed[:copiloto] = loja('Loja E2E 7', 'Helena Atendente', 'helena@e2e.test', '+5511999990006')
+# lia-avisos.spec.mjs: faixa "LIA parada", fila "Esperando a equipe" e a passagem visivel.
+# A caixa desta conta e vinculada a loja 888 na LIA (run.sh). Tres clientes escreveram ha
+# 74, 20 e 5 minutos e ninguem respondeu; so os dois primeiros passam dos 15 minutos.
+avisos = loja('Loja E2E 8', 'Lia Teixeira Atendente', 'teixeira@e2e.test', '+5511999990007')
+avisos_account = Account.find(avisos[:account_id])
+avisos_inbox = Inbox.find(avisos[:inbox_id])
+avisos_user = User.find(avisos[:user_id])
+primeira = avisos_account.conversations.find_by(display_id: avisos[:conversation_id])
+primeira.update_columns(waiting_since: 74.minutes.ago) # rubocop:disable Rails/SkipsModelValidations
+avisos[:esperando] = { 'Paula Souza' => primeira.display_id }
+[['Marcos Lima', '+5511999990008', 20, 'Vocês entregam em Joinville?'],
+ ['Ana Costa', '+5511999990009', 5, 'Qual o valor da esteira?']].each do |nome, fone, minutos, texto|
+  contato = Contact.create!(account: avisos_account, name: nome, phone_number: fone)
+  ci = ContactInbox.create!(contact: contato, inbox: avisos_inbox, source_id: SecureRandom.uuid)
+  conversa = Conversation.create!(account: avisos_account, inbox: avisos_inbox, contact: contato,
+                                  contact_inbox: ci, status: :open, assignee: avisos_user)
+  Message.create!(account: avisos_account, inbox: avisos_inbox, conversation: conversa,
+                  message_type: :incoming, content: texto, sender: contato)
+  conversa.update_columns(waiting_since: minutos.minutes.ago) # rubocop:disable Rails/SkipsModelValidations
+  avisos[:esperando][nome] = conversa.display_id
+end
+# O token com que a LIA fala com o Chatwoot (a passagem visivel usa etiqueta e prioridade).
+avisos[:token] = avisos_user.access_token.token
+seed[:avisos] = avisos
 Redis::Alfred.delete(Redis::Alfred::CHATWOOT_INSTALLATION_ONBOARDING)
 puts seed.to_json

@@ -7,6 +7,7 @@ import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import { onClickOutside } from '@vueuse/core';
 import { useI18n } from 'vue-i18n';
 import ConversationAPI from 'dashboard/api/inbox/conversation';
+import { refreshLiaOverview } from 'dashboard/composables/useLiaOverview';
 import {
   liaStatusActionKey,
   liaStatusChip,
@@ -56,6 +57,8 @@ const toggle = async () => {
       status.value.action
     );
     status.value = data;
+    // A faixa do topo e a fila mudam junto, sem esperar o minuto da atualizacao.
+    refreshLiaOverview();
   } catch (error) {
     const data = error?.response?.data || {};
     message.value = data.message || t('LIA_STATUS.ERROR');

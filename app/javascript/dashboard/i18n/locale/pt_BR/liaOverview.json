@@ -1,0 +1,24 @@
+{
+  "LIA_OVERVIEW": {
+    "BANNER_ONE": "LIA parada em {name}",
+    "BANNER_MANY": "LIA parada em {count} lojas:",
+    "BANNER_WAITING": "{count} cliente esperando | {count} clientes esperando",
+    "BANNER_OLDEST": "o mais antigo há {wait}",
+    "BANNER_NOBODY": "Ninguém esperando agora.",
+    "SEE_WAITING": "Ver quem espera",
+    "TURN_ON": "Ligar a LIA agora",
+    "TURN_ON_ERROR": "Não consegui ligar a LIA. Tente pelo selo da conversa.",
+    "SIDEBAR": "Esperando a equipe",
+    "TITLE": "Esperando a equipe",
+    "SUBTITLE": "Clientes que escreveram e estão há mais de {minutes} min sem resposta, do mais antigo para o mais novo. A conversa sai daqui quando alguém responde.",
+    "EMPTY_TITLE": "Ninguém esperando",
+    "EMPTY_TEXT": "Todo cliente que escreveu já teve resposta nos últimos {minutes} min.",
+    "WAITING_FOR": "há {wait}",
+    "REASON_HANDOFF": "LIA transferiu",
+    "REASON_PAUSED": "LIA parada nesta loja",
+    "REASON_UNANSWERED": "Sem resposta",
+    "NO_NAME": "Cliente sem nome",
+    "LIA_UNAVAILABLE": "O estado da LIA não respondeu agora; a fila abaixo vem do Chatwoot e está certa.",
+    "MORE": "Mostrando os {shown} mais antigos de {count}."
+  }
+}

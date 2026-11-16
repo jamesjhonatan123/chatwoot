@@ -26,6 +26,7 @@ import CopilotLauncher from 'dashboard/components-next/copilot/CopilotLauncher.v
 import CopilotContainer from 'dashboard/components/copilot/CopilotContainer.vue';
 
 import MobileSidebarLauncher from 'dashboard/components-next/sidebar/MobileSidebarLauncher.vue';
+import LiaBanner from 'dashboard/components/app/LiaBanner.vue';
 import { useCallsStore } from 'dashboard/stores/calls';
 
 export default {
@@ -39,6 +40,7 @@ export default {
     CopilotContainer,
     FloatingCallWidget,
     MobileSidebarLauncher,
+    LiaBanner,
   },
   setup() {
     const upgradePageRef = ref(null);
@@ -145,41 +147,44 @@ export default {
       @close-mobile-sidebar="closeMobileSidebar"
     />
 
-    <main
-      class="flex flex-1 h-full w-full min-h-0 px-0 overflow-hidden bg-n-surface-1"
-    >
-      <UpgradePage
-        v-show="showUpgradePage"
-        ref="upgradePageRef"
-        :bypass-upgrade-page="bypassUpgradePage"
+    <div class="flex flex-col flex-1 min-w-0 h-full">
+      <LiaBanner v-if="!isPopout" />
+      <main
+        class="flex flex-1 w-full min-h-0 px-0 overflow-hidden bg-n-surface-1"
       >
-        <MobileSidebarLauncher
-          v-if="!isPopout"
-          :is-mobile-sidebar-open="isMobileSidebarOpen"
-          @toggle="toggleMobileSidebar"
+        <UpgradePage
+          v-show="showUpgradePage"
+          ref="upgradePageRef"
+          :bypass-upgrade-page="bypassUpgradePage"
+        >
+          <MobileSidebarLauncher
+            v-if="!isPopout"
+            :is-mobile-sidebar-open="isMobileSidebarOpen"
+            @toggle="toggleMobileSidebar"
+          />
+        </UpgradePage>
+        <template v-if="!showUpgradePage">
+          <router-view />
+          <CopilotLauncher v-if="!isPopout" />
+          <MobileSidebarLauncher
+            v-if="!isPopout"
+            :is-mobile-sidebar-open="isMobileSidebarOpen"
+            @toggle="toggleMobileSidebar"
+          />
+          <CopilotContainer />
+          <FloatingCallWidget v-if="hasActiveCall || hasIncomingCall" />
+        </template>
+        <CommandBar v-if="!isPopout" :is-paywalled="isAccountPaywalled" />
+        <AddAccountModal
+          :show="showCreateAccountModal"
+          @close-account-create-modal="closeCreateAccountModal"
         />
-      </UpgradePage>
-      <template v-if="!showUpgradePage">
-        <router-view />
-        <CopilotLauncher v-if="!isPopout" />
-        <MobileSidebarLauncher
-          v-if="!isPopout"
-          :is-mobile-sidebar-open="isMobileSidebarOpen"
-          @toggle="toggleMobileSidebar"
+        <WootKeyShortcutModal
+          v-model:show="showShortcutModal"
+          @close="closeKeyShortcutModal"
+          @clickaway="closeKeyShortcutModal"
         />
-        <CopilotContainer />
-        <FloatingCallWidget v-if="hasActiveCall || hasIncomingCall" />
-      </template>
-      <CommandBar v-if="!isPopout" :is-paywalled="isAccountPaywalled" />
-      <AddAccountModal
-        :show="showCreateAccountModal"
-        @close-account-create-modal="closeCreateAccountModal"
-      />
-      <WootKeyShortcutModal
-        v-model:show="showShortcutModal"
-        @close="closeKeyShortcutModal"
-        @clickaway="closeKeyShortcutModal"
-      />
-    </main>
+      </main>
+    </div>
   </div>
 </template>

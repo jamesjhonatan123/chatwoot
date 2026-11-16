@@ -47,6 +47,7 @@ import whatsappTemplates from './whatsappTemplates.json';
 import followUps from './followUps.json';
 import kanban from './kanban.json';
 import liaSuggestion from './liaSuggestion.json';
+import liaOverview from './liaOverview.json';
 import whatsappTemplateMgmt from './whatsappTemplateMgmt.json';
 import yearInReview from './yearInReview.json';
 
@@ -100,6 +101,7 @@ export default {
   ...whatsappTemplates,
   ...kanban,
   ...liaSuggestion,
+  ...liaOverview,
   ...whatsappTemplateMgmt,
   ...yearInReview,
 };

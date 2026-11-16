@@ -123,7 +123,7 @@ docker cp "$HERE/seed.rb" "$CW:/tmp/seed.rb"
 SEED="$(docker exec "$CW" bundle exec rails runner /tmp/seed.rb 2> "$OUT/seed.err" | tail -1)"
 echo "$SEED" > "$OUT/seed.json"
 read -r ACCOUNT INBOX CONV ACCOUNT2 INBOX2 CONV2 ACCOUNT3 INBOX3 CONV3 ACCOUNT4 INBOX4 CONV4 ACCOUNT5 INBOX5 \
-  ACCOUNT6 INBOX6 CONV6 ACCOUNT7 INBOX7 CONV7 < <(node -e '
+  ACCOUNT6 INBOX6 CONV6 ACCOUNT7 INBOX7 CONV7 ACCOUNT8 INBOX8 < <(node -e '
   const s = JSON.parse(process.argv[1]);
   const a = s.apresentacao;
   const m = s.meio;
@@ -131,10 +131,11 @@ read -r ACCOUNT INBOX CONV ACCOUNT2 INBOX2 CONV2 ACCOUNT3 INBOX3 CONV3 ACCOUNT4 
   const e = s.estado;
   const f = s.faixa;
   const c = s.copiloto;
+  const v = s.avisos;
   console.log(s.account_id, s.inbox_id, s.conversation_id, a.account_id, a.inbox_id, a.conversation_id,
               m.account_id, m.inbox_id, m.conversation_id, k.account_id, k.inbox_id, k.conversation_id,
               e.account_id, e.inbox_id, f.account_id, f.inbox_id, f.conversation_id,
-              c.account_id, c.inbox_id, c.conversation_id)' "$SEED")
+              c.account_id, c.inbox_id, c.conversation_id, v.account_id, v.inbox_id)' "$SEED")
 
 # A conversa como a LIA a conhece (o Chatwoot a encontra pelo display_id) e a resposta
 # rápida que o autocompletar deve oferecer.
@@ -218,16 +219,19 @@ VALUES (gen_random_uuid(), '778', 'Processo', 'processo',
         'Como funciona a locação', true, now(), now());
 INSERT INTO system_settings (key, value, updated_at)
 VALUES ('__store__:778:reply_compose_generative', 'true', now());
--- A caixa da "Loja E2E 5" pertence à loja 777 (lia-estado). As outras ficam sem loja.
+-- A caixa da "Loja E2E 5" pertence à loja 777 (lia-estado) e a da "Loja E2E 8" à loja 888
+-- (lia-avisos). As outras ficam sem loja.
 INSERT INTO system_settings (key, value, updated_at)
-VALUES ('chatwoot_inboxes', '[{"account_id": $ACCOUNT5, "inbox_id": $INBOX5, "store_id": 777}]', now());
+VALUES ('chatwoot_inboxes', '[{"account_id": $ACCOUNT5, "inbox_id": $INBOX5, "store_id": 777},
+        {"account_id": $ACCOUNT8, "inbox_id": $INBOX8, "store_id": 888, "label": "Loja Avisos"}]', now());
 SQL
 
 echo "== Playwright -> $OUT"
 cd "$HERE"
 set +e
 E2E_SEED="$SEED" E2E_OUT="$OUT" CHATWOOT_URL="http://127.0.0.1:$CW_PORT" \
-  LIA_URL="http://$GATEWAY:$LIA_PORT" LIA_PG_CONTAINER=lia-e2e-lia-pg npx playwright test "$@" 2>&1 | tee "$OUT/playwright.log"
+  LIA_URL="http://$GATEWAY:$LIA_PORT" LIA_DIR="$LIA_DIR" LIA_PYTHON="$PYTHON" \
+  LIA_PG_CONTAINER=lia-e2e-lia-pg npx playwright test "$@" 2>&1 | tee "$OUT/playwright.log"
 STATUS=${PIPESTATUS[0]}
 echo "status=$STATUS" >> "$OUT/playwright.log"
 exit "$STATUS"

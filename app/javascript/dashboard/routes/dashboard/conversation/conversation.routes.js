@@ -2,6 +2,7 @@
 import { frontendURL } from '../../../helper/URLHelper';
 import store from '../../../store';
 import ConversationView from './ConversationView.vue';
+import LiaWaitingPage from './LiaWaitingPage.vue';
 
 const CONVERSATION_PERMISSIONS = [
   'administrator',
@@ -186,6 +187,14 @@ export default {
         conversationId: route.params.conversationId,
         conversationType: 'mention',
       }),
+    },
+    {
+      path: frontendURL('accounts/:accountId/lia-waiting'),
+      name: 'lia_waiting',
+      meta: {
+        permissions: CONVERSATION_PERMISSIONS,
+      },
+      component: LiaWaitingPage,
     },
     {
       path: frontendURL('accounts/:accountId/unattended/conversations'),

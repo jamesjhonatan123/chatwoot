@@ -1,4 +1,5 @@
 <script setup>
+import { useLiaOverview } from 'dashboard/composables/useLiaOverview';
 import { h, ref, computed, onMounted, watch } from 'vue';
 import { provideSidebarContext, useSidebarResize } from './provider';
 import { useAccount } from 'dashboard/composables/useAccount';
@@ -230,6 +231,8 @@ const mentionsUnreadCount = useMapGetter(
 const participatingUnreadCount = useMapGetter(
   'conversationUnreadCounts/getParticipatingUnreadCount'
 );
+// Fila "Esperando a equipe": o contador e o mesmo da faixa da LIA (um pedido por minuto).
+const { waitingCount: liaWaitingCount } = useLiaOverview();
 const unattendedUnreadCount = useMapGetter(
   'conversationUnreadCounts/getUnattendedUnreadCount'
 );
@@ -409,6 +412,14 @@ const menuItems = computed(() => {
             : 0,
           activeOn: ['conversation_through_participating'],
           to: accountScopedRoute('conversation_participating'),
+        },
+        {
+          name: 'LiaWaiting',
+          label: t('LIA_OVERVIEW.SIDEBAR'),
+          icon: 'i-lucide-hourglass',
+          badgeCount: liaWaitingCount.value,
+          activeOn: ['lia_waiting'],
+          to: accountScopedRoute('lia_waiting'),
         },
         {
           name: 'Unattended',

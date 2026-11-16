@@ -174,6 +174,10 @@ Rails.application.routes.draw do
           resource :lia_suggestion_metrics, only: [:show] do
             post :release
           end
+          # Faixa "LIA parada" no topo e fila "Esperando a equipe" (qualquer atendente).
+          resource :lia_overview, only: [:show] do
+            post :toggle
+          end
           resources :conversations, only: [:index, :create, :show, :update, :destroy] do
             collection do
               get :meta
