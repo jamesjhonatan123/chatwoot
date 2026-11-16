@@ -68,7 +68,12 @@ const REASON_CLASS = {
       </p>
     </div>
 
-    <ul v-else class="divide-y divide-n-weak" data-test-id="lia-waiting-list">
+    <ul
+      v-else
+      class="divide-y divide-n-weak"
+      data-test-id="lia-waiting-list"
+      :aria-label="t('LIA_OVERVIEW.TITLE')"
+    >
       <li v-for="row in rows" :key="row.id">
         <router-link
           :to="row.url"
