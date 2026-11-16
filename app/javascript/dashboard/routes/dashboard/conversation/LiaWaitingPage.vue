@@ -7,6 +7,7 @@ import { useRoute } from 'vue-router';
 import { useLiaOverview } from 'dashboard/composables/useLiaOverview';
 import { frontendURL, conversationUrl } from 'dashboard/helper/URLHelper';
 import { REASON_KEYS, waitingFor } from 'dashboard/helper/liaOverview';
+import Spinner from 'dashboard/components-next/spinner/Spinner.vue';
 
 const { t } = useI18n();
 const route = useRoute();
@@ -55,7 +56,14 @@ const REASON_CLASS = {
     </header>
 
     <div
-      v-if="overview && !rows.length"
+      v-if="!overview"
+      class="flex items-center justify-center flex-1 p-10 text-n-slate-11"
+    >
+      <Spinner />
+    </div>
+
+    <div
+      v-else-if="!rows.length"
       class="flex flex-col items-center justify-center flex-1 gap-1 p-10 text-center"
       data-test-id="lia-waiting-empty"
     >

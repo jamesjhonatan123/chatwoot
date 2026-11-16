@@ -124,6 +124,54 @@ RSpec.describe 'LIA overview API', type: :request do
     expect(response.parsed_body['state']).to eq('respondendo')
   end
 
+  # Revisão do Gemini: a última mensagem era uma consulta por conversa, e a contagem duas
+  # por loja. A tela consulta a cada minuto por atendente aberto.
+  it 'does not grow the number of queries with conversations and stores' do
+    stub_stores
+    count_queries = lambda do
+      queries = 0
+      callback = ->(*, payload) { queries += 1 unless payload[:name] == 'SCHEMA' || payload[:sql].start_with?('BEGIN', 'COMMIT') }
+      ActiveSupport::Notifications.subscribed(callback, 'sql.active_record') do
+        get show_url, headers: agent.create_new_auth_token, as: :json
+      end
+      queries
+    end
+    2.times { |i| waiting_conversation(minutes: 20 + i) }
+    few = count_queries.call
+    6.times { |i| waiting_conversation(minutes: 40 + i) }
+    expect(count_queries.call).to eq(few)
+  end
+
+  it 'counts everyone waiting even beyond the 50 listed' do
+    stub_stores
+    stub_const("#{Api::V1::Accounts::LiaOverviewsController}::LIST_LIMIT", 2)
+    3.times { |i| waiting_conversation(minutes: 20 + i) }
+
+    get show_url, headers: agent.create_new_auth_token, as: :json
+
+    expect(response.parsed_body['waiting']['conversations'].size).to eq(2)
+    expect(response.parsed_body['waiting']['count']).to eq(3)
+  end
+
+  it 'lets an administrator see every inbox without being a member' do
+    stub_stores
+    admin = create(:user, account: account, role: :administrator)
+    waiting_conversation(minutes: 30, target_inbox: other_inbox)
+
+    get show_url, headers: admin.create_new_auth_token, as: :json
+
+    expect(response.parsed_body['waiting']['count']).to eq(1)
+    expect(response.parsed_body['stores'].pluck('store_id')).to contain_exactly('334', '2863')
+  end
+
+  it 'answers 503, not 404, when LIA is down and someone clicks to turn it on' do
+    stub_request(:get, stores_endpoint).with(query: hash_including({})).to_timeout
+
+    post toggle_url, params: { store_id: '334', lia_action: 'ligar' }, headers: agent.create_new_auth_token, as: :json
+
+    expect(response).to have_http_status(:service_unavailable)
+  end
+
   it 'refuses to toggle a store whose inboxes the agent cannot see' do
     stub_stores
     toggle = stub_request(:post, "#{lia_url}/api/lia-status/chatwoot")

@@ -19,7 +19,7 @@ class Api::V1::Accounts::LiaOverviewsController < Api::V1::Accounts::BaseControl
     render json: {
       lia_available: !stores.nil?,
       threshold_minutes: WAIT_THRESHOLD.in_minutes.to_i,
-      stores: (stores || []).map { |store| store_summary(store, waiting) },
+      stores: store_summaries(stores || [], waiting),
       waiting: { count: waiting.count, conversations: waiting_rows(waiting, stores || []) }
     }
   end
@@ -27,7 +27,9 @@ class Api::V1::Accounts::LiaOverviewsController < Api::V1::Accounts::BaseControl
   # Ligar a LIA de uma loja pela faixa. A LIA resolve a loja pela caixa; vai a primeira caixa
   # da loja que o atendente pode ver, entao ninguem liga loja de caixa que nao acessa.
   def toggle
-    store = (visible_stores || []).find { |item| item['store_id'] == params[:store_id].to_s }
+    return render json: { message: 'A LIA não respondeu.' }, status: :service_unavailable if visible_stores.nil?
+
+    store = requested_store
     return render json: { message: 'Loja não encontrada.' }, status: :not_found if store.nil?
 
     status, body = Lia::StatusClient.new.toggle(
@@ -40,6 +42,10 @@ class Api::V1::Accounts::LiaOverviewsController < Api::V1::Accounts::BaseControl
   end
 
   private
+
+  def requested_store
+    visible_stores.find { |item| item['store_id'] == params[:store_id].to_s }
+  end
 
   def inbox_ids
     @inbox_ids ||= Current.user.assigned_inboxes.pluck(:id)
@@ -61,22 +67,27 @@ class Api::V1::Accounts::LiaOverviewsController < Api::V1::Accounts::BaseControl
            .where('conversations.waiting_since <= ?', WAIT_THRESHOLD.ago)
   end
 
-  def store_summary(store, waiting)
-    of_store = waiting.where(inbox_id: store['inbox_ids'])
-    store.merge(
-      'waiting_count' => of_store.count,
-      'oldest_waiting_since' => of_store.minimum(:waiting_since)&.iso8601
-    )
+  # Duas consultas agrupadas por caixa para todas as lojas, em vez de duas por loja.
+  def store_summaries(stores, waiting)
+    counts = waiting.group(:inbox_id).count
+    oldest = waiting.group(:inbox_id).minimum(:waiting_since)
+    stores.map do |store|
+      ids = store['inbox_ids']
+      store.merge(
+        'waiting_count' => ids.sum { |id| counts[id].to_i },
+        'oldest_waiting_since' => oldest.values_at(*ids).compact.min&.iso8601
+      )
+    end
   end
 
   def waiting_rows(waiting, stores)
     paused = stores.reject { |store| store['state'] == RESPONDING }.flat_map { |store| store['inbox_ids'] }
-    waiting.reorder(waiting_since: :asc).limit(LIST_LIMIT).includes(:contact, :inbox).map do |conversation|
-      waiting_row(conversation, paused)
-    end
+    conversations = waiting.reorder(waiting_since: :asc).limit(LIST_LIMIT).includes(:contact, :inbox).to_a
+    last_messages = last_incoming(conversations.map(&:id))
+    conversations.map { |conversation| waiting_row(conversation, paused, last_messages[conversation.id]) }
   end
 
-  def waiting_row(conversation, paused)
+  def waiting_row(conversation, paused, last_message)
     labels = conversation.cached_label_list.to_s.split(',').map(&:strip).compact_blank
     {
       id: conversation.display_id,
@@ -86,7 +97,7 @@ class Api::V1::Accounts::LiaOverviewsController < Api::V1::Accounts::BaseControl
       waiting_since: conversation.waiting_since&.iso8601,
       priority: conversation.priority,
       labels: labels,
-      last_message: last_incoming(conversation),
+      last_message: last_message.to_s.squish.first(140),
       reason: reason_for(conversation, labels, paused)
     }
   end
@@ -98,7 +109,13 @@ class Api::V1::Accounts::LiaOverviewsController < Api::V1::Accounts::BaseControl
     'sem_resposta'
   end
 
-  def last_incoming(conversation)
-    conversation.messages.incoming.reorder(created_at: :desc).pick(:content).to_s.squish.first(140)
+  # A última fala do cliente de cada conversa da fila, numa consulta só.
+  def last_incoming(conversation_ids)
+    return {} if conversation_ids.empty?
+
+    Message.incoming.where(conversation_id: conversation_ids)
+           .select('DISTINCT ON (conversation_id) conversation_id, content')
+           .reorder(:conversation_id, created_at: :desc)
+           .to_h { |message| [message.conversation_id, message.content] }
   end
 end

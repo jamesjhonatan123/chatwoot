@@ -9,25 +9,30 @@ const overview = ref(null);
 const loading = ref(false);
 let users = 0;
 let timer = null;
+// Cada pedido leva um numero; so o mais recente grava. Foco e relogio podem disparar
+// juntos, e a resposta antiga chegando depois faria a faixa voltar ao estado velho.
+let latest = 0;
 
-const applyTitle = () => {
+const applyTitle = count => {
   if (typeof document === 'undefined') return;
-  document.title = titleWithCount(
-    document.title,
-    overview.value?.waiting?.count || 0
-  );
+  document.title = titleWithCount(document.title, count);
 };
 
 export const refreshLiaOverview = async () => {
+  latest += 1;
+  const mine = latest;
   loading.value = true;
   try {
     const { data } = await LiaOverviewAPI.get();
+    if (mine !== latest) return;
     overview.value = data;
   } catch {
     // Sem resposta, mantem o ultimo estado: a faixa nao pisca a cada falha de rede.
   } finally {
-    loading.value = false;
-    applyTitle();
+    if (mine === latest) {
+      loading.value = false;
+      if (users > 0) applyTitle(overview.value?.waiting?.count || 0);
+    }
   }
 };
 
@@ -47,6 +52,9 @@ export function useLiaOverview() {
     if (users === 0) {
       clearInterval(timer);
       window.removeEventListener('focus', onFocus);
+      latest += 1;
+      loading.value = false;
+      applyTitle(0);
     }
   });
 
