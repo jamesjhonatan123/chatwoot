@@ -45,6 +45,7 @@ import contentTemplates from './contentTemplates.json';
 import mfa from './mfa.json';
 import kanban from './kanban.json';
 import liaSuggestion from './liaSuggestion.json';
+import liaOverview from './liaOverview.json';
 import onboarding from './onboarding.json';
 import sessionLimit from './sessionLimit.json';
 import yearInReview from './yearInReview.json';
@@ -97,6 +98,7 @@ export default {
   ...mfa,
   ...kanban,
   ...liaSuggestion,
+  ...liaOverview,
   ...onboarding,
   ...sessionLimit,
   ...yearInReview,

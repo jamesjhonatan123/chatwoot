@@ -26,6 +26,23 @@ class Lia::StatusClient
     UNAVAILABLE
   end
 
+  # Todas as lojas da conta (faixa do topo e fila). Devolve nil se a LIA nao respondeu:
+  # a faixa some em vez de acusar loja parada sem saber.
+  def account_stores(account_id:)
+    return nil unless self.class.enabled?
+
+    response = request(:get, '/api/lia-status/chatwoot/account', query: { account_id: account_id })
+    return nil unless response.code == 200
+
+    stores = response.parsed_response.is_a?(Hash) ? response.parsed_response['stores'] : nil
+    return nil unless stores.is_a?(Array)
+
+    stores.first(100).filter_map { |store| clean_store(store) }
+  rescue StandardError => e
+    Rails.logger.warn("[LIA status] #{e.class.name}")
+    nil
+  end
+
   # Devolve [status_http, corpo]. 409 = nada a fazer (o corpo traz o estado atual).
   def toggle(account_id:, inbox_id:, action:, by:)
     return [422, { 'error' => 'acao invalida' }] unless ACTIONS.include?(action)
@@ -57,6 +74,16 @@ class Lia::StatusClient
     data['action'] = nil unless ACTIONS.include?(data['action'])
     data['label'] = data['label'].to_s.first(200)
     data
+  end
+
+  def clean_store(store)
+    return nil unless store.is_a?(Hash) && store['store_id'].present?
+
+    clean(store).merge(
+      'since' => store['since'].presence,
+      'name' => store['name'].to_s.first(80),
+      'inbox_ids' => Array(store['inbox_ids']).map(&:to_i).select(&:positive?)
+    )
   end
 
   def request(verb, path, query: nil, body: nil)

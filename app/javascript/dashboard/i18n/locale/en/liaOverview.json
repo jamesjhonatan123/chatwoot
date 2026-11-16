@@ -1,0 +1,24 @@
+{
+  "LIA_OVERVIEW": {
+    "BANNER_ONE": "LIA paused at {name}",
+    "BANNER_MANY": "LIA paused at {count} stores:",
+    "BANNER_WAITING": "{count} customer waiting | {count} customers waiting",
+    "BANNER_OLDEST": "oldest for {wait}",
+    "BANNER_NOBODY": "Nobody waiting right now.",
+    "SEE_WAITING": "See who is waiting",
+    "TURN_ON": "Turn LIA on now",
+    "TURN_ON_ERROR": "Could not turn LIA on. Try from the conversation badge.",
+    "SIDEBAR": "Waiting for the team",
+    "TITLE": "Waiting for the team",
+    "SUBTITLE": "Customers who wrote and have had no reply for more than {minutes} min, oldest first. A conversation leaves this list when someone replies.",
+    "EMPTY_TITLE": "Nobody waiting",
+    "EMPTY_TEXT": "Every customer who wrote got a reply within {minutes} min.",
+    "WAITING_FOR": "for {wait}",
+    "REASON_HANDOFF": "LIA handed off",
+    "REASON_PAUSED": "LIA paused at this store",
+    "REASON_UNANSWERED": "No reply",
+    "NO_NAME": "Unnamed customer",
+    "LIA_UNAVAILABLE": "LIA status did not answer; the list below comes from Chatwoot and is accurate.",
+    "MORE": "Showing the {shown} oldest of {count}."
+  }
+}
