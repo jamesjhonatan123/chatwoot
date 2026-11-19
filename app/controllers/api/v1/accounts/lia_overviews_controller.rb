@@ -7,8 +7,13 @@
 # "Esperando" e a conversa aberta cujo cliente escreveu e ninguem (LIA ou equipe) respondeu
 # ha mais de 15 minutos: e o waiting_since do proprio Chatwoot, que a resposta publica de
 # qualquer um zera e a nota privada nao. Cada atendente so ve as caixas a que tem acesso.
+#
+# So entra quem espera ha ate 7 dias (MAX_WAIT). Em 19/11/2026 a fila tinha 208 conversas,
+# quase todas abertas e sem resposta ha mais de 140 dias: ninguem fechou as abandonadas, e elas
+# escondiam quem escreveu hoje. As mais antigas vem so contadas (stale), para serem fechadas.
 class Api::V1::Accounts::LiaOverviewsController < Api::V1::Accounts::BaseController
   WAIT_THRESHOLD = 15.minutes
+  MAX_WAIT = 7.days
   LIST_LIMIT = 50
   HANDOFF_LABEL = 'lia-transferiu'.freeze
   RESPONDING = 'respondendo'.freeze
@@ -19,6 +24,8 @@ class Api::V1::Accounts::LiaOverviewsController < Api::V1::Accounts::BaseControl
     render json: {
       lia_available: !stores.nil?,
       threshold_minutes: WAIT_THRESHOLD.in_minutes.to_i,
+      max_wait_days: MAX_WAIT.in_days.to_i,
+      stale: { count: open_in_inboxes.where('conversations.waiting_since < ?', MAX_WAIT.ago).count },
       stores: store_summaries(stores || [], waiting),
       waiting: { count: waiting.count, conversations: waiting_rows(waiting, stores || []) }
     }
@@ -61,10 +68,12 @@ class Api::V1::Accounts::LiaOverviewsController < Api::V1::Accounts::BaseControl
     end
   end
 
+  def open_in_inboxes
+    Current.account.conversations.open.where(inbox_id: inbox_ids)
+  end
+
   def waiting_scope
-    Current.account.conversations.open
-           .where(inbox_id: inbox_ids)
-           .where('conversations.waiting_since <= ?', WAIT_THRESHOLD.ago)
+    open_in_inboxes.where(waiting_since: MAX_WAIT.ago..WAIT_THRESHOLD.ago)
   end
 
   # Duas consultas agrupadas por caixa para todas as lojas, em vez de duas por loja.

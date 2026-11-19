@@ -69,13 +69,16 @@ avisos[:token] = avisos_user.access_token.token
 seed[:avisos] = avisos
 # lia-painel.spec.mjs: Painel da LIA. Paula (da loja()) conversa com a LIA agora; Marcos foi
 # transferido pela LIA e espera ha 40 min; Ana veio de campanha; Bruno pagou so com a LIA.
+# lia-fila-recente.spec.mjs: Rita escreveu ha 150 dias e ninguem fechou (abandonada): fica fora
+# da fila "Esperando a equipe" e aparece so na contagem das abandonadas.
 painel = loja('Loja E2E 9', 'Vera Atendente', 'vera@e2e.test', '+5511999990020')
 painel_account = Account.find(painel[:account_id])
 painel_inbox = Inbox.find(painel[:inbox_id])
 painel[:conversas] = { 'Paula Souza' => painel[:conversation_id] }
 [['Marcos Lima', '+5511999990021', 40, 'Quero falar com uma pessoa'],
  ['Ana Costa', '+5511999990022', nil, 'Quanto fica com o desconto?'],
- ['Bruno Reis', '+5511999990023', nil, 'Fechado, pode mandar']].each do |nome, fone, minutos, texto|
+ ['Bruno Reis', '+5511999990023', nil, 'Fechado, pode mandar'],
+ ['Rita Antiga', '+5511999990024', 150 * 24 * 60, 'Ainda tem a esteira?']].each do |nome, fone, minutos, texto|
   contato = Contact.create!(account: painel_account, name: nome, phone_number: fone)
   ci = ContactInbox.create!(contact: contato, inbox: painel_inbox, source_id: SecureRandom.uuid)
   conversa = Conversation.create!(account: painel_account, inbox: painel_inbox, contact: contato,

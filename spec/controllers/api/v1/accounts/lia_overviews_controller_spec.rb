@@ -70,6 +70,30 @@ RSpec.describe 'LIA overview API', type: :request do
     expect(response.body).not_to include('segredo-de-teste')
   end
 
+  # Em 19/11/2026 a fila de producao tinha 208 conversas, quase todas abertas e sem resposta
+  # ha 141 a 172 dias: o waiting_since so zera com resposta, e ninguem fechou as abandonadas.
+  # Elas escondiam quem escreveu hoje. Ficam fora da fila e do contador, e vem so contadas.
+  it 'leaves out conversations abandoned for more than 7 days and only counts them' do
+    stub_stores
+    today = waiting_conversation(minutes: 40)
+    six_days = waiting_conversation(minutes: 6 * 24 * 60)
+    abandoned = waiting_conversation(minutes: 150 * 24 * 60)
+    waiting_conversation(minutes: 8 * 24 * 60)
+    waiting_conversation(minutes: 9 * 24 * 60, target_inbox: other_inbox)
+
+    get show_url, headers: agent.create_new_auth_token, as: :json
+
+    body = response.parsed_body
+    expect(body['waiting']['conversations'].pluck('id')).to eq([six_days.display_id, today.display_id])
+    expect(body['waiting']['count']).to eq(2)
+    expect(body['waiting']['conversations'].pluck('id')).not_to include(abandoned.display_id)
+    expect(body['max_wait_days']).to eq(7)
+    expect(body['stale']).to eq('count' => 2)
+    batel = body['stores'].find { |store| store['store_id'] == '334' }
+    expect(batel['waiting_count']).to eq(2)
+    expect(Time.zone.parse(batel['oldest_waiting_since'])).to be > 7.days.ago
+  end
+
   it 'gives the reason: handed off by LIA, LIA paused in the store, or just unanswered' do
     stub_stores(stores: [stores.first.merge(state: 'respondendo', reason: 'normal')])
     handed = waiting_conversation(minutes: 50, labels: ['lia-transferiu'])

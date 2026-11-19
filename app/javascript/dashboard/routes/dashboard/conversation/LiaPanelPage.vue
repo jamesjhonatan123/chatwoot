@@ -76,6 +76,11 @@ const stores = computed(() => overview.value?.stores || []);
 const available = computed(() => panel.value?.lia_available !== false);
 const summary = computed(() => panel.value?.summary || {});
 const threshold = computed(() => overview.value?.threshold_minutes || 15);
+const maxWaitDays = computed(() => overview.value?.max_wait_days || 7);
+// As abandonadas há mais de 7 dias ficam fora da fila; a contagem é da conta toda.
+const staleCount = computed(() =>
+  storeId.value ? 0 : overview.value?.stale?.count || 0
+);
 
 const waiting = computed(() =>
   waitingForStore(overview.value, storeId.value).map(row => ({
@@ -499,6 +504,19 @@ const exportCsv = () => {
           >
             {{ t('LIA_PANEL.SEE_ALL', { count: waitingCount }) }}
           </router-link>
+          <p
+            v-if="staleCount"
+            class="mt-2 text-xs text-n-slate-10"
+            data-testid="lia-panel-stale"
+          >
+            {{
+              t(
+                'LIA_OVERVIEW.STALE',
+                { count: staleCount, days: maxWaitDays },
+                staleCount
+              )
+            }}
+          </p>
         </article>
 
         <article
