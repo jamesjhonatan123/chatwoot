@@ -3,6 +3,7 @@ import { frontendURL } from '../../../helper/URLHelper';
 import store from '../../../store';
 import ConversationView from './ConversationView.vue';
 import LiaWaitingPage from './LiaWaitingPage.vue';
+import LiaPanelPage from './LiaPanelPage.vue';
 
 const CONVERSATION_PERMISSIONS = [
   'administrator',
@@ -187,6 +188,14 @@ export default {
         conversationId: route.params.conversationId,
         conversationType: 'mention',
       }),
+    },
+    {
+      path: frontendURL('accounts/:accountId/painel'),
+      name: 'lia_panel',
+      meta: {
+        permissions: CONVERSATION_PERMISSIONS,
+      },
+      component: LiaPanelPage,
     },
     {
       path: frontendURL('accounts/:accountId/lia-waiting'),

@@ -226,6 +226,58 @@ VALUES ('chatwoot_inboxes', '[{"account_id": $ACCOUNT5, "inbox_id": $INBOX5, "st
         {"account_id": $ACCOUNT8, "inbox_id": $INBOX8, "store_id": 888, "label": "Loja Avisos"}]', now());
 SQL
 
+# lia-painel: as quatro conversas da "Loja E2E 9" como a LIA as conhece, com mensagens e
+# links de hoje (minutos atrás) e os telefones das clientes no link_clicks.
+read -r PN_ACCOUNT PN_INBOX PN_PAULA PN_MARCOS PN_ANA PN_BRUNO < <(node -e '
+  const p = JSON.parse(process.argv[1]).painel;
+  const c = p.conversas;
+  console.log(p.account_id, p.inbox_id, c["Paula Souza"], c["Marcos Lima"], c["Ana Costa"], c["Bruno Reis"])' "$SEED")
+docker exec -i lia-e2e-lia-pg psql -q -v ON_ERROR_STOP=1 -U lia -d lia_e2e <<SQL
+INSERT INTO conversation_flow_status
+  (id, session_id, phone_number, current_step, sector, is_interrupted, interrupted_at, interruption_reason,
+   flow_data, created_at, updated_at, input_tokens, output_tokens, total_tokens)
+VALUES
+  (gen_random_uuid(), 'e2e-painel-20', '5511999990020', 'ONBOARDING_AGENT', 'vendas', false, NULL, NULL,
+   '{"chatwoot_account_id": $PN_ACCOUNT, "chatwoot_inbox_id": $PN_INBOX, "chatwoot_conversation_id": $PN_PAULA}',
+   now(), now(), 0, 0, 0),
+  (gen_random_uuid(), 'e2e-painel-21', '5511999990021', 'ONBOARDING_AGENT', 'vendas', true,
+   now() - interval '40 minutes', 'Cliente pediu para falar com um atendente humano',
+   '{"chatwoot_account_id": $PN_ACCOUNT, "chatwoot_inbox_id": $PN_INBOX, "chatwoot_conversation_id": $PN_MARCOS}',
+   now(), now(), 0, 0, 0),
+  (gen_random_uuid(), 'e2e-painel-22', '5511999990022', 'ONBOARDING_AGENT', 'vendas', true,
+   now() - interval '50 minutes', 'Humano iniciou contato - Campanha blackfriday',
+   '{"chatwoot_account_id": $PN_ACCOUNT, "chatwoot_inbox_id": $PN_INBOX, "chatwoot_conversation_id": $PN_ANA}',
+   now(), now(), 0, 0, 0),
+  (gen_random_uuid(), 'e2e-painel-23', '5511999990023', 'ONBOARDING_AGENT', 'vendas', false, NULL, NULL,
+   '{"chatwoot_account_id": $PN_ACCOUNT, "chatwoot_inbox_id": $PN_INBOX, "chatwoot_conversation_id": $PN_BRUNO}',
+   now(), now(), 0, 0, 0);
+INSERT INTO conversation_messages (id, conversation_id, role, content, created_at)
+SELECT gen_random_uuid(), c.id, m.role, m.content, now() - m.ago
+FROM conversation_flow_status c
+JOIN (VALUES
+  ('5511999990020', 'user', 'Quero alugar uma esteira', interval '20 minutes'),
+  ('5511999990020', 'assistant', 'Segue o link: https://loc.fit/finalizar-assinatura/?locfit_plan=1', interval '19 minutes'),
+  ('5511999990020', 'user', 'Abri, estou vendo', interval '4 minutes'),
+  ('5511999990020', 'assistant', 'Ótimo! Qualquer dúvida me chama.', interval '3 minutes'),
+  ('5511999990021', 'user', 'Quero falar com uma pessoa', interval '42 minutes'),
+  ('5511999990021', 'assistant', 'Já chamo alguém! Enquanto isso: https://loc.fit/produto/esteira/', interval '41 minutes'),
+  ('5511999990022', 'assistant', '👤 [HUMANO] Black Friday: 30% off!', interval '55 minutes'),
+  ('5511999990022', 'user', 'Quanto fica com o desconto?', interval '50 minutes'),
+  ('5511999990022', 'assistant', '👤 [HUMANO] Fica R\$ 99', interval '48 minutes'),
+  ('5511999990023', 'user', 'Fechado, pode mandar', interval '50 minutes'),
+  ('5511999990023', 'assistant', 'Aqui: https://loc.fit/finalizar-assinatura/?locfit_plan=2', interval '49 minutes')
+) AS m(phone, role, content, ago) ON m.phone = c.phone_number
+WHERE c.session_id LIKE 'e2e-painel-%';
+INSERT INTO link_clicks (id, tracking_id, phone, product_url, clicked_at, converted_at, created_at, updated_at)
+VALUES
+  (gen_random_uuid(), 'E2EPN1', '5511999990020', 'https://loc.fit/finalizar-assinatura/?locfit_plan=1',
+   now() - interval '10 minutes', NULL, now() - interval '19 minutes', now()),
+  (gen_random_uuid(), 'E2EPN2', '5511999990021', 'https://loc.fit/produto/esteira/',
+   NULL, NULL, now() - interval '41 minutes', now()),
+  (gen_random_uuid(), 'E2EPN3', '5511999990023', 'https://loc.fit/finalizar-assinatura/?locfit_plan=2',
+   now() - interval '45 minutes', now() - interval '40 minutes', now() - interval '49 minutes', now());
+SQL
+
 echo "== Playwright -> $OUT"
 cd "$HERE"
 set +e

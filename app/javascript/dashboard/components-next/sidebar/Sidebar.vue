@@ -365,6 +365,13 @@ const reportRoutes = computed(() => newReportRoutes());
 const menuItems = computed(() => {
   return [
     {
+      name: 'LiaPanel',
+      label: t('LIA_PANEL.SIDEBAR'),
+      icon: 'i-lucide-layout-dashboard',
+      to: accountScopedRoute('lia_panel'),
+      activeOn: ['lia_panel'],
+    },
+    {
       name: 'Inbox',
       label: t('SIDEBAR.INBOX'),
       icon: 'i-lucide-inbox',
