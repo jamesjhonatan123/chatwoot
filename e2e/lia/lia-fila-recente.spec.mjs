@@ -40,7 +40,7 @@ test('a fila deixa de fora a conversa abandonada há 150 dias e só a conta', as
     .getByRole('list', { name: 'Esperando a equipe' })
     .getByRole('link');
   await expect(linhas.first()).toBeVisible();
-  await prova(page, 'fila');
+  await prova(page, 'fila-recente');
   // Soft: na versão sem a mudança o teste segue até o Painel, para o print do "antes".
   await expect.soft(linhas).toHaveCount(1);
   await expect.soft(linhas).toContainText('Marcos Lima');
@@ -61,7 +61,7 @@ test('a fila deixa de fora a conversa abandonada há 150 dias e só a conta', as
   });
   await expect(fila.getByRole('listitem').first()).toBeVisible();
   await fila.scrollIntoViewIfNeeded();
-  await prova(page, 'painel-fila');
+  await prova(page, 'painel-fila-recente');
   await expect(fila.getByRole('listitem')).toHaveCount(1);
   await expect(fila).toContainText('Marcos Lima');
   await expect(fila).toContainText(ABANDONADAS);
