@@ -7,8 +7,13 @@
 # "Esperando" e a conversa aberta cujo cliente escreveu e ninguem (LIA ou equipe) respondeu
 # ha mais de 15 minutos: e o waiting_since do proprio Chatwoot, que a resposta publica de
 # qualquer um zera e a nota privada nao. Cada atendente so ve as caixas a que tem acesso.
+#
+# So entra quem espera ha ate 7 dias (MAX_WAIT). Em 19/11/2026 a fila tinha 208 conversas,
+# quase todas abertas e sem resposta ha mais de 140 dias: ninguem fechou as abandonadas, e elas
+# escondiam quem escreveu hoje. As mais antigas vem so contadas (stale), para serem fechadas.
 class Api::V1::Accounts::LiaOverviewsController < Api::V1::Accounts::BaseController
   WAIT_THRESHOLD = 15.minutes
+  MAX_WAIT = 7.days
   LIST_LIMIT = 50
   HANDOFF_LABEL = 'lia-transferiu'.freeze
   RESPONDING = 'respondendo'.freeze
@@ -16,10 +21,13 @@ class Api::V1::Accounts::LiaOverviewsController < Api::V1::Accounts::BaseControl
   def show
     stores = visible_stores
     waiting = waiting_scope
+    stale = stale_scope
     render json: {
       lia_available: !stores.nil?,
       threshold_minutes: WAIT_THRESHOLD.in_minutes.to_i,
-      stores: store_summaries(stores || [], waiting),
+      max_wait_days: MAX_WAIT.in_days.to_i,
+      stale: { count: stale.count },
+      stores: store_summaries(stores || [], waiting, stale),
       waiting: { count: waiting.count, conversations: waiting_rows(waiting, stores || []) }
     }
   end
@@ -61,20 +69,42 @@ class Api::V1::Accounts::LiaOverviewsController < Api::V1::Accounts::BaseControl
     end
   end
 
-  def waiting_scope
-    Current.account.conversations.open
-           .where(inbox_id: inbox_ids)
-           .where('conversations.waiting_since <= ?', WAIT_THRESHOLD.ago)
+  def open_in_inboxes
+    Current.account.conversations.open.where(inbox_id: inbox_ids)
   end
 
-  # Duas consultas agrupadas por caixa para todas as lojas, em vez de duas por loja.
-  def store_summaries(stores, waiting)
+  def unanswered
+    open_in_inboxes.where('conversations.waiting_since <= ?', WAIT_THRESHOLD.ago)
+  end
+
+  # O teto de 7 dias olha a ultima fala do cliente, nao o waiting_since: o Chatwoot so o grava
+  # quando esta vazio, e quem esperava ha meses e escreve de novo hoje tem de voltar a fila.
+  def recent_incoming
+    @wait_cutoff ||= MAX_WAIT.ago
+    Message.unscope(:order).incoming
+           .where('messages.conversation_id = conversations.id')
+           .where('messages.created_at >= ?', @wait_cutoff)
+  end
+
+  def waiting_scope
+    unanswered.where(recent_incoming.arel.exists)
+  end
+
+  # Abertas e sem resposta, mas o cliente nao escreve ha mais de 7 dias: so contadas.
+  def stale_scope
+    unanswered.where(recent_incoming.arel.exists.not)
+  end
+
+  # Consultas agrupadas por caixa para todas as lojas, em vez de varias por loja.
+  def store_summaries(stores, waiting, stale)
     counts = waiting.group(:inbox_id).count
     oldest = waiting.group(:inbox_id).minimum(:waiting_since)
+    stale_counts = stale.group(:inbox_id).count
     stores.map do |store|
       ids = store['inbox_ids']
       store.merge(
         'waiting_count' => ids.sum { |id| counts[id].to_i },
+        'stale_count' => ids.sum { |id| stale_counts[id].to_i },
         'oldest_waiting_since' => oldest.values_at(*ids).compact.min&.iso8601
       )
     end

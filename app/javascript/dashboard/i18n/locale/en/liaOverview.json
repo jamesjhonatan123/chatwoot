@@ -10,15 +10,17 @@
     "TURN_ON_ERROR": "Could not turn LIA on. Try from the conversation badge.",
     "SIDEBAR": "Waiting for the team",
     "TITLE": "Waiting for the team",
-    "SUBTITLE": "Customers who wrote and have had no reply for more than {minutes} min, oldest first. A conversation leaves this list when someone replies.",
+    "SUBTITLE": "Customers who wrote and have had no reply for more than {minutes} min (up to {days} days), oldest first. A conversation leaves this list when someone replies.",
     "EMPTY_TITLE": "Nobody waiting",
     "EMPTY_TEXT": "Every customer who wrote got a reply within {minutes} min.",
+    "EMPTY_TEXT_STALE": "No customer who wrote in the last {days} days is waiting for a reply.",
     "WAITING_FOR": "for {wait}",
     "REASON_HANDOFF": "LIA handed off",
     "REASON_PAUSED": "LIA paused at this store",
     "REASON_UNANSWERED": "No reply",
     "NO_NAME": "Unnamed customer",
     "LIA_UNAVAILABLE": "LIA status did not answer; the list below comes from Chatwoot and is accurate.",
-    "MORE": "Showing the {shown} oldest of {count}."
+    "MORE": "Showing the {shown} oldest of {count}.",
+    "STALE": "{count} open conversation unanswered for more than {days} days is left out of the queue. Resolve the ones no longer needed. | {count} open conversations unanswered for more than {days} days are left out of the queue. Resolve the ones no longer needed."
   }
 }

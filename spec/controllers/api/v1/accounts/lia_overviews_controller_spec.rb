@@ -37,7 +37,7 @@ RSpec.describe 'LIA overview API', type: :request do
     conversation = create(:conversation, account: account, inbox: target_inbox)
     conversation.update!(label_list: labels) if labels.any?
     create(:message, conversation: conversation, account: account, inbox: target_inbox, message_type: :incoming,
-                     content: "cliente esperando #{minutes}")
+                     content: "cliente esperando #{minutes}", created_at: minutes.minutes.ago)
     # Depois da mensagem: a fala do cliente reabre conversa resolvida.
     conversation.update_columns(waiting_since: minutes.minutes.ago, status: Conversation.statuses[status]) # rubocop:disable Rails/SkipsModelValidations
     conversation
@@ -68,6 +68,51 @@ RSpec.describe 'LIA overview API', type: :request do
     expect(body['waiting']['conversations'].first['last_message']).to eq('cliente esperando 905')
     expect(body['waiting']['conversations'].first['inbox_name']).to eq('WhatsApp Batel')
     expect(response.body).not_to include('segredo-de-teste')
+  end
+
+  # Em 19/11/2026 a fila de producao tinha 208 conversas, quase todas abertas e sem resposta
+  # ha 141 a 172 dias: o waiting_since so zera com resposta, e ninguem fechou as abandonadas.
+  # Elas escondiam quem escreveu hoje. Ficam fora da fila e do contador, e vem so contadas.
+  it 'leaves out conversations abandoned for more than 7 days and only counts them' do
+    stub_stores
+    today = waiting_conversation(minutes: 40)
+    six_days = waiting_conversation(minutes: 6 * 24 * 60)
+    abandoned = waiting_conversation(minutes: 150 * 24 * 60)
+    waiting_conversation(minutes: 8 * 24 * 60)
+    waiting_conversation(minutes: 9 * 24 * 60, target_inbox: other_inbox)
+
+    get show_url, headers: agent.create_new_auth_token, as: :json
+
+    body = response.parsed_body
+    expect(body['waiting']['conversations'].pluck('id')).to eq([six_days.display_id, today.display_id])
+    expect(body['waiting']['count']).to eq(2)
+    expect(body['waiting']['conversations'].pluck('id')).not_to include(abandoned.display_id)
+    expect(body['max_wait_days']).to eq(7)
+    expect(body['stale']).to eq('count' => 2)
+    batel = body['stores'].find { |store| store['store_id'] == '334' }
+    expect(batel['waiting_count']).to eq(2)
+    expect(Time.zone.parse(batel['oldest_waiting_since'])).to be > 7.days.ago
+  end
+
+  # O Chatwoot so grava waiting_since quando esta vazio: quem esperava ha 150 dias e escreve de
+  # novo hoje continua com o waiting_since antigo. O teto olha a ultima fala do cliente.
+  it 'keeps in the queue an abandoned conversation whose customer wrote again today' do
+    stub_stores
+    back = waiting_conversation(minutes: 150 * 24 * 60)
+    back.messages.incoming.update_all(created_at: 150.days.ago) # rubocop:disable Rails/SkipsModelValidations
+    create(:message, conversation: back, account: account, inbox: inbox, message_type: :incoming,
+                     content: 'alguem ai?', created_at: 20.minutes.ago)
+    abandoned = waiting_conversation(minutes: 150 * 24 * 60)
+    abandoned.messages.incoming.update_all(created_at: 150.days.ago) # rubocop:disable Rails/SkipsModelValidations
+
+    get show_url, headers: agent.create_new_auth_token, as: :json
+
+    body = response.parsed_body
+    expect(body['waiting']['conversations'].pluck('id')).to eq([back.display_id])
+    expect(body['stale']).to eq('count' => 1)
+    batel = body['stores'].find { |store| store['store_id'] == '334' }
+    expect(batel['waiting_count']).to eq(1)
+    expect(batel['stale_count']).to eq(1)
   end
 
   it 'gives the reason: handed off by LIA, LIA paused in the store, or just unanswered' do

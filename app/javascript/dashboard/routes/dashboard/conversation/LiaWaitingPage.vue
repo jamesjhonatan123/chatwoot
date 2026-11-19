@@ -15,6 +15,8 @@ const { overview } = useLiaOverview();
 
 const minutes = computed(() => overview.value?.threshold_minutes || 15);
 const count = computed(() => overview.value?.waiting?.count || 0);
+const days = computed(() => overview.value?.max_wait_days || 7);
+const stale = computed(() => overview.value?.stale?.count || 0);
 const rows = computed(() =>
   (overview.value?.waiting?.conversations || []).map(row => ({
     ...row,
@@ -45,7 +47,14 @@ const REASON_CLASS = {
         </span>
       </h1>
       <p class="mt-1 text-sm text-n-slate-11 max-w-3xl">
-        {{ t('LIA_OVERVIEW.SUBTITLE', { minutes }) }}
+        {{ t('LIA_OVERVIEW.SUBTITLE', { minutes, days }) }}
+      </p>
+      <p
+        v-if="stale"
+        class="mt-2 text-xs text-n-slate-10 max-w-3xl"
+        data-testid="lia-waiting-stale"
+      >
+        {{ t('LIA_OVERVIEW.STALE', { count: stale, days }, stale) }}
       </p>
       <p
         v-if="overview && !overview.lia_available"
@@ -72,7 +81,11 @@ const REASON_CLASS = {
         {{ t('LIA_OVERVIEW.EMPTY_TITLE') }}
       </p>
       <p class="text-sm text-n-slate-11">
-        {{ t('LIA_OVERVIEW.EMPTY_TEXT', { minutes }) }}
+        {{
+          stale
+            ? t('LIA_OVERVIEW.EMPTY_TEXT_STALE', { days })
+            : t('LIA_OVERVIEW.EMPTY_TEXT', { minutes })
+        }}
       </p>
     </div>
 
