@@ -102,6 +102,7 @@
       "SENT": "Sent",
       "CLICKED": "Opened",
       "PAID": "Paid"
-    }
+    },
+    "LIST_TRUNCATED": "The list shows the {count} most recent of {total}; the numbers above count all of them."
   }
 }

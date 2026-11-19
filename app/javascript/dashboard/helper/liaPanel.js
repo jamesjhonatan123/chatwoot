@@ -97,3 +97,19 @@ export const LINK_KEYS = {
   clicked: 'LIA_PANEL.LINK.CLICKED',
   paid: 'LIA_PANEL.LINK.PAID',
 };
+
+// Total de quem espera a equipe: o count do Chatwoot (a lista vem cortada em 50) ou, com loja
+// escolhida, o waiting_count dela.
+export const waitingTotal = (overview, storeId) => {
+  if (!overview) return 0;
+  if (!storeId) return overview.waiting?.count || 0;
+  const store = (overview.stores || []).find(item => item.store_id === storeId);
+  return store?.waiting_count || 0;
+};
+
+// Celula de CSV: aspas dobradas e formula neutralizada (nome do WhatsApp com = + - @).
+export const csvCell = value => {
+  let text = String(value ?? '');
+  if (/^[=+\-@\t\r]/.test(text)) text = `'${text}`;
+  return `"${text.replace(/"/g, '""')}"`;
+};

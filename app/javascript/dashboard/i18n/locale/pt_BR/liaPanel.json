@@ -3,7 +3,11 @@
     "SIDEBAR": "Painel",
     "TITLE": "Painel da LIA",
     "UPDATES": "Atualiza a cada minuto",
-    "PERIOD": { "hoje": "Hoje", "7d": "7 dias", "30d": "30 dias" },
+    "PERIOD": {
+      "hoje": "Hoje",
+      "7d": "7 dias",
+      "30d": "30 dias"
+    },
     "ALL_STORES": "Todas as lojas",
     "STORE_FILTER": "Loja",
     "REFRESH": "Atualizar",
@@ -98,6 +102,7 @@
       "SENT": "Enviado",
       "CLICKED": "Aberto",
       "PAID": "Pago"
-    }
+    },
+    "LIST_TRUNCATED": "A lista traz as {count} mais recentes das {total} do período; os números acima contam todas."
   }
 }

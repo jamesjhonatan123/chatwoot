@@ -19,6 +19,8 @@ import {
   minutesSince,
   pct,
   waitingForStore,
+  waitingTotal,
+  csvCell,
 } from 'dashboard/helper/liaPanel';
 import Spinner from 'dashboard/components-next/spinner/Spinner.vue';
 
@@ -81,6 +83,9 @@ const waiting = computed(() =>
     wait: waitingFor(row.waiting_since),
     url: urlFor(row.id),
   }))
+);
+const waitingCount = computed(() =>
+  Math.max(waitingTotal(overview.value, storeId.value), waiting.value.length)
 );
 const live = computed(() =>
   (panel.value?.live || []).map(row => ({ ...row, url: urlFor(row.id) }))
@@ -186,7 +191,7 @@ const exportCsv = () => {
     'ASSIGNEE',
     'LAST',
   ].map(key => t(`LIA_PANEL.COL.${key}`));
-  const quote = value => `"${String(value ?? '').replace(/"/g, '""')}"`;
+  const quote = csvCell;
   const lines = filtered.value.map(row =>
     [
       `${row.contact_name || ''} #${row.id}`,
@@ -352,7 +357,7 @@ const exportCsv = () => {
         </article>
         <article
           class="p-4 rounded-xl border bg-n-solid-1"
-          :class="waiting.length ? 'border-n-ruby-6' : 'border-n-weak'"
+          :class="waitingCount ? 'border-n-ruby-6' : 'border-n-weak'"
           data-testid="lia-panel-waiting-count"
         >
           <h2 class="text-xs text-n-slate-11">
@@ -360,9 +365,9 @@ const exportCsv = () => {
           </h2>
           <p
             class="mt-1 text-3xl font-semibold tabular-nums"
-            :class="waiting.length ? 'text-n-ruby-11' : 'text-n-slate-12'"
+            :class="waitingCount ? 'text-n-ruby-11' : 'text-n-slate-12'"
           >
-            {{ waiting.length }}
+            {{ waitingCount }}
           </p>
           <p class="mt-1 text-xs text-n-slate-11">
             {{
@@ -436,10 +441,10 @@ const exportCsv = () => {
           >
             {{ t('LIA_PANEL.WAITING_QUEUE') }}
             <span
-              v-if="waiting.length"
+              v-if="waitingCount"
               class="px-2 rounded-full text-xs leading-5 text-white bg-n-ruby-9"
             >
-              {{ waiting.length }}
+              {{ waitingCount }}
             </span>
           </h2>
           <p class="mb-3 text-xs text-n-slate-11">
@@ -488,11 +493,11 @@ const exportCsv = () => {
             </li>
           </ul>
           <router-link
-            v-if="waiting.length > QUEUE_LIMIT"
+            v-if="waitingCount > QUEUE_LIMIT"
             :to="frontendURL(`accounts/${route.params.accountId}/lia-waiting`)"
             class="mt-2 text-xs text-n-brand"
           >
-            {{ t('LIA_PANEL.SEE_ALL', { count: waiting.length }) }}
+            {{ t('LIA_PANEL.SEE_ALL', { count: waitingCount }) }}
           </router-link>
         </article>
 
@@ -809,6 +814,17 @@ const exportCsv = () => {
                 t('LIA_PANEL.LIST_COUNT', {
                   shown: filtered.length,
                   count: rows.length,
+                })
+              }}
+            </span>
+            <span
+              v-if="rows.length < (summary.conversations || 0)"
+              class="text-xs text-n-amber-11"
+            >
+              {{
+                t('LIA_PANEL.LIST_TRUNCATED', {
+                  count: rows.length,
+                  total: summary.conversations,
                 })
               }}
             </span>
