@@ -826,7 +826,7 @@ const exportCsv = () => {
               <input
                 v-model="query"
                 type="search"
-                class="h-8 text-sm rounded-lg !mb-0 w-72 max-w-full"
+                class="h-8 text-sm rounded-lg !mb-0 !w-72 max-w-full"
                 :placeholder="t('LIA_PANEL.SEARCH')"
                 :aria-label="t('LIA_PANEL.SEARCH')"
               />

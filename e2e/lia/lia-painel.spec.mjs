@@ -101,6 +101,8 @@ test('o Painel da LIA mostra autonomia, filas, links e a lista', async ({
   const lista = bloco(/^Conversas do período$/);
   const linhas = lista.getByRole('row').filter({ has: page.getByRole('cell') });
   await expect(linhas).toHaveCount(4);
+  await bloco(/^Tendência$/).scrollIntoViewIfNeeded();
+  await prova(page, 'painel-graficos-e-lista');
   await bloco(/^Funil/)
     .getByRole('button', { name: /Pagou/ })
     .click();
