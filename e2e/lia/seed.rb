@@ -67,5 +67,26 @@ end
 # O token com que a LIA fala com o Chatwoot (a passagem visivel usa etiqueta e prioridade).
 avisos[:token] = avisos_user.access_token.token
 seed[:avisos] = avisos
+# lia-painel.spec.mjs: Painel da LIA. Paula (da loja()) conversa com a LIA agora; Marcos foi
+# transferido pela LIA e espera ha 40 min; Ana veio de campanha; Bruno pagou so com a LIA.
+painel = loja('Loja E2E 9', 'Vera Atendente', 'vera@e2e.test', '+5511999990020')
+painel_account = Account.find(painel[:account_id])
+painel_inbox = Inbox.find(painel[:inbox_id])
+painel[:conversas] = { 'Paula Souza' => painel[:conversation_id] }
+[['Marcos Lima', '+5511999990021', 40, 'Quero falar com uma pessoa'],
+ ['Ana Costa', '+5511999990022', nil, 'Quanto fica com o desconto?'],
+ ['Bruno Reis', '+5511999990023', nil, 'Fechado, pode mandar']].each do |nome, fone, minutos, texto|
+  contato = Contact.create!(account: painel_account, name: nome, phone_number: fone)
+  ci = ContactInbox.create!(contact: contato, inbox: painel_inbox, source_id: SecureRandom.uuid)
+  conversa = Conversation.create!(account: painel_account, inbox: painel_inbox, contact: contato,
+                                  contact_inbox: ci, status: :open)
+  Message.create!(account: painel_account, inbox: painel_inbox, conversation: conversa,
+                  message_type: :incoming, content: texto, sender: contato)
+  conversa.update_columns(waiting_since: minutos&.minutes&.ago) # rubocop:disable Rails/SkipsModelValidations
+  painel[:conversas][nome] = conversa.display_id
+end
+Conversation.where(account_id: painel[:account_id], display_id: painel[:conversation_id])
+            .update_all(waiting_since: nil) # rubocop:disable Rails/SkipsModelValidations
+seed[:painel] = painel
 Redis::Alfred.delete(Redis::Alfred::CHATWOOT_INSTALLATION_ONBOARDING)
 puts seed.to_json

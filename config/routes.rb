@@ -175,6 +175,8 @@ Rails.application.routes.draw do
             post :release
           end
           # Faixa "LIA parada" no topo e fila "Esperando a equipe" (qualquer atendente).
+          # Painel da LIA: autonomia, links, funil e filas (qualquer atendente, so as caixas dele).
+          resource :lia_panel, only: [:show]
           resource :lia_overview, only: [:show] do
             post :toggle
           end

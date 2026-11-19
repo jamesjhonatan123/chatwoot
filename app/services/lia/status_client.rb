@@ -4,6 +4,7 @@
 class Lia::StatusClient
   OPEN_TIMEOUT = 3
   READ_TIMEOUT = 8
+  PANEL_READ_TIMEOUT = 20
   STATES = %w[respondendo silencio desligada].freeze
   ACTIONS = %w[ligar desligar].freeze
   KEYS = %w[store_id state reason label until by action].freeze
@@ -40,6 +41,21 @@ class Lia::StatusClient
     stores.first(100).filter_map { |store| clean_store(store) }
   rescue StandardError => e
     Rails.logger.warn("[LIA status] #{e.class.name}")
+    nil
+  end
+
+  # Painel da LIA (lia_panels_controller.rb): numeros so das caixas pedidas. nil se a LIA nao respondeu.
+  def panel(account_id:, inbox_ids:, period:)
+    return nil unless self.class.enabled?
+
+    response = request(:get, '/api/lia-status/chatwoot/panel',
+                       query: { account_id: account_id, inbox_ids: inbox_ids.join(','), period: period },
+                       read_timeout: PANEL_READ_TIMEOUT)
+    return nil unless response.code == 200 && response.parsed_response.is_a?(Hash)
+
+    response.parsed_response
+  rescue StandardError => e
+    Rails.logger.warn("[LIA panel] #{e.class.name}")
     nil
   end
 
@@ -86,11 +102,11 @@ class Lia::StatusClient
     )
   end
 
-  def request(verb, path, query: nil, body: nil)
+  def request(verb, path, query: nil, body: nil, read_timeout: READ_TIMEOUT)
     token = ENV.fetch('LIA_ADMIN_API_TOKEN')
     headers = { 'Authorization' => "Bearer #{token}", 'X-Admin-Token' => token, 'Content-Type' => 'application/json' }
     url = "#{ENV.fetch('LIA_API_URL').chomp('/')}#{path}"
-    options = { headers: headers, open_timeout: OPEN_TIMEOUT, read_timeout: READ_TIMEOUT }
+    options = { headers: headers, open_timeout: OPEN_TIMEOUT, read_timeout: read_timeout }
     options[:query] = query if query
     options[:body] = body.to_json if body
     HTTParty.public_send(verb, url, options)
