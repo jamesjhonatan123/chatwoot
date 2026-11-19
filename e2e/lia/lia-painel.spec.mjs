@@ -16,10 +16,10 @@
  * Ação e resultado esperado exato:
  *   1. o primeiro link do menu é "Painel"; clicar nele abre /painel com o título "Painel da LIA";
  *   2. autonomia "67%" e "2 de 3 conversas atendidas só pela LIA" (a campanha fica fora);
- *      "1 de campanha ficam fora da conta";
+ *      "1 de campanha fica fora da conta";
  *   3. "Com a LIA agora" = 1 e a fila lista Paula Souza; "Esperando a equipe" = 1 e a fila
  *      lista Marcos Lima;
- *   4. links "3 → 2" (dois checkouts e um produto mandados, dois abertos), "1 pagos";
+ *   4. links "3 → 2" (dois checkouts e um produto mandados, dois abertos), "1 pago";
  *   5. motivo da transferência "Cliente pediu atendente"; gargalo "Recebeu o link e não abriu";
  *   6. a lista tem as 4 conversas; clicar na etapa "Pagou" do funil deixa só Bruno Reis;
  *      a busca "Marcos" deixa só Marcos Lima, e "Abrir" leva à conversa dele.
@@ -46,59 +46,69 @@ test('o Painel da LIA mostra autonomia, filas, links e a lista', async ({
   await prova(page, 'menu');
 
   // 1. Primeiro item do menu.
-  const menu = page.getByRole('navigation').first();
-  const primeiro = menu.getByRole('link').first();
-  await expect(primeiro).toHaveText(/Painel/);
+  // Os itens de topo do menu são role="button" (SidebarGroupHeader.vue).
+  const primeiro = page
+    .getByRole('navigation')
+    .first()
+    .getByRole('listitem')
+    .first()
+    .getByRole('button')
+    .first();
+  await expect(primeiro).toHaveAccessibleName('Painel');
   await primeiro.click();
   await page.waitForURL(/\/painel$/);
   await expect(
     page.getByRole('heading', { name: 'Painel da LIA', level: 1 })
   ).toBeVisible();
 
+  // Cada bloco do painel é um <article> com o título num heading.
+  const bloco = nome =>
+    page
+      .getByRole('article')
+      .filter({ has: page.getByRole('heading', { name: nome }) });
+
   // 2. Autonomia, sem a campanha.
-  const autonomia = page.getByTestId('lia-panel-autonomy');
+  const autonomia = bloco(/^Autonomia da LIA$/);
   await expect(autonomia).toContainText('67%');
   await expect(autonomia).toContainText(
     '2 de 3 conversas atendidas só pela LIA'
   );
-  await expect(autonomia).toContainText('1 de campanha ficam fora da conta');
+  await expect(autonomia).toContainText('1 de campanha fica fora da conta');
 
   // 3. As duas filas, com quem é.
-  await expect(page.getByTestId('lia-panel-live-count')).toContainText('1');
-  const comLia = page.getByTestId('lia-panel-live');
+  await expect(bloco(/^Com a LIA agora$/)).toContainText('1');
+  const comLia = bloco(/^Com a LIA no momento/);
   await expect(comLia.getByRole('listitem')).toHaveCount(1);
   await expect(comLia).toContainText('Paula Souza');
-  await expect(page.getByTestId('lia-panel-waiting-count')).toContainText('1');
-  const esperando = page.getByTestId('lia-panel-waiting');
+  await expect(bloco(/^Esperando a equipe$/)).toContainText('1');
+  const esperando = bloco(/^Esperando a equipe agora/);
   await expect(esperando.getByRole('listitem')).toHaveCount(1);
   await expect(esperando).toContainText('Marcos Lima');
 
   // 4. Links.
-  const links = page.getByTestId('lia-panel-links');
+  const links = bloco(/^Links enviados → abertos$/);
   await expect(links).toContainText('3 → 2');
-  await expect(links).toContainText('1 pagos');
+  await expect(links).toContainText('1 pago ·');
 
   // 5. Motivo e gargalo.
-  await expect(page.getByTestId('lia-panel-reasons')).toContainText(
-    'Cliente pediu atendente'
-  );
-  await expect(page.getByTestId('lia-panel-stalled')).toContainText(
+  await expect(bloco(/^Por que/)).toContainText('Cliente pediu atendente');
+  await expect(bloco(/^Etapas que mais travaram$/)).toContainText(
     'Recebeu o link e não abriu'
   );
   await prova(page, 'painel');
 
   // 6. Lista, filtro pelo funil, busca e abrir.
-  const lista = page.getByTestId('lia-panel-list');
-  await expect(lista.locator('tbody tr')).toHaveCount(4);
-  await page
-    .getByTestId('lia-panel-funnel')
+  const lista = bloco(/^Conversas do período$/);
+  const linhas = lista.getByRole('row').filter({ has: page.getByRole('cell') });
+  await expect(linhas).toHaveCount(4);
+  await bloco(/^Funil/)
     .getByRole('button', { name: /Pagou/ })
     .click();
-  await expect(lista.locator('tbody tr')).toHaveCount(1);
-  await expect(lista.locator('tbody')).toContainText('Bruno Reis');
-  await lista.getByRole('button', { name: /Pagou/ }).click();
+  await expect(linhas).toHaveCount(1);
+  await expect(linhas).toContainText('Bruno Reis');
+  await lista.getByRole('button', { name: /Limpar etapa/ }).click();
   await lista.getByRole('searchbox', { name: /Buscar/ }).fill('Marcos');
-  await expect(lista.locator('tbody tr')).toHaveCount(1);
+  await expect(linhas).toHaveCount(1);
   await lista
     .getByRole('link', { name: `Abrir #${P.conversas['Marcos Lima']}` })
     .click();

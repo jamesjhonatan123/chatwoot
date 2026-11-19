@@ -214,7 +214,7 @@ const exportCsv = () => {
 <template>
   <section
     class="flex flex-col flex-1 h-full min-w-0 overflow-y-auto bg-n-background"
-    data-test-id="lia-panel"
+    data-testid="lia-panel"
   >
     <header
       class="sticky top-0 z-10 flex flex-wrap items-center gap-3 px-6 py-4 border-b border-n-weak bg-n-background"
@@ -296,7 +296,7 @@ const exportCsv = () => {
         <article
           v-if="available"
           class="p-4 rounded-xl border border-n-weak bg-n-solid-1"
-          data-test-id="lia-panel-autonomy"
+          data-testid="lia-panel-autonomy"
         >
           <h2 class="text-xs text-n-slate-11">
             {{ t('LIA_PANEL.KPI.AUTONOMY') }}
@@ -324,13 +324,19 @@ const exportCsv = () => {
             }}
           </p>
           <p v-if="summary.campaign" class="mt-1 text-xs text-n-slate-10">
-            {{ t('LIA_PANEL.KPI.CAMPAIGNS', { count: summary.campaign }) }}
+            {{
+              t(
+                'LIA_PANEL.KPI.CAMPAIGNS',
+                { count: summary.campaign },
+                summary.campaign
+              )
+            }}
           </p>
         </article>
         <article
           v-if="available"
           class="p-4 rounded-xl border border-n-weak bg-n-solid-1"
-          data-test-id="lia-panel-live-count"
+          data-testid="lia-panel-live-count"
         >
           <h2 class="text-xs text-n-slate-11">{{ t('LIA_PANEL.KPI.LIVE') }}</h2>
           <p class="mt-1 text-3xl font-semibold tabular-nums text-n-slate-12">
@@ -347,7 +353,7 @@ const exportCsv = () => {
         <article
           class="p-4 rounded-xl border bg-n-solid-1"
           :class="waiting.length ? 'border-n-ruby-6' : 'border-n-weak'"
-          data-test-id="lia-panel-waiting-count"
+          data-testid="lia-panel-waiting-count"
         >
           <h2 class="text-xs text-n-slate-11">
             {{ t('LIA_PANEL.KPI.WAITING') }}
@@ -371,7 +377,7 @@ const exportCsv = () => {
         <article
           v-if="available"
           class="p-4 rounded-xl border border-n-weak bg-n-solid-1"
-          data-test-id="lia-panel-links"
+          data-testid="lia-panel-links"
         >
           <h2 class="text-xs text-n-slate-11">
             {{ t('LIA_PANEL.KPI.LINKS') }}
@@ -381,10 +387,11 @@ const exportCsv = () => {
           </p>
           <p class="mt-1 text-xs text-n-slate-11">
             {{
-              t('LIA_PANEL.KPI.LINKS_DETAIL', {
-                paid: links.paid,
-                rate: pct(links.clicked, links.sent),
-              })
+              t(
+                'LIA_PANEL.KPI.LINKS_DETAIL',
+                { paid: links.paid, rate: pct(links.clicked, links.sent) },
+                links.paid
+              )
             }}
           </p>
         </article>
@@ -401,10 +408,14 @@ const exportCsv = () => {
             </p>
             <p class="mt-1 text-xs text-n-slate-11">
               {{
-                t('LIA_PANEL.KPI.BOTTLENECK_DETAIL', {
-                  count: bottleneck.count,
-                  rate: pct(bottleneck.count, stalledTotal),
-                })
+                t(
+                  'LIA_PANEL.KPI.BOTTLENECK_DETAIL',
+                  {
+                    count: bottleneck.count,
+                    rate: pct(bottleneck.count, stalledTotal),
+                  },
+                  bottleneck.count
+                )
               }}
             </p>
           </template>
@@ -418,7 +429,7 @@ const exportCsv = () => {
       <div class="grid gap-4 lg:grid-cols-2">
         <article
           class="flex flex-col p-4 rounded-xl border border-n-weak bg-n-solid-1"
-          data-test-id="lia-panel-waiting"
+          data-testid="lia-panel-waiting"
         >
           <h2
             class="flex items-center gap-2 text-sm font-medium text-n-slate-12"
@@ -440,7 +451,7 @@ const exportCsv = () => {
           >
             {{ t('LIA_PANEL.WAITING_EMPTY') }}
           </p>
-          <ul v-else class="flex flex-col gap-2">
+          <ul v-else class="flex flex-col gap-2 p-0 m-0 list-none">
             <li
               v-for="row in waiting.slice(0, QUEUE_LIMIT)"
               :key="row.id"
@@ -488,7 +499,7 @@ const exportCsv = () => {
         <article
           v-if="available"
           class="flex flex-col p-4 rounded-xl border border-n-weak bg-n-solid-1"
-          data-test-id="lia-panel-live"
+          data-testid="lia-panel-live"
         >
           <h2
             class="flex items-center gap-2 text-sm font-medium text-n-slate-12"
@@ -510,7 +521,7 @@ const exportCsv = () => {
           >
             {{ t('LIA_PANEL.LIVE_EMPTY') }}
           </p>
-          <ul v-else class="flex flex-col gap-2">
+          <ul v-else class="flex flex-col gap-2 p-0 m-0 list-none">
             <li
               v-for="row in live.slice(0, QUEUE_LIMIT)"
               :key="row.id"
@@ -560,7 +571,7 @@ const exportCsv = () => {
         <div class="grid gap-4 lg:grid-cols-2">
           <article
             class="p-4 rounded-xl border border-n-weak bg-n-solid-1"
-            data-test-id="lia-panel-funnel"
+            data-testid="lia-panel-funnel"
           >
             <h2 class="text-sm font-medium text-n-slate-12">
               {{ t('LIA_PANEL.FUNNEL') }}
@@ -568,7 +579,7 @@ const exportCsv = () => {
             <p class="mb-3 text-xs text-n-slate-11">
               {{ t('LIA_PANEL.FUNNEL_HINT') }}
             </p>
-            <ol class="flex flex-col gap-3">
+            <ol class="flex flex-col gap-3 p-0 m-0 list-none">
               <li v-for="(step, index) in funnel" :key="step.key">
                 <button
                   type="button"
@@ -594,7 +605,13 @@ const exportCsv = () => {
                     v-if="step.stopped > 0"
                     class="block mt-1 text-xs text-n-slate-10"
                   >
-                    {{ t('LIA_PANEL.FUNNEL_STOPPED', { count: step.stopped }) }}
+                    {{
+                      t(
+                        'LIA_PANEL.FUNNEL_STOPPED',
+                        { count: step.stopped },
+                        step.stopped
+                      )
+                    }}
                   </span>
                 </button>
               </li>
@@ -603,7 +620,7 @@ const exportCsv = () => {
 
           <article
             class="p-4 rounded-xl border border-n-weak bg-n-solid-1"
-            data-test-id="lia-panel-stalled"
+            data-testid="lia-panel-stalled"
           >
             <h2 class="text-sm font-medium text-n-slate-12">
               {{ t('LIA_PANEL.STALLED') }}
@@ -617,7 +634,7 @@ const exportCsv = () => {
             >
               {{ t('LIA_PANEL.STALLED_EMPTY') }}
             </p>
-            <ul v-else class="flex flex-col gap-2">
+            <ul v-else class="flex flex-col gap-2 p-0 m-0 list-none">
               <li v-for="item in stalled" :key="item.key">
                 <button
                   type="button"
@@ -648,7 +665,7 @@ const exportCsv = () => {
         <div class="grid gap-4 lg:grid-cols-2 xl:grid-cols-4">
           <article
             class="p-4 rounded-xl border border-n-weak bg-n-solid-1 xl:col-span-2"
-            data-test-id="lia-panel-trend"
+            data-testid="lia-panel-trend"
           >
             <h2 class="text-sm font-medium text-n-slate-12">
               {{ t('LIA_PANEL.TREND') }}
@@ -692,7 +709,7 @@ const exportCsv = () => {
             <h2 class="text-sm font-medium text-n-slate-12">
               {{ t('LIA_PANEL.OUTCOMES') }}
             </h2>
-            <ul class="flex flex-col gap-2 mt-3">
+            <ul class="flex flex-col gap-2 p-0 m-0 mt-3 list-none">
               <li v-for="item in outcomes" :key="item.key">
                 <span class="flex justify-between text-xs text-n-slate-12">
                   <span>{{ t(CATEGORY_KEYS[item.key]) }}</span>
@@ -720,8 +737,8 @@ const exportCsv = () => {
             </p>
             <ul
               v-else
-              class="flex flex-col gap-2 mt-3"
-              data-test-id="lia-panel-reasons"
+              class="flex flex-col gap-2 p-0 m-0 mt-3 list-none"
+              data-testid="lia-panel-reasons"
             >
               <li v-for="item in reasons" :key="item.key" :title="item.example">
                 <span class="flex justify-between text-xs text-n-slate-12">
@@ -781,7 +798,7 @@ const exportCsv = () => {
         <!-- Lista -->
         <article
           class="p-4 rounded-xl border border-n-weak bg-n-solid-1"
-          data-test-id="lia-panel-list"
+          data-testid="lia-panel-list"
         >
           <div class="flex flex-wrap items-center gap-2 mb-3">
             <h2 class="text-sm font-medium text-n-slate-12">
@@ -880,7 +897,7 @@ const exportCsv = () => {
                 <tr
                   v-for="row in filtered"
                   :key="row.id"
-                  :data-test-id="`lia-panel-row-${row.id}`"
+                  :data-testid="`lia-panel-row-${row.id}`"
                 >
                   <td class="py-2 pr-3">
                     <span class="font-medium text-n-slate-12">
