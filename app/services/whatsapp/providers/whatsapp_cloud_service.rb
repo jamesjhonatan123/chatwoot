@@ -1,4 +1,6 @@
 class Whatsapp::Providers::WhatsappCloudService < Whatsapp::Providers::BaseService
+  include Whatsapp::Providers::WhatsappCloudCtaUrl
+
   def send_message(phone_number, message)
     @message = message
 
@@ -6,6 +8,8 @@ class Whatsapp::Providers::WhatsappCloudService < Whatsapp::Providers::BaseServi
       send_attachment_message(phone_number, message)
     elsif message.content_type == 'input_select'
       send_interactive_text_message(phone_number, message)
+    elsif (button = cta_url_button(message))
+      send_cta_url_message(phone_number, message, button)
     else
       send_text_message(phone_number, message)
     end
