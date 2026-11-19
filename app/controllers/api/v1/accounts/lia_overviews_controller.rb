@@ -21,12 +21,13 @@ class Api::V1::Accounts::LiaOverviewsController < Api::V1::Accounts::BaseControl
   def show
     stores = visible_stores
     waiting = waiting_scope
+    stale = stale_scope
     render json: {
       lia_available: !stores.nil?,
       threshold_minutes: WAIT_THRESHOLD.in_minutes.to_i,
       max_wait_days: MAX_WAIT.in_days.to_i,
-      stale: { count: open_in_inboxes.where('conversations.waiting_since < ?', MAX_WAIT.ago).count },
-      stores: store_summaries(stores || [], waiting),
+      stale: { count: stale.count },
+      stores: store_summaries(stores || [], waiting, stale),
       waiting: { count: waiting.count, conversations: waiting_rows(waiting, stores || []) }
     }
   end
@@ -72,18 +73,38 @@ class Api::V1::Accounts::LiaOverviewsController < Api::V1::Accounts::BaseControl
     Current.account.conversations.open.where(inbox_id: inbox_ids)
   end
 
-  def waiting_scope
-    open_in_inboxes.where(waiting_since: MAX_WAIT.ago..WAIT_THRESHOLD.ago)
+  def unanswered
+    open_in_inboxes.where('conversations.waiting_since <= ?', WAIT_THRESHOLD.ago)
   end
 
-  # Duas consultas agrupadas por caixa para todas as lojas, em vez de duas por loja.
-  def store_summaries(stores, waiting)
+  # O teto de 7 dias olha a ultima fala do cliente, nao o waiting_since: o Chatwoot so o grava
+  # quando esta vazio, e quem esperava ha meses e escreve de novo hoje tem de voltar a fila.
+  def recent_incoming
+    @wait_cutoff ||= MAX_WAIT.ago
+    Message.unscope(:order).incoming
+           .where('messages.conversation_id = conversations.id')
+           .where('messages.created_at >= ?', @wait_cutoff)
+  end
+
+  def waiting_scope
+    unanswered.where(recent_incoming.arel.exists)
+  end
+
+  # Abertas e sem resposta, mas o cliente nao escreve ha mais de 7 dias: so contadas.
+  def stale_scope
+    unanswered.where(recent_incoming.arel.exists.not)
+  end
+
+  # Consultas agrupadas por caixa para todas as lojas, em vez de varias por loja.
+  def store_summaries(stores, waiting, stale)
     counts = waiting.group(:inbox_id).count
     oldest = waiting.group(:inbox_id).minimum(:waiting_since)
+    stale_counts = stale.group(:inbox_id).count
     stores.map do |store|
       ids = store['inbox_ids']
       store.merge(
         'waiting_count' => ids.sum { |id| counts[id].to_i },
+        'stale_count' => ids.sum { |id| stale_counts[id].to_i },
         'oldest_waiting_since' => oldest.values_at(*ids).compact.min&.iso8601
       )
     end

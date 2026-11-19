@@ -77,10 +77,12 @@ const available = computed(() => panel.value?.lia_available !== false);
 const summary = computed(() => panel.value?.summary || {});
 const threshold = computed(() => overview.value?.threshold_minutes || 15);
 const maxWaitDays = computed(() => overview.value?.max_wait_days || 7);
-// As abandonadas há mais de 7 dias ficam fora da fila; a contagem é da conta toda.
-const staleCount = computed(() =>
-  storeId.value ? 0 : overview.value?.stale?.count || 0
-);
+// As abandonadas há mais de 7 dias ficam fora da fila e aparecem só contadas.
+const staleCount = computed(() => {
+  if (!storeId.value) return overview.value?.stale?.count || 0;
+  const store = stores.value.find(item => item.store_id === storeId.value);
+  return store?.stale_count || 0;
+});
 
 const waiting = computed(() =>
   waitingForStore(overview.value, storeId.value).map(row => ({

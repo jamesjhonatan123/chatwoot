@@ -13,6 +13,7 @@
     "SUBTITLE": "Customers who wrote and have had no reply for more than {minutes} min (up to {days} days), oldest first. A conversation leaves this list when someone replies.",
     "EMPTY_TITLE": "Nobody waiting",
     "EMPTY_TEXT": "Every customer who wrote got a reply within {minutes} min.",
+    "EMPTY_TEXT_STALE": "No customer who wrote in the last {days} days is waiting for a reply.",
     "WAITING_FOR": "for {wait}",
     "REASON_HANDOFF": "LIA handed off",
     "REASON_PAUSED": "LIA paused at this store",

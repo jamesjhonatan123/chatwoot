@@ -84,7 +84,8 @@ painel[:conversas] = { 'Paula Souza' => painel[:conversation_id] }
   conversa = Conversation.create!(account: painel_account, inbox: painel_inbox, contact: contato,
                                   contact_inbox: ci, status: :open)
   Message.create!(account: painel_account, inbox: painel_inbox, conversation: conversa,
-                  message_type: :incoming, content: texto, sender: contato)
+                  message_type: :incoming, content: texto, sender: contato,
+                  created_at: minutos ? minutos.minutes.ago : Time.zone.now)
   conversa.update_columns(waiting_since: minutos&.minutes&.ago) # rubocop:disable Rails/SkipsModelValidations
   painel[:conversas][nome] = conversa.display_id
 end

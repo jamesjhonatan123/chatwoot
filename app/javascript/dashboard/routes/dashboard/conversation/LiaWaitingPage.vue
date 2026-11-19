@@ -81,7 +81,11 @@ const REASON_CLASS = {
         {{ t('LIA_OVERVIEW.EMPTY_TITLE') }}
       </p>
       <p class="text-sm text-n-slate-11">
-        {{ t('LIA_OVERVIEW.EMPTY_TEXT', { minutes }) }}
+        {{
+          stale
+            ? t('LIA_OVERVIEW.EMPTY_TEXT_STALE', { days })
+            : t('LIA_OVERVIEW.EMPTY_TEXT', { minutes })
+        }}
       </p>
     </div>
 

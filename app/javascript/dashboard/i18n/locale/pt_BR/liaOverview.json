@@ -13,6 +13,7 @@
     "SUBTITLE": "Clientes que escreveram e estão há mais de {minutes} min sem resposta (até {days} dias), do mais antigo para o mais novo. A conversa sai daqui quando alguém responde.",
     "EMPTY_TITLE": "Ninguém esperando",
     "EMPTY_TEXT": "Todo cliente que escreveu já teve resposta nos últimos {minutes} min.",
+    "EMPTY_TEXT_STALE": "Nenhum cliente que escreveu nos últimos {days} dias está sem resposta.",
     "WAITING_FOR": "há {wait}",
     "REASON_HANDOFF": "LIA transferiu",
     "REASON_PAUSED": "LIA parada nesta loja",

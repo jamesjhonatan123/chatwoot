@@ -37,7 +37,7 @@ RSpec.describe 'LIA overview API', type: :request do
     conversation = create(:conversation, account: account, inbox: target_inbox)
     conversation.update!(label_list: labels) if labels.any?
     create(:message, conversation: conversation, account: account, inbox: target_inbox, message_type: :incoming,
-                     content: "cliente esperando #{minutes}")
+                     content: "cliente esperando #{minutes}", created_at: minutes.minutes.ago)
     # Depois da mensagem: a fala do cliente reabre conversa resolvida.
     conversation.update_columns(waiting_since: minutes.minutes.ago, status: Conversation.statuses[status]) # rubocop:disable Rails/SkipsModelValidations
     conversation
@@ -92,6 +92,27 @@ RSpec.describe 'LIA overview API', type: :request do
     batel = body['stores'].find { |store| store['store_id'] == '334' }
     expect(batel['waiting_count']).to eq(2)
     expect(Time.zone.parse(batel['oldest_waiting_since'])).to be > 7.days.ago
+  end
+
+  # O Chatwoot so grava waiting_since quando esta vazio: quem esperava ha 150 dias e escreve de
+  # novo hoje continua com o waiting_since antigo. O teto olha a ultima fala do cliente.
+  it 'keeps in the queue an abandoned conversation whose customer wrote again today' do
+    stub_stores
+    back = waiting_conversation(minutes: 150 * 24 * 60)
+    back.messages.incoming.update_all(created_at: 150.days.ago) # rubocop:disable Rails/SkipsModelValidations
+    create(:message, conversation: back, account: account, inbox: inbox, message_type: :incoming,
+                     content: 'alguem ai?', created_at: 20.minutes.ago)
+    abandoned = waiting_conversation(minutes: 150 * 24 * 60)
+    abandoned.messages.incoming.update_all(created_at: 150.days.ago) # rubocop:disable Rails/SkipsModelValidations
+
+    get show_url, headers: agent.create_new_auth_token, as: :json
+
+    body = response.parsed_body
+    expect(body['waiting']['conversations'].pluck('id')).to eq([back.display_id])
+    expect(body['stale']).to eq('count' => 1)
+    batel = body['stores'].find { |store| store['store_id'] == '334' }
+    expect(batel['waiting_count']).to eq(1)
+    expect(batel['stale_count']).to eq(1)
   end
 
   it 'gives the reason: handed off by LIA, LIA paused in the store, or just unanswered' do
