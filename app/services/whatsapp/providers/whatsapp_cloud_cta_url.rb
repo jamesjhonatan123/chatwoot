@@ -17,7 +17,7 @@ module Whatsapp::Providers::WhatsappCloudCtaUrl
     return if url.blank?
 
     content = message.outgoing_content.to_s
-    return unless content.include?(url)
+    return unless cta_url_on_own_line?(content, url)
 
     body = cta_body_without(content, url)
     return if body.blank? || body.length > CTA_BODY_LIMIT
@@ -36,6 +36,12 @@ module Whatsapp::Providers::WhatsappCloudCtaUrl
     [url, label]
   end
 
+  # Só com o link sozinho na linha (com ou sem a seta 👉): no meio da frase, tirar o link
+  # deixaria "Seu link é ." no corpo. Nesse caso sai o texto de sempre.
+  def cta_url_on_own_line?(content, url)
+    content.each_line.any? { |line| line.include?(url) && line.sub(url, '').delete('👉').strip.empty? }
+  end
+
   # Tira o link (e a seta que o apontava) e as linhas que ficaram vazias no lugar dele.
   def cta_body_without(content, url)
     content.gsub(/(?:👉\s*)?#{Regexp.escape(url)}/, '')
@@ -44,12 +50,19 @@ module Whatsapp::Providers::WhatsappCloudCtaUrl
            .strip
   end
 
+  # Citação da mensagem respondida, só quando existe (o texto manda `context: nil`).
+  def cta_reply_context(message)
+    context = whatsapp_reply_context(message)
+    context.present? ? { context: context } : {}
+  end
+
   def send_cta_url_message(phone_number, message, button)
     response = HTTParty.post(
       "#{phone_id_path}/messages",
       headers: api_headers,
       body: {
         messaging_product: 'whatsapp',
+        **cta_reply_context(message),
         **recipient_params(phone_number),
         type: 'interactive',
         interactive: {
